@@ -1,4 +1,8 @@
 add_library(cs241c-frontend
+  ast/Computation.cpp
+  ast/Computation.h
+  ast/Decl.cpp
+  ast/Decl.h
   ast/Expr.cpp
   ast/Expr.h
   ast/Stmt.cpp
