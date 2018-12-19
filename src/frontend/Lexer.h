@@ -1,5 +1,5 @@
-#ifndef CS241C_TOKEN_H
-#define CS241C_TOKEN_H
+#ifndef CS241C_FRONTEND_LEXER_H
+#define CS241C_FRONTEND_LEXER_H
 
 #include <optional>
 #include <string>
