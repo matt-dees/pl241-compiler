@@ -139,6 +139,7 @@ public:
         while (*Pos != '\n') {
           nextChar();
         }
+        break;
       default: {
         if (isalpha(*Pos)) {
           std::string Ident = lexIdentifier();
