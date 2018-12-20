@@ -8,6 +8,8 @@ add_library(cs241c-frontend
   ast/Stmt.cpp
   ast/Stmt.h
   Lexer.cpp
-  Lexer.h)
+  Lexer.h
+  Parser.cpp
+  Parser.h)
 
 target_include_directories(cs241c-frontend INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

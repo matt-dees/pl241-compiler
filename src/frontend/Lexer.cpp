@@ -3,25 +3,26 @@
 #include <unordered_map>
 
 using namespace cs241c;
+using TT = Token::Type;
 
 namespace {
 class Lexer {
-  const std::unordered_map<std::string, Token::Type> Keywords{
-      {"main", Token::Type::Main},
-      {"function", Token::Type::Function},
-      {"procedure", Token::Type::Procedure},
-      {"call", Token::Type::Call},
-      {"return", Token::Type::Return},
-      {"var", Token::Type::Var},
-      {"array", Token::Type::Array},
-      {"let", Token::Type::Let},
-      {"if", Token::Type::If},
-      {"then", Token::Type::Then},
-      {"else", Token::Type::Else},
-      {"fi", Token::Type::Fi},
-      {"while", Token::Type::While},
-      {"do", Token::Type::Do},
-      {"od", Token::Type::Od}};
+  const std::unordered_map<std::string, TT> Keywords{
+      {"main", TT::Main},
+      {"function", TT::Function},
+      {"procedure", TT::Procedure},
+      {"call", TT::Call},
+      {"return", TT::Return},
+      {"var", TT::Var},
+      {"array", TT::Array},
+      {"let", TT::Let},
+      {"if", TT::If},
+      {"then", TT::Then},
+      {"else", TT::Else},
+      {"fi", TT::Fi},
+      {"while", TT::While},
+      {"do", TT::Do},
+      {"od", TT::Od}};
 
   std::string Text;
   std::string::iterator Pos;
@@ -38,7 +39,7 @@ public:
       }
 
       if (Eof) {
-        return Token::Type::Eof;
+        return TT::Eof;
       }
 
       switch (*Pos) {
@@ -46,48 +47,48 @@ public:
         nextChar();
         if (*Pos == '=') {
           nextChar();
-          return Token::Type::Eq;
+          return TT::Eq;
         }
-        return Token::Type::Unknown;
+        return TT::Unknown;
       }
       case '!': {
         nextChar();
         if (*Pos == '=') {
           nextChar();
-          return Token::Type::Ne;
+          return TT::Ne;
         }
-        return Token::Type::Unknown;
+        return TT::Unknown;
       }
       case '<': {
         nextChar();
         if (*Pos == '=') {
           nextChar();
-          return Token::Type::Le;
+          return TT::Le;
         } else if (*Pos == '-') {
           nextChar();
-          return Token::Type::LArrow;
+          return TT::LArrow;
         }
-        return Token::Type::Lt;
+        return TT::Lt;
       }
       case '>': {
         nextChar();
         if (*Pos == '=') {
           nextChar();
-          return Token::Type::Ge;
+          return TT::Ge;
         }
-        return Token::Type::Gt;
+        return TT::Gt;
       }
       case '+': {
         nextChar();
-        return Token::Type::Add;
+        return TT::Add;
       }
       case '-': {
         nextChar();
-        return Token::Type::Sub;
+        return TT::Sub;
       }
       case '*': {
         nextChar();
-        return Token::Type::Mul;
+        return TT::Mul;
       }
       case '/': {
         nextChar();
@@ -96,44 +97,44 @@ public:
             nextChar();
           }
         } else {
-          return Token::Type::Div;
+          return TT::Div;
         }
       }
       case '(': {
         nextChar();
-        return Token::Type::POpen;
+        return TT::POpen;
       }
       case ')': {
         nextChar();
-        return Token::Type::PClose;
+        return TT::PClose;
       }
       case '[': {
         nextChar();
-        return Token::Type::BOpen;
+        return TT::BOpen;
       }
       case ']': {
         nextChar();
-        return Token::Type::BClose;
+        return TT::BClose;
       }
       case '{': {
         nextChar();
-        return Token::Type::COpen;
+        return TT::COpen;
       }
       case '}': {
         nextChar();
-        return Token::Type::CClose;
+        return TT::CClose;
       }
       case '.': {
         nextChar();
-        return Token::Type::Period;
+        return TT::Period;
       }
       case ',': {
         nextChar();
-        return Token::Type::Comma;
+        return TT::Comma;
       }
       case ';': {
         nextChar();
-        return Token::Type::Semi;
+        return TT::Semi;
       }
       case '#':
         while (*Pos != '\n') {
@@ -145,15 +146,15 @@ public:
           std::string Ident = lexIdentifier();
           auto Kw = Keywords.find(Ident);
           if (Kw == Keywords.end()) {
-            return {Token::Type::Ident, Ident};
+            return {TT::Ident, Ident};
           } else {
             return Kw->second;
           }
         } else if (isdigit(*Pos)) {
           int32_t I = lexNumber();
-          return {Token::Type::Number, I};
+          return {TT::Number, I};
         }
-        return Token::Type::Unknown;
+        return TT::Unknown;
       }
       }
     }
@@ -195,13 +196,13 @@ std::vector<Token> cs241c::lex(const std::string &text) {
   Lexer L(text);
   std::vector<Token> Tokens;
   Token T = L.next();
-  while (T.T != Token::Type::Eof) {
-    if (T.T == Token::Type::Unknown) {
+  do {
+    if (T.T == TT::Unknown) {
       throw std::runtime_error("Lexer: Unkown symbol.");
     }
     Tokens.push_back(T);
     T = L.next();
-  }
+  } while (T.T != TT::Eof);
 
   return Tokens;
 }

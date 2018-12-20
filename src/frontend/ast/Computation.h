@@ -8,11 +8,10 @@
 namespace cs241c {
 class Computation {
   std::vector<std::unique_ptr<Decl>> Vars;
-  std::vector<std::unique_ptr<Func>> Funcs;
+  std::vector<Func> Funcs;
 
 public:
-  Computation(std::vector<std::unique_ptr<Decl>> Vars,
-              std::vector<std::unique_ptr<Func>> Funcs);
+  Computation(std::vector<std::unique_ptr<Decl>> Vars, std::vector<Func> Funcs);
 };
 } // namespace cs241c
 
