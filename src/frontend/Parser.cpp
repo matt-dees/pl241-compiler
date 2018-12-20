@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include <algorithm>
+#include <functional>
 #include <stdexcept>
 
 using namespace cs241c;
@@ -39,8 +40,7 @@ private:
 
     while (match({TT::Function, TT::Procedure})) {
       auto Func = pFunc();
-      Funcs.insert(Funcs.end(), make_move_iterator(Func.begin()),
-                   make_move_iterator(Func.end()));
+      Funcs.push_back(std::move(Func));
     }
 
     consume(TT::COpen);
@@ -53,9 +53,130 @@ private:
     return {move(Globals), move(Funcs)};
   }
 
-  std::vector<std::unique_ptr<Decl>> pDecl() { return {}; }
-  std::vector<Func> pFunc() { return {}; }
-  std::vector<std::unique_ptr<Stmt>> pStmtSeq() { return {}; }
+  std::vector<std::unique_ptr<Decl>> pDecl() {
+    auto DeclGen = pDeclType();
+
+    std::vector<std::unique_ptr<Decl>> Decls;
+
+    std::string Ident = consumeIdent();
+    auto Decl = DeclGen(Ident);
+    Decls.push_back(move(Decl));
+
+    while (match(TT::Comma)) {
+      consume(TT::Comma);
+      Ident = consumeIdent();
+      Decl = DeclGen(Ident);
+      Decls.push_back(move(Decl));
+    }
+
+    consume(TT::Semi);
+
+    return Decls;
+  }
+
+  Func pFunc() {
+    Func::Type FT = Lookahead->T == TT::Function ? Func::Type::Function
+                                                 : Func::Type::Procedure;
+
+    consume({TT::Function, TT::Procedure});
+    auto Ident = consumeIdent();
+
+    std::vector<std::string> Params;
+    if (match(TT::POpen)) {
+      Params = pParams();
+    }
+
+    consume(TT::Semi);
+    auto [Vars, StmtSeq] = pBody();
+    consume(TT::Semi);
+
+    return {FT, Ident, Params, Vars, move(StmtSeq)};
+  }
+
+  std::vector<std::unique_ptr<Stmt>> pStmtSeq() {
+    std::vector<std::unique_ptr<Stmt>> StmtSeq;
+
+    StmtSeq.push_back(pStmt());
+    while (match(TT::Semi)) {
+      consume(TT::Semi);
+      StmtSeq.push_back(pStmt());
+    }
+
+    return StmtSeq;
+  }
+
+  std::function<std::unique_ptr<Decl>(const std::string &)> pDeclType() {
+    if (match(TT::Var)) {
+      consume(TT::Var);
+      return [](const std::string &Ident) {
+        return std::make_unique<Decl>(IntDecl(Ident));
+      };
+    } else {
+      consume(TT::Array);
+
+      std::vector<int32_t> Dim;
+
+      consume(TT::BOpen);
+      Dim.push_back(consumeNumber());
+      consume(TT::BClose);
+
+      while (match(TT::BOpen)) {
+        consume(TT::BOpen);
+        Dim.push_back(consumeNumber());
+        consume(TT::BClose);
+      }
+
+      return [Dim](const std::string &Ident) {
+        return std::make_unique<Decl>(ArrayDecl(Ident, Dim));
+      };
+    }
+  }
+
+  std::vector<std::string> pParams() {
+    consume(TT::POpen);
+
+    std::vector<std::string> Params;
+
+    if (match(TT::Ident)) {
+      Params.push_back(consumeIdent());
+    }
+
+    while (match(TT::Comma)) {
+      consume(TT::Comma);
+      Params.push_back(consumeIdent());
+    }
+
+    consume(TT::PClose);
+
+    return Params;
+  }
+
+  std::tuple<std::vector<IntDecl>, std::vector<std::unique_ptr<Stmt>>> pBody() {
+    return {};
+  }
+
+  std::unique_ptr<Stmt> pStmt() { return nullptr; }
+
+  std::string consumeIdent() {
+    Token T = *Lookahead;
+    consume(TT::Ident);
+    return *T.S;
+  }
+
+  int32_t consumeNumber() {
+    Token T = *Lookahead;
+    consume(TT::Number);
+    return *T.I;
+  }
+
+  void consume(TT T) { consume(std::vector<TT>{T}); }
+
+  void consume(const std::vector<TT> &Ts) {
+    if (!match(Ts)) {
+      error(Ts.front());
+    }
+    advance();
+  }
 
   void advance() {
     if (Lookahead->T != TT::Eof)
@@ -66,12 +187,6 @@ private:
 
   bool match(const std::vector<TT> &Ts) {
     return std::find(Ts.begin(), Ts.end(), Lookahead->T) != Ts.end();
-  }
-
-  void consume(TT T) {
-    if (Lookahead->T != T) {
-      error(T);
-    }
   }
 
   void error(TT TExpect) {
