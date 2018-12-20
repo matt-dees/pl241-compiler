@@ -32,12 +32,13 @@ private:
   Type T;
   std::string Ident;
   std::vector<std::string> Params;
-  std::vector<IntDecl> Vars;
+  std::vector<std::unique_ptr<Decl>> Vars;
   std::vector<std::unique_ptr<Stmt>> Stmts;
 
 public:
   Func(Type T, std::string Ident, std::vector<std::string> Params,
-       std::vector<IntDecl> Vars, std::vector<std::unique_ptr<Stmt>> Stmts);
+       std::vector<std::unique_ptr<Decl>> Vars,
+       std::vector<std::unique_ptr<Stmt>> Stmts);
 };
 } // namespace cs241c
 

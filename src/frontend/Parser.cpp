@@ -90,7 +90,7 @@ private:
     auto [Vars, StmtSeq] = pBody();
     consume(TT::Semi);
 
-    return {FT, Ident, Params, Vars, move(StmtSeq)};
+    return {FT, Ident, Params, move(Vars), move(StmtSeq)};
   }
 
   std::vector<std::unique_ptr<Stmt>> pStmtSeq() {
@@ -151,11 +151,94 @@ private:
     return Params;
   }
 
-  std::tuple<std::vector<IntDecl>, std::vector<std::unique_ptr<Stmt>>> pBody() {
-    return {};
+  std::tuple<std::vector<std::unique_ptr<Decl>>,
+             std::vector<std::unique_ptr<Stmt>>>
+  pBody() {
+    std::vector<std::unique_ptr<Decl>> Locals;
+    while (match({TT::Var, TT::Array})) {
+      auto Decl = pDecl();
+      Locals.insert(Locals.end(), make_move_iterator(Decl.begin()),
+                    make_move_iterator(Decl.end()));
+    }
+
+    consume(TT::COpen);
+    if (!match({TT::Let, TT::Call, TT::If, TT::While, TT::Return})) {
+      throw std::runtime_error("Parser: Expected statement.");
+    }
+    auto StmtSeq = pStmtSeq();
+    consume(TT::CClose);
+
+    return {move(Locals), move(StmtSeq)};
   }
 
-  std::unique_ptr<Stmt> pStmt() { return nullptr; }
+  std::unique_ptr<Stmt> pStmt() {
+    switch (Lookahead->T) {
+    case TT::Let:
+      return pAssignment();
+    case TT::Call:
+      return std::make_unique<FunctionCallStmt>(std::move(*pFuncCall()));
+    case TT::If:
+      return pIfStmt();
+    case TT::While:
+      return pWhileStmt();
+    case TT::Return:
+      return pReturnStmt();
+    default:
+      throw std::runtime_error("Parser: Expected statement.");
+    }
+  }
+
+  std::unique_ptr<Assignment> pAssignment() {
+    consume(TT::Let);
+    auto Lhs = pDesignator();
+    consume(TT::LArrow);
+    auto Rhs = pExpr();
+    return std::make_unique<Assignment>(move(Lhs), move(Rhs));
+  }
+
+  std::unique_ptr<IfStmt> pIfStmt() {
+    consume(TT::If);
+    auto Cond = pRelation();
+    consume(TT::Then);
+    auto ThenSeq = pStmtSeq();
+
+    std::vector<std::unique_ptr<Stmt>> ElseSeq;
+    if (match(TT::Else)) {
+      consume(TT::Else);
+      ElseSeq = pStmtSeq();
+    }
+
+    consume(TT::Fi);
+
+    return std::make_unique<IfStmt>(std::move(Cond), move(ThenSeq),
+                                    move(ElseSeq));
+  }
+
+  std::unique_ptr<WhileStmt> pWhileStmt() {
+    consume(TT::While);
+    auto Cond = pRelation();
+    consume(TT::Do);
+    auto Body = pStmtSeq();
+    consume(TT::Od);
+    return std::make_unique<WhileStmt>(std::move(Cond), move(Body));
+  }
+
+  std::unique_ptr<ReturnStmt> pReturnStmt() {
+    consume(TT::Return);
+    if (match({TT::Ident, TT::Number, TT::COpen, TT::Call})) {
+      return std::make_unique<ReturnStmt>(pExpr());
+    } else {
+      return {nullptr};
+    }
+  }
+
+  std::unique_ptr<Designator> pDesignator() {}
+
+  std::unique_ptr<Expr> pExpr() {}
+
+  std::unique_ptr<FunctionCall> pFuncCall() {}
+
+  Relation pRelation() {}
 
   std::string consumeIdent() {
     Token T = *Lookahead;
@@ -191,7 +274,7 @@ private:
 
   void error(TT TExpect) {
     throw std::runtime_error(
-        std::string("Expected token: ") +
+        std::string("Parser: Expected token: ") +
         TokenNames[static_cast<size_t>(TExpect)] +
         ", actual token: " + TokenNames[static_cast<size_t>(Lookahead->T)]);
   }

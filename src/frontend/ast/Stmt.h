@@ -30,20 +30,20 @@ public:
 
 class IfStmt : public Stmt {
   Relation Rel;
-  std::vector<std::unique_ptr<Expr>> Then;
-  std::vector<std::unique_ptr<Expr>> Else;
+  std::vector<std::unique_ptr<Stmt>> Then;
+  std::vector<std::unique_ptr<Stmt>> Else;
 
 public:
-  IfStmt(Relation Rel, std::vector<std::unique_ptr<Expr>> Then,
-         std::vector<std::unique_ptr<Expr>> Else);
+  IfStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Then,
+         std::vector<std::unique_ptr<Stmt>> Else);
 };
 
 class WhileStmt : public Stmt {
   Relation Rel;
-  std::vector<std::unique_ptr<Expr>> Body;
+  std::vector<std::unique_ptr<Stmt>> Body;
 
 public:
-  WhileStmt(Relation Rel, std::vector<std::unique_ptr<Expr>> Body);
+  WhileStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Body);
 };
 } // namespace cs241c
 
