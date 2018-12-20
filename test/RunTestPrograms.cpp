@@ -1,4 +1,5 @@
 #include "Lexer.h"
+#include "Parser.h"
 #include <catch.hpp>
 #include <filesystem>
 #include <fstream>
@@ -12,7 +13,8 @@ TEST_CASE("Compile and run test programs") {
       std::ifstream FS(P.path().string());
       std::string Text(std::istreambuf_iterator<char>{FS}, {});
       std::vector<Token> Tokens = lex(Text);
-      CHECK_FALSE(Tokens.empty());
+      Computation Comp = parse(Tokens);
+      CHECK(true);
     }
   }
 }

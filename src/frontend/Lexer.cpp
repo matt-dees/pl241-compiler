@@ -96,6 +96,7 @@ public:
           while (*Pos != '\n') {
             nextChar();
           }
+          break;
         } else {
           return TT::Div;
         }
