@@ -1,15 +1,17 @@
 #include "Parser.h"
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <functional>
 #include <stdexcept>
+#include <string_view>
 
 using namespace cs241c;
 
 namespace {
 using TT = Token::Type;
 
-const char *TokenNames[] = {
+const std::array<std::string_view, 39> TokenNames = {
     "Eof",   "Main",   "Function", "Procedure", "Call",   "Return", "Var",
     "Array", "Let",    "If",       "Then",      "Else",   "Fi",     "While",
     "Do",    "Od",     "Eq",       "Ne",        "Lt",     "Le",     "Gt",
@@ -405,10 +407,11 @@ private:
   }
 
   std::runtime_error error(TT TExpect) {
-    return std::runtime_error(
-        std::string("Parser: Expected token: ") +
-        TokenNames[static_cast<size_t>(TExpect)] +
-        ", actual token: " + TokenNames[static_cast<size_t>(Lookahead->T)]);
+    std::string Msg{"Parser: Expected token: "};
+    Msg.append(TokenNames[static_cast<size_t>(TExpect)]);
+    Msg.append(", actual token: ");
+    Msg.append(TokenNames[static_cast<size_t>(Lookahead->T)]);
+    return std::runtime_error(Msg);
   }
 };
 } // namespace

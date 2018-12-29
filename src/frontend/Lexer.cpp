@@ -1,5 +1,6 @@
 #include "Lexer.h"
 #include <stdexcept>
+#include <string_view>
 #include <unordered_map>
 
 using namespace cs241c;
@@ -7,7 +8,7 @@ using TT = Token::Type;
 
 namespace {
 class Lexer {
-  const std::unordered_map<std::string, TT> Keywords{
+  const std::unordered_map<std::string_view, TT> Keywords{
       {"main", TT::Main},
       {"function", TT::Function},
       {"procedure", TT::Procedure},
