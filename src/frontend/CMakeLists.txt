@@ -13,3 +13,4 @@ add_library(cs241c-frontend
   Parser.h)
 
 target_include_directories(cs241c-frontend INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(cs241c-frontend cs241c-ir)
