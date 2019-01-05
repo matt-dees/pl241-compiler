@@ -5,7 +5,10 @@ namespace cs241c {
 class Value {};
 
 class ConstantValue : public Value {
+public:
   int Val;
+
+  explicit ConstantValue(int Val);
 };
 } // namespace cs241c
 

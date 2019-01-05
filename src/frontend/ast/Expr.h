@@ -1,19 +1,26 @@
 #ifndef CS241C_FRONTEND_AST_EXPR_H
 #define CS241C_FRONTEND_AST_EXPR_H
 
+#include "IrGenContext.h"
+#include "Value.h"
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace cs241c {
-class Expr {};
+class Expr {
+public:
+  virtual Value *genIr(IrGenContext &Gen) = 0;
+};
 
 class ConstantExpr : public Expr {
   int32_t Val;
 
 public:
   ConstantExpr(int32_t Val);
+
+  Value *genIr(IrGenContext &Gen) override;
 };
 
 class Designator : public Expr {};
@@ -23,6 +30,8 @@ class VarDesignator : public Designator {
 
 public:
   VarDesignator(std::string Ident);
+
+  Value *genIr(IrGenContext &Gen) override;
 };
 
 class ArrayDesignator : public Designator {
@@ -31,6 +40,8 @@ class ArrayDesignator : public Designator {
 
 public:
   ArrayDesignator(std::string Ident, std::vector<std::unique_ptr<Expr>> Dim);
+
+  Value *genIr(IrGenContext &Gen) override;
 };
 
 class FunctionCall : public Expr {
@@ -39,6 +50,8 @@ class FunctionCall : public Expr {
 
 public:
   FunctionCall(std::string Ident, std::vector<std::unique_ptr<Expr>> Args);
+
+  Value *genIr(IrGenContext &Gen) override;
 };
 
 class MathExpr : public Expr {
@@ -53,6 +66,8 @@ private:
 public:
   MathExpr(Operation Op, std::unique_ptr<Expr> Left,
            std::unique_ptr<Expr> Right);
+
+  Value *genIr(IrGenContext &Gen) override;
 };
 
 class Relation {
