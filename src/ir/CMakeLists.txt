@@ -2,6 +2,7 @@ add_library(cs241c-ir
   BasicBlock.cpp
   BasicBlock.h
   BasicBlockTerminator.h
+  Function.cpp
   Function.h
   Instruction.cpp
   Instruction.h

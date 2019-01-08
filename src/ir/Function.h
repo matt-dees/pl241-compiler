@@ -6,7 +6,10 @@
 
 namespace cs241c {
 class Function {
+public:
+  explicit Function(const std::string &Name);
   std::unique_ptr<BasicBlock> EntryBlock;
+  const std::string Name;
 };
 } // namespace cs241c
 

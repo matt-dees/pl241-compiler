@@ -6,7 +6,14 @@
 
 namespace cs241c {
 class Module {
+public:
+  explicit Module(const std::string &ModuleName);
   std::vector<Function> Functions;
+
+  const std::string getIdentifier() const;
+
+private:
+  const std::string Name;
 };
 } // namespace cs241c
 
