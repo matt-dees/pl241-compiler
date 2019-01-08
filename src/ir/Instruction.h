@@ -147,7 +147,7 @@ class BranchNotEqualInstruction
       public BasicBlockTerminator {
 public:
   explicit BranchNotEqualInstruction(Value *X, Value *Y);
-}; // namespace cs241c
+};
 
 class BranchEqualInstruction
     : public VisitableInstruction<BranchEqualInstruction>,
