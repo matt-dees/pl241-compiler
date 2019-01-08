@@ -2,41 +2,77 @@
 
 using namespace cs241c;
 
-UnaryInstruction::UnaryInstruction(Value *X) : X(X) {}
-BinaryInstruction::BinaryInstruction(Value *X, Value *Y) : X(X), Y(Y) {}
-NaryInstruction::NaryInstruction(const std::vector<cs241c::Value *> &Values)
-    : Values(Values) {}
+Instruction::Instruction(const std::vector<Value *> &Params) : Params(Params) {}
 
-NegInstruction::NegInstruction(Value *X) : UnaryInstruction(X) {}
-SubInstruction::SubInstruction(Value *X, Value *Y) : BinaryInstruction(X, Y) {}
-MulInstruction::MulInstruction(Value *X, Value *Y) : BinaryInstruction(X, Y) {}
-DivInstruction::DivInstruction(Value *X, Value *Y) : BinaryInstruction(X, Y) {}
-CmpInstruction::CmpInstruction(Value *X, Value *Y) : BinaryInstruction(X, Y) {}
+template <typename T>
+VisitableInstruction<T>::VisitableInstruction(
+    const std::vector<Value *> &Params)
+    : Instruction(Params) {}
+
+NegInstruction::NegInstruction(Value *X)
+    : VisitableInstruction<NegInstruction>(std::vector<Value *>{X}) {}
+
+AddInstruction::AddInstruction(Value *X, Value *Y)
+    : VisitableInstruction<AddInstruction>(std::vector<Value *>{X, Y}) {}
+
+SubInstruction::SubInstruction(Value *X, Value *Y)
+    : VisitableInstruction<SubInstruction>(std::vector<Value *>({X, Y})) {}
+
+MulInstruction::MulInstruction(Value *X, Value *Y)
+    : VisitableInstruction<MulInstruction>(std::vector<Value *>({X, Y})) {}
+
+DivInstruction::DivInstruction(Value *X, Value *Y)
+    : VisitableInstruction<DivInstruction>(std::vector<Value *>({X, Y})) {}
+
+CmpInstruction::CmpInstruction(Value *X, Value *Y)
+    : VisitableInstruction<CmpInstruction>(std::vector<Value *>({X, Y})) {}
+
 AddaInstruction::AddaInstruction(Value *X, Value *Y)
-    : BinaryInstruction(X, Y) {}
-LoadInstruction::LoadInstruction(Value *Y) : UnaryInstruction(Y) {}
+    : VisitableInstruction<AddaInstruction>(std::vector<Value *>({X, Y})) {}
+
+LoadInstruction::LoadInstruction(Value *Y)
+    : VisitableInstruction<LoadInstruction>(std::vector<Value *>({Y})) {}
+
 StoreInstruction::StoreInstruction(Value *Y, Value *X)
-    : BinaryInstruction(Y, X) {}
+    : VisitableInstruction<StoreInstruction>(std::vector<Value *>({Y, X})) {}
+
 MoveInstruction::MoveInstruction(Value *Y, Value *X)
-    : BinaryInstruction(Y, X) {}
+    : VisitableInstruction<MoveInstruction>(std::vector<Value *>({Y, X})) {}
+
 PhiInstruction::PhiInstruction(const std::vector<Value *> &Values)
-    : NaryInstruction(Values) {}
-RetInstruction::RetInstruction(Value *X) : UnaryInstruction(X) {}
-EndInstruction::EndInstruction() {}
-BranchInstruction::BranchInstruction(Value *Y) : UnaryInstruction(Y) {}
+    : VisitableInstruction<PhiInstruction>(Values) {}
+
+RetInstruction::RetInstruction(Value *X)
+    : VisitableInstruction<RetInstruction>(std::vector<Value *>({X})) {}
+
+EndInstruction::EndInstruction()
+    : VisitableInstruction<EndInstruction>(std::vector<Value *>({})) {}
+
+BranchInstruction::BranchInstruction(Value *Y)
+    : VisitableInstruction<BranchInstruction>(std::vector<Value *>({Y})) {}
+
 BranchNotEqualInstruction::BranchNotEqualInstruction(Value *X, Value *Y)
-    : BinaryInstruction(X, Y) {}
+    : VisitableInstruction<BranchNotEqualInstruction>(
+          std::vector<Value *>({X, Y})) {}
+
 BranchEqualInstruction::BranchEqualInstruction(Value *X, Value *Y)
-    : BinaryInstruction(X, Y) {}
+    : VisitableInstruction<BranchEqualInstruction>(
+          std::vector<Value *>({X, Y})) {}
+
 BranchLessThanEqualInstruction::BranchLessThanEqualInstruction(Value *X,
                                                                Value *Y)
-    : BinaryInstruction(X, Y) {}
+    : VisitableInstruction<BranchLessThanEqualInstruction>(
+          std::vector<Value *>({X, Y})) {}
 
 BranchLessThanInstruction::BranchLessThanInstruction(Value *X, Value *Y)
-    : BinaryInstruction(X, Y) {}
+    : VisitableInstruction<BranchLessThanInstruction>(
+          std::vector<Value *>({X, Y})) {}
 
 BranchGreaterThanEqualInstruction::BranchGreaterThanEqualInstruction(Value *X,
                                                                      Value *Y)
-    : BinaryInstruction(X, Y) {}
+    : VisitableInstruction<BranchGreaterThanEqualInstruction>(
+          std::vector<Value *>({X, Y})) {}
+
 BranchGreaterThanInstruction::BranchGreaterThanInstruction(Value *X, Value *Y)
-    : BinaryInstruction(X, Y) {}
+    : VisitableInstruction<BranchGreaterThanInstruction>(
+          std::vector<Value *>({X, Y})) {}
