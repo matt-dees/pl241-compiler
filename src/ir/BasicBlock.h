@@ -7,7 +7,9 @@
 
 namespace cs241c {
 class BasicBlock {
-  std::vector<Instruction> Instructions;
+public:
+  explicit BasicBlock();
+  std::vector<Instruction *> Instructions;
   BasicBlockTerminator Terminator;
 };
 } // namespace cs241c
