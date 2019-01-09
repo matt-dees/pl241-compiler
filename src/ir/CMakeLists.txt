@@ -4,6 +4,8 @@ add_library(cs241c-ir
   BasicBlockTerminator.h
   Function.cpp
   Function.h
+  GlobalVariable.cpp
+  GlobalVariable.h
   Instruction.cpp
   Instruction.h
   Module.cpp

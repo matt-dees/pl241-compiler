@@ -1,19 +1,25 @@
 #ifndef CS241C_FRONTEND_AST_DECL_H
 #define CS241C_FRONTEND_AST_DECL_H
 
+#include "GlobalVariable.h"
 #include "Stmt.h"
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace cs241c {
-class Decl {};
+class Decl {
+public:
+  virtual std::unique_ptr<GlobalVariable> genIr(IrGenContext &Ctx) = 0;
+};
 
 class IntDecl : public Decl {
   std::string Ident;
 
 public:
   IntDecl(std::string Ident);
+
+  std::unique_ptr<GlobalVariable> genIr(IrGenContext &Ctx) override;
 };
 
 class ArrayDecl : public Decl {
@@ -22,6 +28,8 @@ class ArrayDecl : public Decl {
 
 public:
   ArrayDecl(std::string Ident, std::vector<int32_t> Dim);
+
+  std::unique_ptr<GlobalVariable> genIr(IrGenContext &Ctx) override;
 };
 
 class Func {

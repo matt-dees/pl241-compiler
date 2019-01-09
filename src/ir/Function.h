@@ -3,6 +3,8 @@
 
 #include "BasicBlock.h"
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace cs241c {
 class Function {
@@ -11,7 +13,7 @@ public:
                     std::vector<std::unique_ptr<BasicBlock>> BasicBlocks = {});
   const std::vector<std::unique_ptr<BasicBlock>> BasicBlocks;
   const std::string Name;
-}; // namespace cs241c
+};
 } // namespace cs241c
 
 #endif

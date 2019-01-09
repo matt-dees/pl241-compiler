@@ -4,8 +4,20 @@ using namespace cs241c;
 
 IntDecl::IntDecl(std::string Ident) : Ident(move(Ident)) {}
 
+std::unique_ptr<GlobalVariable> IntDecl::genIr(IrGenContext &Ctx) {
+  auto var = std::make_unique<GlobalVariable>(Ident);
+  Ctx.declareGlobal(var.get());
+  return var;
+}
+
 ArrayDecl::ArrayDecl(std::string Ident, std::vector<int32_t> Dim)
     : Ident(move(Ident)), Dim(move(Dim)) {}
+
+std::unique_ptr<GlobalVariable> ArrayDecl::genIr(IrGenContext &Ctx) {
+  auto var = std::make_unique<GlobalVariable>(Ident, Dim);
+  Ctx.declareGlobal(var.get());
+  return var;
+}
 
 Func::Func(Func::Type T, std::string Ident, std::vector<std::string> Params,
            std::vector<std::unique_ptr<Decl>> Vars,

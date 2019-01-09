@@ -2,19 +2,22 @@
 #define CS241C_IR_MODULE_H
 
 #include "Function.h"
+#include "GlobalVariable.h"
+#include <memory>
 #include <vector>
 
 namespace cs241c {
 class Module {
+  const std::string Name;
+
 public:
-  explicit Module(const std::string &ModuleName,
-                  std::vector<std::unique_ptr<Function>> Functions = {});
+  std::vector<std::unique_ptr<GlobalVariable>> Globals;
   std::vector<std::unique_ptr<Function>> Functions;
 
+  Module(std::string ModuleName,
+         std::vector<std::unique_ptr<GlobalVariable>> &&Globals,
+         std::vector<std::unique_ptr<Function>> &&Functions);
   const std::string getIdentifier() const;
-
-private:
-  const std::string Name;
 };
 } // namespace cs241c
 

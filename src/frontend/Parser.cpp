@@ -112,7 +112,7 @@ private:
     if (match(TT::Var)) {
       consume(TT::Var);
       return [](const std::string &Ident) {
-        return std::make_unique<Decl>(IntDecl(Ident));
+        return std::make_unique<IntDecl>(Ident);
       };
     } else {
       consume(TT::Array);
@@ -130,7 +130,7 @@ private:
       }
 
       return [Dim](const std::string &Ident) {
-        return std::make_unique<Decl>(ArrayDecl(Ident, Dim));
+        return std::make_unique<ArrayDecl>(Ident, Dim);
       };
     }
   }
