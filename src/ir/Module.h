@@ -7,8 +7,9 @@
 namespace cs241c {
 class Module {
 public:
-  explicit Module(const std::string &ModuleName);
-  std::vector<Function> Functions;
+  explicit Module(const std::string &ModuleName,
+                  std::vector<std::unique_ptr<Function>> Functions = {});
+  std::vector<std::unique_ptr<Function>> Functions;
 
   const std::string getIdentifier() const;
 

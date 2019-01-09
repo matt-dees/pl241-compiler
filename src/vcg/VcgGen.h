@@ -8,9 +8,9 @@
 #include <string>
 
 namespace cs241c {
-class VcgGen : InstructionVisitor {
+class VcgGen {
 public:
-  explicit VcgGen(const Module &InputModule);
+  explicit VcgGen(std::unique_ptr<Module> InputModule);
 
   // Generates .vcg file that serves as input to the VCG program.
   // Throws exception if unable to generate file correctly.
@@ -18,38 +18,13 @@ public:
 
 private:
   void writeGraph();
-  void writeBasicBlock(const BasicBlock &BB, const std::string &Title);
+  void writeBasicBlock(BasicBlock *BB, const std::string &Title);
   void writeEdge(BasicBlock *Source, BasicBlock *Destination);
   void writeProperties();
-  void writeFunction(const Function &F);
-
-  void visitNormalInstruction(Instruction *I);
-  void visitTerminatingInstruction(BasicBlockTerminator *I);
-  void visitBranchInstruction(BasicBlockTerminator *I);
-
-  void visit(NegInstruction *I);
-  void visit(AddInstruction *I);
-  void visit(SubInstruction *I);
-  void visit(MulInstruction *I);
-  void visit(DivInstruction *I);
-  void visit(CmpInstruction *I);
-  void visit(AddaInstruction *I);
-  void visit(LoadInstruction *I);
-  void visit(StoreInstruction *I);
-  void visit(MoveInstruction *I);
-  void visit(PhiInstruction *I);
-  void visit(RetInstruction *I);
-  void visit(EndInstruction *I);
-  void visit(BranchInstruction *I);
-  void visit(BranchNotEqualInstruction *I);
-  void visit(BranchEqualInstruction *I);
-  void visit(BranchLessThanEqualInstruction *I);
-  void visit(BranchLessThanInstruction *I);
-  void visit(BranchGreaterThanEqualInstruction *I);
-  void visit(BranchGreaterThanInstruction *I);
+  void writeFunction(Function *F);
 
   std::ofstream VcgFileStream;
-  const Module InputModule;
+  std::unique_ptr<Module> InputModule;
 };
 } // namespace cs241c
 #endif // CS241C_VCGGEN_H

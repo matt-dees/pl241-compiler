@@ -30,6 +30,7 @@ class BranchLessThanInstruction;
 class BranchGreaterThanEqualInstruction;
 class BranchGreaterThanInstruction;
 class BasicBlock;
+class CallInstruction;
 
 class InstructionVisitor {
 public:
@@ -53,28 +54,28 @@ public:
   virtual void visit(BranchLessThanInstruction *I) = 0;
   virtual void visit(BranchGreaterThanEqualInstruction *I) = 0;
   virtual void visit(BranchGreaterThanInstruction *I) = 0;
+  virtual void visit(CallInstruction *I) = 0;
 };
 
-class Instruction : public Value {
+class Instruction {
 public:
   explicit Instruction(const std::vector<Value *> &Params,
-                       const BasicBlock const *Owner);
+                       BasicBlock const *const Owner, const std::string &Name);
 
   virtual void visit(InstructionVisitor *V) = 0;
-  virtual const std::string toString() = 0;
+  const std::string toString();
   BasicBlock const *getOwner();
 
 private:
   BasicBlock const *const Owner;
   const std::vector<Value *> Params;
+  const std::string Name;
 };
 
 template <typename T> class VisitableInstruction : public Instruction {
 public:
   explicit VisitableInstruction(const std::vector<Value *> &Params,
-                                const BasicBlock *BB);
-
-  virtual const std::string toString() = 0;
+                                const BasicBlock *BB, const std::string &Name);
 
   void visit(InstructionVisitor *V) override {
     V->visit(static_cast<T *>(this));

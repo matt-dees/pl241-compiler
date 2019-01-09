@@ -6,7 +6,8 @@
 using namespace cs241c;
 namespace fs = std::filesystem;
 
-VcgGen::VcgGen(const Module &InputModule) : InputModule(InputModule) {}
+VcgGen::VcgGen(std::unique_ptr<Module> InputModule)
+    : InputModule(std::move(InputModule)) {}
 
 void VcgGen::generate(const std::string &OutFilePath) {
   if (fs::exists(OutFilePath)) {
@@ -22,65 +23,51 @@ void VcgGen::generate(const std::string &OutFilePath) {
 void VcgGen::writeGraph() {
   VcgFileStream << "graph : {" << std::endl;
   VcgFileStream << "title : "
-                << "\"" << InputModule.getIdentifier() << "\"" << std::endl;
+                << "\"" << InputModule->getIdentifier() << "\"" << std::endl;
 
   writeProperties();
 
-  for (auto &Function : InputModule.Functions) {
-    const std::string currentFunctionName = Function.Name;
+  for (auto &F : InputModule->Functions) {
+    writeFunction(F.get());
   }
   VcgFileStream << "}";
 }
 
-void VcgGen::writeFunction(const Function &F) {
-  const std::string FunctionName = F.Name;
-  for (auto &BB : F.BasicBlocks) {
-    writeBasicBlock(BB, FunctionName);
+void VcgGen::writeFunction(Function *F) {
+  const std::string FunctionName = F->Name;
+  for (auto &BB : F->BasicBlocks) {
+    writeBasicBlock(BB.get(), FunctionName);
   }
 }
 
-void VcgGen::writeBasicBlock(const cs241c::BasicBlock &BB,
-                             const std::string &Title) {
+void VcgGen::writeBasicBlock(BasicBlock *BB, const std::string &Title) {
   VcgFileStream << "node: {" << std::endl;
   VcgFileStream << "title: "
-                << "\"" << Title << "\"" << std::endl;
+                << "\"" << Title << ":" << BB->ID << "\"" << std::endl;
   VcgFileStream << "label: ";
   VcgFileStream << "\"";
 
-  for (auto &I : BB.Instructions) {
+  // Note: Assumes terminating instruction is in Instructions vector
+  for (auto &I : BB->Instructions) {
     VcgFileStream << I->toString() << std::endl;
   }
 
-  VcgFileStream << BB.Terminator.toString() << std::endl;
   VcgFileStream << "\"" << std::endl;
   VcgFileStream << "}" << std::endl;
 
-  if (dynamic_cast<>)
+  for (auto &Next : BB->NextBlocks) {
+    writeEdge(BB, Next);
+  }
 }
 
-void VcgGen::visitNormalInstruction(Instruction *I) {
-  VcgFileStream << I->toString() << std::endl;
-}
-
-void VcgGen::visitTerminatingInstruction(BasicBlockTerminator *I) {
-  VcgFileStream << I->toString() << std::endl;
-  VcgFileStream << "\"" << std::endl;
+void VcgGen::writeEdge(BasicBlock *Source, BasicBlock *Destination) {
+  VcgFileStream << "edge: " << std::endl;
+  VcgFileStream << "{" << std::endl;
+  VcgFileStream << "sourcename: "
+                << "\"" << Source->ID << "\"" << std::endl;
+  VcgFileStream << "targetname: "
+                << "\"" << Destination->ID << "\"" << std::endl;
+  VcgFileStream << "color: "
+                << "blue" << std::endl;
   VcgFileStream << "}" << std::endl;
 }
-
-void VcgGen::visitBranchInstruction(cs241c::BasicBlockTerminator *I) {
-  visitTerminatingInstruction(I);
-  writeEdge()
-}
-
-void VcgGen::visit(NegInstruction *I) { visitNormalInstruction(I); }
-void VcgGen::visit(AddInstruction *I) { visitNormalInstruction(I); }
-void VcgGen::visit(SubInstruction *I) { visitNormalInstruction(I); }
-void VcgGen::visit(MulInstruction *I) { visitNormalInstruction(I); }
-void VcgGen::visit(DivInstruction *I) { visitNormalInstruction(I); }
-void VcgGen::visit(CmpInstruction *I) { visitNormalInstruction(I); }
-void VcgGen::visit(AddaInstruction *I) { visitNormalInstruction(I); }
-void VcgGen::visit(LoadInstruction *I) { visitNormalInstruction(I); }
-void VcgGen::visit(StoreInstruction *I) { visitNormalInstruction(I); }
-void VcgGen::visit(MoveInstruction *I) { visitNormalInstruction(I); }
-void VcgGen::visit(PhiInstruction *I) { visitNormalInstruction(I); }
