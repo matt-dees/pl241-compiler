@@ -1,7 +1,20 @@
 #include "Computation.h"
+#include "IrGenContext.h"
+#include <algorithm>
 
 using namespace cs241c;
 
-Computation::Computation(std::vector<std::unique_ptr<cs241c::Decl>> Vars,
-                         std::vector<cs241c::Func> Funcs)
+Computation::Computation(std::vector<std::unique_ptr<Decl>> Vars,
+                         std::vector<Func> Funcs)
     : Vars(move(Vars)), Funcs(move(Funcs)) {}
+
+Module Computation::genIr() {
+  IrGenContext Ctx;
+
+  std::vector<std::unique_ptr<GlobalVariable>> Globals;
+  std::transform(
+      Vars.begin(), Vars.end(), back_inserter(Globals),
+      [&Ctx](const std::unique_ptr<Decl> &Var) { return Var->genIr(Ctx); });
+
+  return Module("program", move(Globals), {});
+}
