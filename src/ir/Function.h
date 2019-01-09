@@ -8,7 +8,7 @@ namespace cs241c {
 class Function {
 public:
   explicit Function(const std::string &Name,
-                    std::vector<std::unique_ptr<BasicBlock>> BasicBlocks);
+                    std::vector<std::unique_ptr<BasicBlock>> BasicBlocks = {});
   const std::vector<std::unique_ptr<BasicBlock>> BasicBlocks;
   const std::string Name;
 }; // namespace cs241c
