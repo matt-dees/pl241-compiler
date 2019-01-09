@@ -31,3 +31,56 @@ void VcgGen::writeGraph() {
   }
   VcgFileStream << "}";
 }
+
+void VcgGen::writeFunction(const Function &F) {
+  const std::string FunctionName = F.Name;
+  for (auto &BB : F.BasicBlocks) {
+    writeBasicBlock(BB, FunctionName);
+  }
+}
+
+void VcgGen::writeBasicBlock(const cs241c::BasicBlock &BB,
+                             const std::string &Title) {
+  VcgFileStream << "node: {" << std::endl;
+  VcgFileStream << "title: "
+                << "\"" << Title << "\"" << std::endl;
+  VcgFileStream << "label: ";
+  VcgFileStream << "\"";
+
+  for (auto &I : BB.Instructions) {
+    VcgFileStream << I->toString() << std::endl;
+  }
+
+  VcgFileStream << BB.Terminator.toString() << std::endl;
+  VcgFileStream << "\"" << std::endl;
+  VcgFileStream << "}" << std::endl;
+
+  if (dynamic_cast<>)
+}
+
+void VcgGen::visitNormalInstruction(Instruction *I) {
+  VcgFileStream << I->toString() << std::endl;
+}
+
+void VcgGen::visitTerminatingInstruction(BasicBlockTerminator *I) {
+  VcgFileStream << I->toString() << std::endl;
+  VcgFileStream << "\"" << std::endl;
+  VcgFileStream << "}" << std::endl;
+}
+
+void VcgGen::visitBranchInstruction(cs241c::BasicBlockTerminator *I) {
+  visitTerminatingInstruction(I);
+  writeEdge()
+}
+
+void VcgGen::visit(NegInstruction *I) { visitNormalInstruction(I); }
+void VcgGen::visit(AddInstruction *I) { visitNormalInstruction(I); }
+void VcgGen::visit(SubInstruction *I) { visitNormalInstruction(I); }
+void VcgGen::visit(MulInstruction *I) { visitNormalInstruction(I); }
+void VcgGen::visit(DivInstruction *I) { visitNormalInstruction(I); }
+void VcgGen::visit(CmpInstruction *I) { visitNormalInstruction(I); }
+void VcgGen::visit(AddaInstruction *I) { visitNormalInstruction(I); }
+void VcgGen::visit(LoadInstruction *I) { visitNormalInstruction(I); }
+void VcgGen::visit(StoreInstruction *I) { visitNormalInstruction(I); }
+void VcgGen::visit(MoveInstruction *I) { visitNormalInstruction(I); }
+void VcgGen::visit(PhiInstruction *I) { visitNormalInstruction(I); }

@@ -1,9 +1,11 @@
 #ifndef CS241C_IR_INSTRUCTION_H
 #define CS241C_IR_INSTRUCTION_H
 
+#include "BasicBlock.h"
 #include "BasicBlockTerminator.h"
 #include "Value.h"
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace cs241c {
@@ -27,6 +29,7 @@ class BranchLessThanEqualInstruction;
 class BranchLessThanInstruction;
 class BranchGreaterThanEqualInstruction;
 class BranchGreaterThanInstruction;
+class BasicBlock;
 
 class InstructionVisitor {
 public:
@@ -54,16 +57,25 @@ public:
 
 class Instruction : public Value {
 public:
-  explicit Instruction(const std::vector<Value *> &Params);
+  explicit Instruction(const std::vector<Value *> &Params,
+                       const BasicBlock const *Owner);
+
   virtual void visit(InstructionVisitor *V) = 0;
+  virtual const std::string toString() = 0;
+  BasicBlock const *getOwner();
 
 private:
+  BasicBlock const *const Owner;
   const std::vector<Value *> Params;
 };
 
 template <typename T> class VisitableInstruction : public Instruction {
 public:
-  explicit VisitableInstruction(const std::vector<Value *> &Params);
+  explicit VisitableInstruction(const std::vector<Value *> &Params,
+                                const BasicBlock *BB);
+
+  virtual const std::string toString() = 0;
+
   void visit(InstructionVisitor *V) override {
     V->visit(static_cast<T *>(this));
   }
@@ -71,117 +83,129 @@ public:
 
 class NegInstruction : public VisitableInstruction<NegInstruction> {
 public:
-  explicit NegInstruction(Value *X);
+  explicit NegInstruction(Value *X, const BasicBlock *Owner);
 };
 
 class AddInstruction : public VisitableInstruction<AddInstruction> {
 public:
-  explicit AddInstruction(Value *X, Value *Y);
+  explicit AddInstruction(Value *X, Value *Y, const BasicBlock *Owner);
 };
 
 class SubInstruction : public VisitableInstruction<SubInstruction> {
 public:
-  explicit SubInstruction(Value *X, Value *Y);
+  explicit SubInstruction(Value *X, Value *Y, const BasicBlock *Owner);
 };
 
 class MulInstruction : public VisitableInstruction<MulInstruction> {
 public:
-  explicit MulInstruction(Value *X, Value *Y);
+  explicit MulInstruction(Value *X, Value *Y, const BasicBlock *Owner);
 };
 
 class DivInstruction : public VisitableInstruction<DivInstruction> {
 public:
-  explicit DivInstruction(Value *X, Value *Y);
+  explicit DivInstruction(Value *X, Value *Y, const BasicBlock *Owner);
 };
 
 class CmpInstruction : public VisitableInstruction<CmpInstruction> {
 public:
-  explicit CmpInstruction(Value *X, Value *Y);
+  explicit CmpInstruction(Value *X, Value *Y, const BasicBlock *Owner);
 };
 
 class AddaInstruction : public VisitableInstruction<AddaInstruction> {
 public:
-  explicit AddaInstruction(Value *X, Value *Y);
+  explicit AddaInstruction(Value *X, Value *Y, const BasicBlock *Owner);
 };
 
 class LoadInstruction : public VisitableInstruction<LoadInstruction> {
 public:
-  explicit LoadInstruction(Value *Y);
+  explicit LoadInstruction(Value *Y, const BasicBlock *Owner);
 };
 
 class StoreInstruction : public VisitableInstruction<StoreInstruction> {
 public:
-  explicit StoreInstruction(Value *Y, Value *X);
+  explicit StoreInstruction(Value *Y, Value *X, const BasicBlock *Owner);
 };
 
 class MoveInstruction : public VisitableInstruction<MoveInstruction> {
 public:
-  explicit MoveInstruction(Value *Y, Value *X);
+  explicit MoveInstruction(Value *Y, Value *X, const BasicBlock *Owner);
 };
 
 class PhiInstruction : public VisitableInstruction<PhiInstruction> {
 public:
-  explicit PhiInstruction(const std::vector<Value *> &Values);
+  explicit PhiInstruction(const std::vector<Value *> &Values,
+                          const BasicBlock *Owner);
 };
 
 class RetInstruction : public VisitableInstruction<RetInstruction>,
                        public BasicBlockTerminator {
 public:
-  explicit RetInstruction(Value *X);
+  explicit RetInstruction(Value *X, const BasicBlock *Owner);
 };
 
 class EndInstruction : public VisitableInstruction<EndInstruction>,
                        public BasicBlockTerminator {
 public:
-  explicit EndInstruction();
+  explicit EndInstruction(const BasicBlock *Owner);
 };
 
 class BranchInstruction : public VisitableInstruction<BranchInstruction>,
                           public BasicBlockTerminator {
 public:
-  explicit BranchInstruction(Value *Y);
+  explicit BranchInstruction(Value *Y, const BasicBlock *Owner);
 };
 
 class BranchNotEqualInstruction
     : public VisitableInstruction<BranchNotEqualInstruction>,
       public BasicBlockTerminator {
 public:
-  explicit BranchNotEqualInstruction(Value *X, Value *Y);
+  explicit BranchNotEqualInstruction(Value *X, Value *Y,
+                                     const BasicBlock *Owner);
 };
 
 class BranchEqualInstruction
     : public VisitableInstruction<BranchEqualInstruction>,
       public BasicBlockTerminator {
 public:
-  explicit BranchEqualInstruction(Value *X, Value *Y);
+  explicit BranchEqualInstruction(Value *X, Value *Y, const BasicBlock *Owner);
 };
 
 class BranchLessThanEqualInstruction
     : public VisitableInstruction<BranchLessThanEqualInstruction>,
       public BasicBlockTerminator {
 public:
-  explicit BranchLessThanEqualInstruction(Value *X, Value *Y);
+  explicit BranchLessThanEqualInstruction(Value *X, Value *Y,
+                                          const BasicBlock *Owner);
 };
 
 class BranchLessThanInstruction
     : public VisitableInstruction<BranchLessThanInstruction>,
       public BasicBlockTerminator {
 public:
-  explicit BranchLessThanInstruction(Value *X, Value *Y);
+  explicit BranchLessThanInstruction(Value *X, Value *Y,
+                                     const BasicBlock *Owner);
 };
 
 class BranchGreaterThanEqualInstruction
     : public VisitableInstruction<BranchGreaterThanEqualInstruction>,
       public BasicBlockTerminator {
 public:
-  explicit BranchGreaterThanEqualInstruction(Value *X, Value *Y);
+  explicit BranchGreaterThanEqualInstruction(Value *X, Value *Y,
+                                             const BasicBlock *Owner);
 };
 
 class BranchGreaterThanInstruction
     : public VisitableInstruction<BranchGreaterThanInstruction>,
       public BasicBlockTerminator {
 public:
-  explicit BranchGreaterThanInstruction(Value *X, Value *Y);
+  explicit BranchGreaterThanInstruction(Value *X, Value *Y,
+                                        const BasicBlock *Owner);
+};
+
+class CallInstruction : public VisitableInstruction<CallInstruction>,
+                        public BasicBlockTerminator {
+public:
+  explicit CallInstruction(Value *X, const BasicBlock *Owner);
 };
 } // namespace cs241c
 

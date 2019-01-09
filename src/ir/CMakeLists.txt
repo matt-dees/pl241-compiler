@@ -11,4 +11,4 @@ add_library(cs241c-ir
   Value.cpp
   Value.h)
 
-target_include_directories(cs241c-ir INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(cs241c-ir PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
