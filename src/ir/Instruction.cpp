@@ -11,12 +11,17 @@ BasicBlock *Instruction::getOwner() { return Owner; }
 std::string Instruction::toString() {
   std::string ret;
   ret += Name;
-  ret += " ";
+  if (Params.size() == 0) {
+    return ret;
+  }
   auto it = Params.begin();
-  while (it != Params.end()) {
+  ret += " ";
+  while (it < Params.end() - 1) {
     ret += (*it)->toString();
     ret += ", ";
+    it++;
   }
+
   ret += (*it)->toString();
   return ret;
 }

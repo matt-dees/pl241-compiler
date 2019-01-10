@@ -13,7 +13,8 @@ class Instruction;
 
 class BasicBlock {
 public:
-  BasicBlock(std::vector<std::unique_ptr<Instruction>> Instructions = {});
+  BasicBlock(uint32_t ID,
+             std::vector<std::unique_ptr<Instruction>> Instructions = {});
   std::vector<std::unique_ptr<Instruction>> Instructions;
   BasicBlockTerminator Terminator;
   // Note: May want to put NextBlocks in BasicBlockTerminator class

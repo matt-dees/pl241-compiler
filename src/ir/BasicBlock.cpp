@@ -3,5 +3,6 @@
 
 using namespace cs241c;
 
-BasicBlock::BasicBlock(std::vector<std::unique_ptr<Instruction>> Instructions)
-    : Instructions(std::move(Instructions)), ID(0) {}
+BasicBlock::BasicBlock(uint32_t ID,
+                       std::vector<std::unique_ptr<Instruction>> Instructions)
+    : Instructions(std::move(Instructions)), NextBlocks({}), ID(ID) {}
