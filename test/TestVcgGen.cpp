@@ -7,6 +7,6 @@ using namespace cs241c;
 
 TEST_CASE("Test VCG Graph Generation") {
   BasicBlock BB1 = BasicBlock();
-  BB1.Instructions.emplace_back(
-      NegInstruction(std::make_unique<Value>("X").get(), &BB1));
+  BB1.Instructions.emplace_back(std::make_unique<NegInstruction>(
+      std::make_unique<Value>("X").get(), &BB1));
 }

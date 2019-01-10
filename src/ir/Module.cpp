@@ -7,5 +7,4 @@ Module::Module(std::string ModuleName,
                std::vector<std::unique_ptr<Function>> &&Functions)
     : Name(move(ModuleName)), Globals(move(Globals)),
       Functions(std::move(Functions)) {}
-
-const std::string Module::getIdentifier() const { return Name; }
+std::string Module::getIdentifier() const { return Name; }

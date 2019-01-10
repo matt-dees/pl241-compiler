@@ -17,7 +17,7 @@ public:
   Module(std::string ModuleName,
          std::vector<std::unique_ptr<GlobalVariable>> &&Globals,
          std::vector<std::unique_ptr<Function>> &&Functions);
-  const std::string getIdentifier() const;
+  std::string getIdentifier() const;
 };
 } // namespace cs241c
 
