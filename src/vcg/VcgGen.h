@@ -23,7 +23,6 @@ private:
   void writeProperties();
   void writeFunction(Function *F);
 
-  std::string indent();
   std::ofstream VcgFileStream;
   std::unique_ptr<Module> InputModule;
 };
