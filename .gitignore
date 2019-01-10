@@ -2,4 +2,4 @@
 .vscode
 cmake-build-*/
 build/
-.ps
+test/vcg_test_files
