@@ -18,7 +18,7 @@ TEST_CASE("Test VCG Graph Generation") {
   std::unique_ptr<BasicBlock> BB1 = std::make_unique<BasicBlock>(1);
   std::unique_ptr<BasicBlock> BB2 = std::make_unique<BasicBlock>(2);
   std::unique_ptr<BasicBlock> BB3 = std::make_unique<BasicBlock>(3);
-  std::unique_ptr<BasicBlock> BB4 = std::make_unique<BasicBlock>(4gu);
+  std::unique_ptr<BasicBlock> BB4 = std::make_unique<BasicBlock>(4);
 
   // Basic Block 1
   // neg 1
