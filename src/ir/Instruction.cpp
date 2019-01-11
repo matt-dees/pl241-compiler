@@ -4,7 +4,8 @@ using namespace cs241c;
 
 Instruction::Instruction(std::vector<Value *> Params, BasicBlock *Owner,
                          std::string Name)
-    : Owner(Owner), Params(std::move(Params)), Name(std::move(Name)) {}
+    : Value(""), Owner(Owner), Params(std::move(Params)),
+      Name(std::move(Name)) {}
 
 BasicBlock *Instruction::getOwner() { return Owner; }
 

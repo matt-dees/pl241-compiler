@@ -12,18 +12,28 @@ class AssignmentGenerator : public ExprVisitor {
   BasicBlock *BB;
 
 public:
+  Value *Result;
+
   explicit AssignmentGenerator(IrGenContext *Ctx, BasicBlock *BB)
       : Ctx(Ctx), BB(BB) {}
 
-  void visit(ConstantExpr *E) override {}
+  void visit(ConstantExpr *E) override {
+    Value *Constant = E->genIr(*Ctx);
+    Value *Zero = Ctx->makeConstant(0);
+    Result = Ctx->makeInstruction<AddInstruction>(Constant, Zero, BB);
+  }
 
-  void visit(VarDesignator *E) override {}
+  void visit(VarDesignator *E) override {
+    Value *Variable = E->genIr(*Ctx);
+    Value *Zero = Ctx->makeConstant(0);
+    Result = Ctx->makeInstruction<AddInstruction>(Variable, Zero, BB);
+  }
 
-  void visit(ArrayDesignator *E) override {}
+  void visit(ArrayDesignator *E) override { Result = E->genIr(*Ctx); }
 
-  void visit(FunctionCall *E) override {}
+  void visit(FunctionCall *E) override { Result = E->genIr(*Ctx); }
 
-  void visit(MathExpr *E) override {}
+  void visit(MathExpr *E) override { Result = E->genIr(*Ctx); }
 };
 } // namespace
 

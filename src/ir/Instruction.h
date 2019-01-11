@@ -57,7 +57,7 @@ public:
   virtual void visit(CallInstruction *I) = 0;
 };
 
-class Instruction {
+class Instruction : public Value {
 public:
   explicit Instruction(std::vector<Value *> Params, BasicBlock *Owner,
                        std::string Name);
