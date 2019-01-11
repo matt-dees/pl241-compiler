@@ -1,10 +1,14 @@
 #ifndef CS241C_FRONTEND_AST_STMT_H
 #define CS241C_FRONTEND_AST_STMT_H
 
+#include "BasicBlock.h"
 #include "Expr.h"
 
 namespace cs241c {
-class Stmt {};
+class Stmt {
+public:
+  virtual BasicBlock *genIr(IrGenContext &Ctx, BasicBlock *BB) const = 0;
+};
 
 class Assignment : public Stmt {
   std::unique_ptr<Designator> Lhs;
@@ -12,6 +16,7 @@ class Assignment : public Stmt {
 
 public:
   Assignment(std::unique_ptr<Designator> Lhs, std::unique_ptr<Expr> Rhs);
+  BasicBlock *genIr(IrGenContext &Ctx, BasicBlock *BB) const override;
 };
 
 class ReturnStmt : public Stmt {
@@ -19,6 +24,7 @@ class ReturnStmt : public Stmt {
 
 public:
   ReturnStmt(std::unique_ptr<Expr> E);
+  BasicBlock *genIr(IrGenContext &Ctx, BasicBlock *BB) const override;
 };
 
 class FunctionCallStmt : public Stmt {
@@ -26,6 +32,7 @@ class FunctionCallStmt : public Stmt {
 
 public:
   FunctionCallStmt(FunctionCall CallExpr);
+  BasicBlock *genIr(IrGenContext &Ctx, BasicBlock *BB) const override;
 };
 
 class IfStmt : public Stmt {
@@ -36,6 +43,7 @@ class IfStmt : public Stmt {
 public:
   IfStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Then,
          std::vector<std::unique_ptr<Stmt>> Else);
+  BasicBlock *genIr(IrGenContext &Ctx, BasicBlock *BB) const override;
 };
 
 class WhileStmt : public Stmt {
@@ -44,6 +52,7 @@ class WhileStmt : public Stmt {
 
 public:
   WhileStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Body);
+  BasicBlock *genIr(IrGenContext &Ctx, BasicBlock *BB) const override;
 };
 } // namespace cs241c
 

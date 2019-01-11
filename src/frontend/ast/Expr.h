@@ -9,12 +9,32 @@
 #include <vector>
 
 namespace cs241c {
+class ConstantExpr;
+class VarDesignator;
+class ArrayDesignator;
+class FunctionCall;
+class MathExpr;
+
+class ExprVisitor {
+public:
+  virtual void visit(ConstantExpr *) = 0;
+  virtual void visit(VarDesignator *) = 0;
+  virtual void visit(ArrayDesignator *) = 0;
+  virtual void visit(FunctionCall *) = 0;
+  virtual void visit(MathExpr *) = 0;
+};
+
 class Expr {
 public:
   virtual Value *genIr(IrGenContext &Gen) = 0;
+  virtual void visit(ExprVisitor *V) = 0;
 };
 
-class ConstantExpr : public Expr {
+template <typename T> class VisitedExpr : public virtual Expr {
+  void visit(ExprVisitor *V) override { V->visit(static_cast<T *>(this)); }
+};
+
+class ConstantExpr : public VisitedExpr<ConstantExpr> {
   int32_t Val;
 
 public:
@@ -23,9 +43,9 @@ public:
   Value *genIr(IrGenContext &Gen) override;
 };
 
-class Designator : public Expr {};
+class Designator : public virtual Expr {};
 
-class VarDesignator : public Designator {
+class VarDesignator : public VisitedExpr<VarDesignator>, public Designator {
   std::string Ident;
 
 public:
@@ -34,7 +54,7 @@ public:
   Value *genIr(IrGenContext &Gen) override;
 };
 
-class ArrayDesignator : public Designator {
+class ArrayDesignator : public VisitedExpr<ArrayDesignator>, public Designator {
   std::string Ident;
   std::vector<std::unique_ptr<Expr>> Dim;
 
@@ -44,7 +64,7 @@ public:
   Value *genIr(IrGenContext &Gen) override;
 };
 
-class FunctionCall : public Expr {
+class FunctionCall : public VisitedExpr<FunctionCall> {
   std::string Ident;
   std::vector<std::unique_ptr<Expr>> Args;
 
@@ -54,7 +74,7 @@ public:
   Value *genIr(IrGenContext &Gen) override;
 };
 
-class MathExpr : public Expr {
+class MathExpr : public VisitedExpr<MathExpr> {
 public:
   enum class Operation { Add, Sub, Mul, Div };
 

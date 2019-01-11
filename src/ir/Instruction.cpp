@@ -32,9 +32,6 @@ VisitableInstruction<T>::VisitableInstruction(std::vector<Value *> Params,
                                               std::string Name)
     : Instruction(std::move(Params), Owner, std::move(Name)) {}
 
-SetInstruction::SetInstruction(Value *X, BasicBlock *Owner)
-    : VisitableInstruction<SetInstruction>({X}, Owner, "set") {}
-
 NegInstruction::NegInstruction(Value *X, BasicBlock *Owner)
     : VisitableInstruction<NegInstruction>({X}, Owner, "neg") {}
 

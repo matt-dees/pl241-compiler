@@ -24,3 +24,16 @@ Func::Func(Func::Type T, std::string Ident, std::vector<std::string> Params,
            std::vector<std::unique_ptr<Stmt>> Stmts)
     : T(T), Ident(move(Ident)), Params(move(Params)), Vars(move(Vars)),
       Stmts(move(Stmts)) {}
+
+std::unique_ptr<Function> Func::genIr(IrGenContext &Ctx) {
+  std::unique_ptr<BasicBlock> EntryBlock = std::make_unique<BasicBlock>(0);
+  BasicBlock *CurrentBlock = EntryBlock.get();
+
+  for (const std::unique_ptr<Stmt> &S : Stmts) {
+    CurrentBlock = S->genIr(Ctx, CurrentBlock);
+  }
+
+  std::vector<std::unique_ptr<BasicBlock>> Blocks;
+  Blocks.push_back(move(EntryBlock));
+  return std::make_unique<Function>(Ident, move(Blocks));
+}

@@ -1,6 +1,7 @@
 #ifndef CS241C_FRONTEND_AST_DECL_H
 #define CS241C_FRONTEND_AST_DECL_H
 
+#include "Function.h"
 #include "GlobalVariable.h"
 #include "Stmt.h"
 #include <memory>
@@ -47,6 +48,8 @@ public:
   Func(Type T, std::string Ident, std::vector<std::string> Params,
        std::vector<std::unique_ptr<Decl>> Vars,
        std::vector<std::unique_ptr<Stmt>> Stmts);
+
+  std::unique_ptr<Function> genIr(IrGenContext &Ctx);
 };
 } // namespace cs241c
 

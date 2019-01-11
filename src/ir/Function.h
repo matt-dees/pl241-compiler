@@ -9,10 +9,11 @@
 namespace cs241c {
 class Function {
 public:
+  std::string Name;
+  std::vector<std::unique_ptr<BasicBlock>> BasicBlocks;
+
   explicit Function(std::string Name,
                     std::vector<std::unique_ptr<BasicBlock>> BasicBlocks = {});
-  std::vector<std::unique_ptr<BasicBlock>> BasicBlocks;
-  std::string Name;
 };
 } // namespace cs241c
 

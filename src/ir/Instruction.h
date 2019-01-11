@@ -9,7 +9,6 @@
 #include <vector>
 
 namespace cs241c {
-class SetInstruction;
 class NegInstruction;
 class AddInstruction;
 class SubInstruction;
@@ -35,7 +34,6 @@ class CallInstruction;
 
 class InstructionVisitor {
 public:
-  virtual void visit(SetInstruction *I) = 0;
   virtual void visit(NegInstruction *I) = 0;
   virtual void visit(AddInstruction *I) = 0;
   virtual void visit(SubInstruction *I) = 0;
@@ -82,11 +80,6 @@ public:
   void visit(InstructionVisitor *V) override {
     V->visit(static_cast<T *>(this));
   }
-};
-
-class SetInstruction : public VisitableInstruction<SetInstruction> {
-public:
-  explicit SetInstruction(Value *X, BasicBlock *Owner);
 };
 
 class NegInstruction : public VisitableInstruction<NegInstruction> {
