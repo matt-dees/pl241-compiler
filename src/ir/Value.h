@@ -2,6 +2,7 @@
 #define CS241C_IR_VALUE_H
 
 #include <string>
+
 namespace cs241c {
 class Value {
 public:

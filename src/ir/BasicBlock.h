@@ -1,16 +1,12 @@
 #ifndef CS241C_IR_BASICBLOCK_H
 #define CS241C_IR_BASICBLOCK_H
 
-#include "BasicBlockTerminator.h"
 #include "Instruction.h"
 #include <cstdint>
 #include <memory>
 #include <vector>
 
 namespace cs241c {
-
-class Instruction;
-
 class BasicBlock {
 public:
   BasicBlock(uint32_t ID,

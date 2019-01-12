@@ -1,7 +1,6 @@
 #ifndef CS241C_FRONTEND_AST_DECL_H
 #define CS241C_FRONTEND_AST_DECL_H
 
-#include "Function.h"
 #include "GlobalVariable.h"
 #include "Stmt.h"
 #include <memory>
@@ -9,6 +8,9 @@
 #include <vector>
 
 namespace cs241c {
+class IrGenContext;
+class Function;
+
 class Decl {
 public:
   virtual std::unique_ptr<GlobalVariable> genIr(IrGenContext &Ctx) = 0;

@@ -1,7 +1,6 @@
 #ifndef CS241C_FRONTEND_AST_EXPR_H
 #define CS241C_FRONTEND_AST_EXPR_H
 
-#include "IrGenContext.h"
 #include "Value.h"
 #include <cstdint>
 #include <memory>
@@ -9,6 +8,7 @@
 #include <vector>
 
 namespace cs241c {
+class IrGenContext;
 class ConstantExpr;
 class VarDesignator;
 class ArrayDesignator;
@@ -26,7 +26,7 @@ public:
 
 class Expr {
 public:
-  virtual Value *genIr(IrGenContext &Gen) = 0;
+  virtual Value *genIr(IrGenContext &Ctx) = 0;
   virtual void visit(ExprVisitor *V) = 0;
 };
 
@@ -40,10 +40,13 @@ class ConstantExpr : public VisitedExpr<ConstantExpr> {
 public:
   ConstantExpr(int32_t Val);
 
-  Value *genIr(IrGenContext &Gen) override;
+  Value *genIr(IrGenContext &Ctx) override;
 };
 
-class Designator : public virtual Expr {};
+class Designator : public virtual Expr {
+public:
+  virtual void genStore(IrGenContext &Ctx, Value *V) = 0;
+};
 
 class VarDesignator : public VisitedExpr<VarDesignator>, public Designator {
   std::string Ident;
@@ -51,7 +54,8 @@ class VarDesignator : public VisitedExpr<VarDesignator>, public Designator {
 public:
   VarDesignator(std::string Ident);
 
-  Value *genIr(IrGenContext &Gen) override;
+  Value *genIr(IrGenContext &Ctx) override;
+  void genStore(IrGenContext &Ctx, Value *V) override;
 };
 
 class ArrayDesignator : public VisitedExpr<ArrayDesignator>, public Designator {
@@ -61,7 +65,8 @@ class ArrayDesignator : public VisitedExpr<ArrayDesignator>, public Designator {
 public:
   ArrayDesignator(std::string Ident, std::vector<std::unique_ptr<Expr>> Dim);
 
-  Value *genIr(IrGenContext &Gen) override;
+  Value *genIr(IrGenContext &Ctx) override;
+  void genStore(IrGenContext &Ctx, Value *V) override;
 };
 
 class FunctionCall : public VisitedExpr<FunctionCall> {
@@ -71,7 +76,7 @@ class FunctionCall : public VisitedExpr<FunctionCall> {
 public:
   FunctionCall(std::string Ident, std::vector<std::unique_ptr<Expr>> Args);
 
-  Value *genIr(IrGenContext &Gen) override;
+  Value *genIr(IrGenContext &Ctx) override;
 };
 
 class MathExpr : public VisitedExpr<MathExpr> {
@@ -87,7 +92,7 @@ public:
   MathExpr(Operation Op, std::unique_ptr<Expr> Left,
            std::unique_ptr<Expr> Right);
 
-  Value *genIr(IrGenContext &Gen) override;
+  Value *genIr(IrGenContext &Ctx) override;
 };
 
 class Relation {
@@ -101,6 +106,8 @@ private:
 
 public:
   Relation(Type T, std::unique_ptr<Expr> Left, std::unique_ptr<Expr> Right);
+
+  Value *genCmp(IrGenContext &Ctx);
 };
 } // namespace cs241c
 

@@ -16,6 +16,8 @@ class IrGenContext {
   std::unordered_map<std::string, GlobalVariable *> GlobalVariables;
 
 public:
+  BasicBlock *CurrentBlock;
+
   Value *makeConstant(int Val);
 
   template <typename T, typename... Params>
