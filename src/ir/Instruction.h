@@ -58,24 +58,28 @@ public:
 };
 
 class Instruction : public Value {
-public:
-  explicit Instruction(std::vector<Value *> Params, BasicBlock *Owner,
-                       std::string Name);
+protected:
+  Instruction() = default;
+  explicit Instruction(std::vector<Value *> Params, std::string Name);
 
+public:
   virtual void visit(InstructionVisitor *V) = 0;
   std::string toString();
   BasicBlock *getOwner();
 
-private:
+protected:
   BasicBlock *Owner;
+
+private:
   std::vector<Value *> Params;
   std::string Name;
+
+  friend class BasicBlock;
 };
 
-template <typename T> class VisitableInstruction : public Instruction {
+template <typename T> class VisitableInstruction : public virtual Instruction {
 public:
-  explicit VisitableInstruction(std::vector<Value *> Params, BasicBlock *BB,
-                                std::string Name);
+  VisitableInstruction() : Instruction() {}
 
   void visit(InstructionVisitor *V) override {
     V->visit(static_cast<T *>(this));
@@ -84,66 +88,65 @@ public:
 
 class NegInstruction : public VisitableInstruction<NegInstruction> {
 public:
-  explicit NegInstruction(Value *X, BasicBlock *Owner = nullptr);
+  explicit NegInstruction(Value *X);
 };
 
 class AddInstruction : public VisitableInstruction<AddInstruction> {
 public:
-  explicit AddInstruction(Value *X, Value *Y, BasicBlock *Owner = nullptr);
+  explicit AddInstruction(Value *X, Value *Y);
 };
 
 class SubInstruction : public VisitableInstruction<SubInstruction> {
 public:
-  explicit SubInstruction(Value *X, Value *Y, BasicBlock *Owner = nullptr);
+  explicit SubInstruction(Value *X, Value *Y);
 };
 
 class MulInstruction : public VisitableInstruction<MulInstruction> {
 public:
-  explicit MulInstruction(Value *X, Value *Y, BasicBlock *Owner = nullptr);
+  explicit MulInstruction(Value *X, Value *Y);
 };
 
 class DivInstruction : public VisitableInstruction<DivInstruction> {
 public:
-  explicit DivInstruction(Value *X, Value *Y, BasicBlock *Owner = nullptr);
+  explicit DivInstruction(Value *X, Value *Y);
 };
 
 class CmpInstruction : public VisitableInstruction<CmpInstruction> {
 public:
-  explicit CmpInstruction(Value *X, Value *Y, BasicBlock *Owner = nullptr);
+  explicit CmpInstruction(Value *X, Value *Y);
 };
 
 class AddaInstruction : public VisitableInstruction<AddaInstruction> {
 public:
-  explicit AddaInstruction(Value *X, Value *Y, BasicBlock *Owner = nullptr);
+  explicit AddaInstruction(Value *X, Value *Y);
 };
 
 class LoadInstruction : public VisitableInstruction<LoadInstruction> {
 public:
-  explicit LoadInstruction(Value *Y, BasicBlock *Owner = nullptr);
+  explicit LoadInstruction(Value *Y);
 };
 
 class StoreInstruction : public VisitableInstruction<StoreInstruction> {
 public:
-  explicit StoreInstruction(Value *Y, Value *X, BasicBlock *Owner = nullptr);
+  explicit StoreInstruction(Value *Y, Value *X);
 };
 
 class MoveInstruction : public VisitableInstruction<MoveInstruction> {
 public:
-  explicit MoveInstruction(Value *Y, Value *X, BasicBlock *Owner = nullptr);
+  explicit MoveInstruction(Value *Y, Value *X);
 };
 
 class PhiInstruction : public VisitableInstruction<PhiInstruction> {
 public:
-  explicit PhiInstruction(const std::vector<Value *> &Values,
-                          BasicBlock *Owner);
+  explicit PhiInstruction(const std::vector<Value *> &Values);
 };
 
 class CallInstruction : public VisitableInstruction<CallInstruction> {
 public:
-  explicit CallInstruction(Value *X, BasicBlock *Owner = nullptr);
+  explicit CallInstruction(Value *X);
 };
 
-class BasicBlockTerminator {
+class BasicBlockTerminator : public virtual Instruction {
 public:
   virtual std::vector<BasicBlock *> followingBlocks();
 };
@@ -151,13 +154,13 @@ public:
 class RetInstruction : public VisitableInstruction<RetInstruction>,
                        public BasicBlockTerminator {
 public:
-  explicit RetInstruction(Value *X, BasicBlock *Owner = nullptr);
+  explicit RetInstruction(Value *X);
 };
 
 class EndInstruction : public VisitableInstruction<EndInstruction>,
                        public BasicBlockTerminator {
 public:
-  explicit EndInstruction(BasicBlock *Owner);
+  explicit EndInstruction();
 };
 
 class BranchInstruction : public VisitableInstruction<BranchInstruction>,
@@ -165,7 +168,7 @@ class BranchInstruction : public VisitableInstruction<BranchInstruction>,
   BasicBlock *Target;
 
 public:
-  explicit BranchInstruction(BasicBlock *Y, BasicBlock *Owner = nullptr);
+  explicit BranchInstruction(BasicBlock *Y);
   std::vector<BasicBlock *> followingBlocks() override;
 };
 
@@ -183,8 +186,7 @@ class BranchNotEqualInstruction
       public ConditionalBlockTerminator {
 public:
   explicit BranchNotEqualInstruction(CmpInstruction *Cmp, BasicBlock *Then,
-                                     BasicBlock *Else,
-                                     BasicBlock *Owner = nullptr);
+                                     BasicBlock *Else);
 };
 
 class BranchEqualInstruction
@@ -192,8 +194,7 @@ class BranchEqualInstruction
       public ConditionalBlockTerminator {
 public:
   explicit BranchEqualInstruction(CmpInstruction *Cmp, BasicBlock *Then,
-                                  BasicBlock *Else,
-                                  BasicBlock *Owner = nullptr);
+                                  BasicBlock *Else);
 };
 
 class BranchLessThanEqualInstruction
@@ -201,7 +202,7 @@ class BranchLessThanEqualInstruction
       public ConditionalBlockTerminator {
 public:
   explicit BranchLessThanEqualInstruction(CmpInstruction *Cmp, BasicBlock *Then,
-                                          BasicBlock *Else, BasicBlock *Owner);
+                                          BasicBlock *Else);
 };
 
 class BranchLessThanInstruction
@@ -209,8 +210,7 @@ class BranchLessThanInstruction
       public ConditionalBlockTerminator {
 public:
   explicit BranchLessThanInstruction(CmpInstruction *Cmp, BasicBlock *Then,
-                                     BasicBlock *Else,
-                                     BasicBlock *Owner = nullptr);
+                                     BasicBlock *Else);
 };
 
 class BranchGreaterThanEqualInstruction
@@ -218,8 +218,8 @@ class BranchGreaterThanEqualInstruction
       public ConditionalBlockTerminator {
 public:
   explicit BranchGreaterThanEqualInstruction(CmpInstruction *Cmp,
-                                             BasicBlock *Then, BasicBlock *Else,
-                                             BasicBlock *Owner);
+                                             BasicBlock *Then,
+                                             BasicBlock *Else);
 };
 
 class BranchGreaterThanInstruction
@@ -227,8 +227,7 @@ class BranchGreaterThanInstruction
       public ConditionalBlockTerminator {
 public:
   explicit BranchGreaterThanInstruction(CmpInstruction *Cmp, BasicBlock *Then,
-                                        BasicBlock *Else,
-                                        BasicBlock *Owner = nullptr);
+                                        BasicBlock *Else);
 };
 } // namespace cs241c
 

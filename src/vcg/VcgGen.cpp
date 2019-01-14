@@ -49,14 +49,14 @@ void VcgGen::writeBasicBlock(BasicBlock *BB, const std::string &Title) {
 
   // Note: Assumes terminating instruction is in Instructions vector
 
-  for (auto &I : BB->Instructions) {
-    VcgFileStream << I->toString() << std::endl;
+  for (Instruction* Instr : *BB) {
+    VcgFileStream << Instr->toString() << std::endl;
   }
 
   VcgFileStream << "\"" << std::endl;
   VcgFileStream << "}" << std::endl;
 
-  for (auto &Next : BB->Terminator.followingBlocks()) {
+  for (auto &Next : BB->Terminator->followingBlocks()) {
     writeEdge(BB, Next);
   }
 }

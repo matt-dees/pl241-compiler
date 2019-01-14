@@ -16,5 +16,9 @@ Module Computation::genIr() {
       Vars.begin(), Vars.end(), back_inserter(Globals),
       [&Ctx](const std::unique_ptr<Decl> &Var) { return Var->genIr(Ctx); });
 
+  std::vector<std::unique_ptr<Function>> Functions;
+  std::transform(Funcs.begin(), Funcs.end(), back_inserter(Functions),
+                 [&Ctx](Func &F) { return F.genIr(Ctx); });
+
   return Module("program", move(Globals), {});
 }

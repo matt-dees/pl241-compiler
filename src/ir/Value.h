@@ -5,9 +5,11 @@
 
 namespace cs241c {
 class Value {
-public:
+protected:
+  Value() = default;
   explicit Value(const std::string &ID);
 
+public:
   const std::string toString();
 
 private:
