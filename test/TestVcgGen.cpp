@@ -126,7 +126,7 @@ TEST_CASE("Test VCG Graph Generation") {
   std::unique_ptr<Module> M =
       std::make_unique<Module>("TestModule", std::move(TestModuleGlobals),
                                std::move(TestModuleFunctions));
-  VcgGen VcgGenerator = VcgGen(std::move(M));
+  VcgGen VcgGenerator = VcgGen(M.get());
   VcgGenerator.generate(TEST_PATH);
   CHECK(true);
 }

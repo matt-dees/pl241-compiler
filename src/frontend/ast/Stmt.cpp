@@ -53,21 +53,15 @@ void ReturnStmt::genIr(IrGenContext &Ctx) const {
 FunctionCallStmt::FunctionCallStmt(FunctionCall CallExpr)
     : CallExpr(std::move(CallExpr)) {}
 
-void FunctionCallStmt::genIr(IrGenContext &Ctx) const {
-  throw std::logic_error("Not implemented.");
-}
+void FunctionCallStmt::genIr(IrGenContext &Ctx) const { CallExpr.genIr(Ctx); }
 
 IfStmt::IfStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Then,
                std::vector<std::unique_ptr<Stmt>> Else)
     : Rel(std::move(Rel)), Then(move(Then)), Else(move(Else)) {}
 
-void IfStmt::genIr(IrGenContext &Ctx) const {
-  throw std::logic_error("Not implemented.");
-}
+void IfStmt::genIr(IrGenContext &) const {}
 
 WhileStmt::WhileStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Body)
     : Rel(std::move(Rel)), Body(std::move(Body)) {}
 
-void WhileStmt::genIr(IrGenContext &Ctx) const {
-  throw std::logic_error("Not implemented.");
-}
+void WhileStmt::genIr(IrGenContext &) const {}

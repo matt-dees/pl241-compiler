@@ -10,7 +10,7 @@
 namespace cs241c {
 class VcgGen {
 public:
-  explicit VcgGen(std::unique_ptr<Module> InputModule);
+  explicit VcgGen(const Module *InputModule);
 
   // Generates .vcg file that serves as input to the VCG program.
   // Throws exception if unable to generate file correctly.
@@ -24,7 +24,7 @@ private:
   void writeFunction(Function *F);
 
   std::ofstream VcgFileStream;
-  std::unique_ptr<Module> InputModule;
+  const Module *InputModule;
 };
 } // namespace cs241c
 #endif // CS241C_VCGGEN_H

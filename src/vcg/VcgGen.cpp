@@ -6,8 +6,7 @@
 using namespace cs241c;
 namespace fs = std::filesystem;
 
-VcgGen::VcgGen(std::unique_ptr<Module> InputModule)
-    : InputModule(std::move(InputModule)) {}
+VcgGen::VcgGen(const Module *InputModule) : InputModule(InputModule) {}
 
 void VcgGen::generate(const std::string &OutFilePath) {
   if (fs::exists(OutFilePath)) {
