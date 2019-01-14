@@ -67,41 +67,66 @@ PhiInstruction::PhiInstruction(const std::vector<Value *> &Values,
                                BasicBlock *Owner)
     : VisitableInstruction<PhiInstruction>(Values, Owner, "phi") {}
 
+CallInstruction::CallInstruction(Value *X, BasicBlock *Owner)
+    : VisitableInstruction<CallInstruction>({X}, Owner, "call") {}
+
+std::vector<BasicBlock *> BasicBlockTerminator::followingBlocks() { return {}; }
+
 RetInstruction::RetInstruction(Value *X, BasicBlock *Owner)
     : VisitableInstruction<RetInstruction>({X}, Owner, "ret") {}
 
 EndInstruction::EndInstruction(BasicBlock *Owner)
     : VisitableInstruction<EndInstruction>({}, Owner, "end") {}
 
-BranchInstruction::BranchInstruction(Value *Y, BasicBlock *Owner)
-    : VisitableInstruction<BranchInstruction>({Y}, Owner, "bra") {}
+BranchInstruction::BranchInstruction(BasicBlock *Y, BasicBlock *Owner)
+    : VisitableInstruction<BranchInstruction>({}, Owner, "bra"), Target(Y) {}
 
-BranchNotEqualInstruction::BranchNotEqualInstruction(Value *X, Value *Y,
-                                                     BasicBlock *Owner)
-    : VisitableInstruction<BranchNotEqualInstruction>({X, Y}, Owner, "bne") {}
-
-BranchEqualInstruction::BranchEqualInstruction(Value *X, Value *Y,
-                                               BasicBlock *Owner)
-    : VisitableInstruction<BranchEqualInstruction>({X, Y}, Owner, "beq") {}
-
-BranchLessThanEqualInstruction::BranchLessThanEqualInstruction(
-    Value *X, Value *Y, BasicBlock *Owner)
-    : VisitableInstruction<BranchLessThanEqualInstruction>({X, Y}, Owner,
-                                                           "ble") {}
-
-BranchLessThanInstruction::BranchLessThanInstruction(Value *X, Value *Y,
-                                                     BasicBlock *Owner)
-    : VisitableInstruction<BranchLessThanInstruction>({X, Y}, Owner, "blt") {}
-
-BranchGreaterThanEqualInstruction::BranchGreaterThanEqualInstruction(
-    Value *X, Value *Y, BasicBlock *Owner)
-    : VisitableInstruction<BranchGreaterThanEqualInstruction>({X, Y}, Owner,
-                                                              "bge") {}
-
-BranchGreaterThanInstruction::BranchGreaterThanInstruction(Value *X, Value *Y,
-                                                           BasicBlock *Owner)
-    : VisitableInstruction<BranchGreaterThanInstruction>({X, Y}, Owner, "bgt") {
+std::vector<BasicBlock *> BranchInstruction::followingBlocks() {
+  return {Target};
 }
 
-CallInstruction::CallInstruction(Value *X, BasicBlock *Owner)
-    : VisitableInstruction<CallInstruction>({X}, Owner, "call") {}
+std::vector<BasicBlock *> ConditionalBlockTerminator::followingBlocks() {
+  return {Then, Else};
+}
+
+ConditionalBlockTerminator::ConditionalBlockTerminator(BasicBlock *Then,
+                                                       BasicBlock *Else)
+    : Then(Then), Else(Else) {}
+
+BranchNotEqualInstruction::BranchNotEqualInstruction(CmpInstruction *Cmp,
+                                                     BasicBlock *Then,
+                                                     BasicBlock *Else,
+                                                     BasicBlock *Owner)
+    : VisitableInstruction<BranchNotEqualInstruction>({}, Owner, "bne"),
+      ConditionalBlockTerminator(Then, Else) {}
+
+BranchEqualInstruction::BranchEqualInstruction(CmpInstruction *Cmp,
+                                               BasicBlock *Then,
+                                               BasicBlock *Else,
+                                               BasicBlock *Owner)
+    : VisitableInstruction<BranchEqualInstruction>({}, Owner, "beq"),
+      ConditionalBlockTerminator(Then, Else) {}
+
+BranchLessThanEqualInstruction::BranchLessThanEqualInstruction(
+    CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else, BasicBlock *Owner)
+    : VisitableInstruction<BranchLessThanEqualInstruction>({}, Owner, "ble"),
+      ConditionalBlockTerminator(Then, Else) {}
+
+BranchLessThanInstruction::BranchLessThanInstruction(CmpInstruction *Cmp,
+                                                     BasicBlock *Then,
+                                                     BasicBlock *Else,
+                                                     BasicBlock *Owner)
+    : VisitableInstruction<BranchLessThanInstruction>({}, Owner, "blt"),
+      ConditionalBlockTerminator(Then, Else) {}
+
+BranchGreaterThanEqualInstruction::BranchGreaterThanEqualInstruction(
+    CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else, BasicBlock *Owner)
+    : VisitableInstruction<BranchGreaterThanEqualInstruction>({}, Owner, "bge"),
+      ConditionalBlockTerminator(Then, Else) {}
+
+BranchGreaterThanInstruction::BranchGreaterThanInstruction(CmpInstruction *Cmp,
+                                                           BasicBlock *Then,
+                                                           BasicBlock *Else,
+                                                           BasicBlock *Owner)
+    : VisitableInstruction<BranchGreaterThanInstruction>({}, Owner, "bgt"),
+      ConditionalBlockTerminator(Then, Else) {}

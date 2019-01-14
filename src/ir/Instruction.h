@@ -138,7 +138,15 @@ public:
                           BasicBlock *Owner);
 };
 
-class BasicBlockTerminator {};
+class CallInstruction : public VisitableInstruction<CallInstruction> {
+public:
+  explicit CallInstruction(Value *X, BasicBlock *Owner = nullptr);
+};
+
+class BasicBlockTerminator {
+public:
+  virtual std::vector<BasicBlock *> followingBlocks();
+};
 
 class RetInstruction : public VisitableInstruction<RetInstruction>,
                        public BasicBlockTerminator {
@@ -154,62 +162,73 @@ public:
 
 class BranchInstruction : public VisitableInstruction<BranchInstruction>,
                           public BasicBlockTerminator {
+  BasicBlock *Target;
+
 public:
-  explicit BranchInstruction(Value *Y, BasicBlock *Owner = nullptr);
+  explicit BranchInstruction(BasicBlock *Y, BasicBlock *Owner = nullptr);
+  std::vector<BasicBlock *> followingBlocks() override;
+};
+
+class ConditionalBlockTerminator : public BasicBlockTerminator {
+  BasicBlock *Then;
+  BasicBlock *Else;
+
+public:
+  ConditionalBlockTerminator(BasicBlock *Then, BasicBlock *Else);
+  std::vector<BasicBlock *> followingBlocks() override;
 };
 
 class BranchNotEqualInstruction
     : public VisitableInstruction<BranchNotEqualInstruction>,
-      public BasicBlockTerminator {
+      public ConditionalBlockTerminator {
 public:
-  explicit BranchNotEqualInstruction(Value *X, Value *Y,
+  explicit BranchNotEqualInstruction(CmpInstruction *Cmp, BasicBlock *Then,
+                                     BasicBlock *Else,
                                      BasicBlock *Owner = nullptr);
 };
 
 class BranchEqualInstruction
     : public VisitableInstruction<BranchEqualInstruction>,
-      public BasicBlockTerminator {
+      public ConditionalBlockTerminator {
 public:
-  explicit BranchEqualInstruction(Value *X, Value *Y,
+  explicit BranchEqualInstruction(CmpInstruction *Cmp, BasicBlock *Then,
+                                  BasicBlock *Else,
                                   BasicBlock *Owner = nullptr);
 };
 
 class BranchLessThanEqualInstruction
     : public VisitableInstruction<BranchLessThanEqualInstruction>,
-      public BasicBlockTerminator {
+      public ConditionalBlockTerminator {
 public:
-  explicit BranchLessThanEqualInstruction(Value *X, Value *Y,
-                                          BasicBlock *Owner);
+  explicit BranchLessThanEqualInstruction(CmpInstruction *Cmp, BasicBlock *Then,
+                                          BasicBlock *Else, BasicBlock *Owner);
 };
 
 class BranchLessThanInstruction
     : public VisitableInstruction<BranchLessThanInstruction>,
-      public BasicBlockTerminator {
+      public ConditionalBlockTerminator {
 public:
-  explicit BranchLessThanInstruction(Value *X, Value *Y,
+  explicit BranchLessThanInstruction(CmpInstruction *Cmp, BasicBlock *Then,
+                                     BasicBlock *Else,
                                      BasicBlock *Owner = nullptr);
 };
 
 class BranchGreaterThanEqualInstruction
     : public VisitableInstruction<BranchGreaterThanEqualInstruction>,
-      public BasicBlockTerminator {
+      public ConditionalBlockTerminator {
 public:
-  explicit BranchGreaterThanEqualInstruction(Value *X, Value *Y,
+  explicit BranchGreaterThanEqualInstruction(CmpInstruction *Cmp,
+                                             BasicBlock *Then, BasicBlock *Else,
                                              BasicBlock *Owner);
 };
 
 class BranchGreaterThanInstruction
     : public VisitableInstruction<BranchGreaterThanInstruction>,
-      public BasicBlockTerminator {
+      public ConditionalBlockTerminator {
 public:
-  explicit BranchGreaterThanInstruction(Value *X, Value *Y,
+  explicit BranchGreaterThanInstruction(CmpInstruction *Cmp, BasicBlock *Then,
+                                        BasicBlock *Else,
                                         BasicBlock *Owner = nullptr);
-};
-
-class CallInstruction : public VisitableInstruction<CallInstruction>,
-                        public BasicBlockTerminator {
-public:
-  explicit CallInstruction(Value *X, BasicBlock *Owner = nullptr);
 };
 } // namespace cs241c
 

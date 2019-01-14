@@ -56,7 +56,7 @@ void VcgGen::writeBasicBlock(BasicBlock *BB, const std::string &Title) {
   VcgFileStream << "\"" << std::endl;
   VcgFileStream << "}" << std::endl;
 
-  for (auto &Next : BB->NextBlocks) {
+  for (auto &Next : BB->Terminator.followingBlocks()) {
     writeEdge(BB, Next);
   }
 }

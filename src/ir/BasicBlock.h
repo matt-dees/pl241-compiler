@@ -13,8 +13,6 @@ public:
              std::vector<std::unique_ptr<Instruction>> Instructions = {});
   std::vector<std::unique_ptr<Instruction>> Instructions;
   BasicBlockTerminator Terminator;
-  // Note: May want to put NextBlocks in BasicBlockTerminator class
-  std::vector<BasicBlock *> NextBlocks;
   uint32_t ID;
 };
 } // namespace cs241c
