@@ -26,8 +26,7 @@ std::string Instruction::toString() {
   return ret;
 }
 
-NegInstruction::NegInstruction(Value *X)
-    : Instruction({X}, "neg") {}
+NegInstruction::NegInstruction(Value *X) : Instruction({X}, "neg") {}
 
 AddInstruction::AddInstruction(Value *X, Value *Y)
     : Instruction({X, Y}, "add") {}
@@ -47,8 +46,7 @@ CmpInstruction::CmpInstruction(Value *X, Value *Y)
 AddaInstruction::AddaInstruction(Value *X, Value *Y)
     : Instruction({X, Y}, "adda") {}
 
-LoadInstruction::LoadInstruction(Value *Y)
-    : Instruction({Y}, "load") {}
+LoadInstruction::LoadInstruction(Value *Y) : Instruction({Y}, "load") {}
 
 StoreInstruction::StoreInstruction(Value *Y, Value *X)
     : Instruction({Y, X}, "store") {}
@@ -59,16 +57,13 @@ MoveInstruction::MoveInstruction(Value *Y, Value *X)
 PhiInstruction::PhiInstruction(const std::vector<Value *> &Values)
     : Instruction(Values, "phi") {}
 
-CallInstruction::CallInstruction(Value *X)
-    : Instruction({X}, "call") {}
+CallInstruction::CallInstruction(Value *X) : Instruction({X}, "call") {}
 
 std::vector<BasicBlock *> BasicBlockTerminator::followingBlocks() { return {}; }
 
-RetInstruction::RetInstruction(Value *X)
-    : Instruction({X}, "ret") {}
+RetInstruction::RetInstruction(Value *X) : Instruction({X}, "ret") {}
 
-EndInstruction::EndInstruction()
-    : Instruction({}, "end") {}
+EndInstruction::EndInstruction() : Instruction({}, "end") {}
 
 BranchInstruction::BranchInstruction(BasicBlock *Y)
     : Instruction({}, "bra"), Target(Y) {}
@@ -88,33 +83,27 @@ ConditionalBlockTerminator::ConditionalBlockTerminator(BasicBlock *Then,
 BranchNotEqualInstruction::BranchNotEqualInstruction(CmpInstruction *Cmp,
                                                      BasicBlock *Then,
                                                      BasicBlock *Else)
-    : Instruction({}, "bne"),
-      ConditionalBlockTerminator(Then, Else) {}
+    : Instruction({}, "bne"), ConditionalBlockTerminator(Then, Else) {}
 
 BranchEqualInstruction::BranchEqualInstruction(CmpInstruction *Cmp,
                                                BasicBlock *Then,
                                                BasicBlock *Else)
-    : Instruction({}, "beq"),
-      ConditionalBlockTerminator(Then, Else) {}
+    : Instruction({}, "beq"), ConditionalBlockTerminator(Then, Else) {}
 
 BranchLessThanEqualInstruction::BranchLessThanEqualInstruction(
     CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else)
-    : Instruction({}, "ble"),
-      ConditionalBlockTerminator(Then, Else) {}
+    : Instruction({}, "ble"), ConditionalBlockTerminator(Then, Else) {}
 
 BranchLessThanInstruction::BranchLessThanInstruction(CmpInstruction *Cmp,
                                                      BasicBlock *Then,
                                                      BasicBlock *Else)
-    : Instruction({}, "blt"),
-      ConditionalBlockTerminator(Then, Else) {}
+    : Instruction({}, "blt"), ConditionalBlockTerminator(Then, Else) {}
 
 BranchGreaterThanEqualInstruction::BranchGreaterThanEqualInstruction(
     CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else)
-    : Instruction({}, "bge"),
-      ConditionalBlockTerminator(Then, Else) {}
+    : Instruction({}, "bge"), ConditionalBlockTerminator(Then, Else) {}
 
 BranchGreaterThanInstruction::BranchGreaterThanInstruction(CmpInstruction *Cmp,
                                                            BasicBlock *Then,
                                                            BasicBlock *Else)
-    : Instruction({}, "bgt"),
-      ConditionalBlockTerminator(Then, Else) {}
+    : Instruction({}, "bgt"), ConditionalBlockTerminator(Then, Else) {}

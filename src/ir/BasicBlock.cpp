@@ -18,11 +18,12 @@ void BasicBlock::terminate(std::unique_ptr<BasicBlockTerminator> T) {
 }
 
 BasicBlock::iterator BasicBlock::begin() { return iterator(this); }
-BasicBlock::iterator BasicBlock::end() { return {}; }
+BasicBlock::iterator BasicBlock::end() { return iterator(this, true); }
 
-BasicBlock::iterator::iterator() : End(true) {}
-BasicBlock::iterator::iterator(BasicBlock *BB)
-    : BB(BB), InstructionsIt(BB->Instructions.begin()), End(false) {}
+BasicBlock::iterator::iterator(BasicBlock *BB, bool End)
+    : BB(BB),
+      InstructionsIt(End ? BB->Instructions.end() : BB->Instructions.begin()),
+      End(End) {}
 
 BasicBlock::iterator &BasicBlock::iterator::operator++() {
   if (End) {

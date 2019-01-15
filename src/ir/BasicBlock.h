@@ -15,8 +15,7 @@ public:
     bool End;
 
   public:
-    iterator();
-    iterator(BasicBlock *BB);
+    iterator(BasicBlock *BB, bool End = false);
 
     iterator &operator++();
     Instruction *operator*();
