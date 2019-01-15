@@ -1,6 +1,8 @@
 add_library(cs241c-ir
   BasicBlock.cpp
   BasicBlock.h
+  DominatorTree.cpp
+  DominatorTree.h
   Function.cpp
   Function.h
   GlobalVariable.cpp
