@@ -37,8 +37,15 @@ FunctionCall::FunctionCall(std::string Ident,
                            std::vector<std::unique_ptr<Expr>> Args)
     : Ident(move(Ident)), Args(move(Args)) {}
 
-Value *FunctionCall::genIr(IrGenContext &) const {
-  throw std::runtime_error("Function calls not implemented.");
+Value *FunctionCall::genIr(IrGenContext &Ctx) const {
+  Function *Target = Ctx.lookupFuncion(Ident);
+
+  std::vector<Value *> Arguments;
+  std::transform(
+      Args.begin(), Args.end(), back_inserter(Arguments),
+      [&Ctx](const std::unique_ptr<Expr> &Arg) { return Arg->genIr(Ctx); });
+
+  return Ctx.makeInstruction<CallInstruction>(Target, move(Arguments));
 }
 
 MathExpr::MathExpr(MathExpr::Operation Op, std::unique_ptr<Expr> Left,

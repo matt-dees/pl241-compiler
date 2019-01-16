@@ -8,8 +8,8 @@
 #include <vector>
 
 namespace cs241c {
-class Instruction;
 class BasicBlockTerminator;
+class Instruction;
 
 class BasicBlock : public Value {
 public:

@@ -2,18 +2,15 @@
 
 using namespace cs241c;
 
-Instruction::Instruction(std::vector<Value *> &&Params)
-    : Params(std::move(Params)) {}
-
 BasicBlock *Instruction::getOwner() const { return Owner; }
 
 std::string Instruction::toString() const {
   std::string Result{getName()};
 
   std::string_view Separator = " ";
-  for (auto &Param : Params) {
+  for (auto &Arg : getArguments()) {
     Result.append(Separator);
-    Result.append(Param->toString());
+    Result.append(Arg->toString());
     Separator = ", ";
   }
 
@@ -21,15 +18,24 @@ std::string Instruction::toString() const {
 }
 
 template <typename T>
-BaseInstruction<T>::BaseInstruction(std::vector<Value *> &&Params)
-    : Instruction(move(Params)) {}
+BaseInstruction<T>::BaseInstruction(std::vector<Value *> &&Arguments)
+    : Arguments(move(Arguments)) {}
+
+template <typename T>
+std::vector<Value *> BaseInstruction<T>::getArguments() const {
+  return Arguments;
+}
 
 template <typename T> void BaseInstruction<T>::visit(InstructionVisitor *V) {
   V->visit(static_cast<T *>(this));
 }
 
-BasicBlockTerminator::BasicBlockTerminator(std::vector<Value *> &&Params)
-    : Instruction(move(Params)) {}
+BasicBlockTerminator::BasicBlockTerminator(std::vector<Value *> &&Arguments)
+    : Arguments(move(Arguments)) {}
+
+std::vector<Value *> BasicBlockTerminator::getArguments() const {
+  return Arguments;
+}
 
 std::vector<BasicBlock *> BasicBlockTerminator::followingBlocks() { return {}; }
 
@@ -99,8 +105,20 @@ PhiInstruction::PhiInstruction(Value *X1, Value *X2)
     : BaseInstruction({X1, X2}) {}
 std::string_view PhiInstruction::getName() const { return "phi"; }
 
-CallInstruction::CallInstruction(Value *X) : BaseInstruction({X}) {}
+CallInstruction::CallInstruction(Function *Target,
+                                 std::vector<Value *> Arguments)
+    : Target(Target), Arguments(move(Arguments)) {}
+
 std::string_view CallInstruction::getName() const { return "call"; }
+
+std::vector<Value *> CallInstruction::getArguments() const {
+  std::vector<Value *> Result;
+  Result.push_back(Target);
+  std::copy(Arguments.begin(), Arguments.end(), std::back_inserter(Result));
+  return Result;
+}
+
+void CallInstruction::visit(InstructionVisitor *V) { V->visit(this); }
 
 RetInstruction::RetInstruction(Value *X) : BaseBasicBlockTerminator({X}) {}
 std::string_view RetInstruction::getName() const { return "ret"; }
