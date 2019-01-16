@@ -5,16 +5,23 @@ using namespace cs241c;
 
 BasicBlock::BasicBlock(uint32_t ID,
                        std::vector<std::unique_ptr<Instruction>> Instructions)
-    : Instructions(std::move(Instructions)), ID(ID) {}
+    : Predecessors({}), Instructions(std::move(Instructions)), ID(ID) {}
 
 void BasicBlock::appendInstruction(std::unique_ptr<Instruction> I) {
   I->Owner = this;
   Instructions.push_back(move(I));
 }
 
+void BasicBlock::appendPredecessor(cs241c::BasicBlock *BB) {
+  Predecessors.push_back(BB);
+}
+
 void BasicBlock::terminate(std::unique_ptr<BasicBlockTerminator> T) {
   T->Owner = this;
   Terminator = move(T);
+  for (auto BB : Terminator->followingBlocks()) {
+    BB->appendPredecessor(this);
+  }
 }
 
 std::string BasicBlock::toString() const { return std::to_string(ID); }

@@ -24,7 +24,10 @@ public:
 
 protected:
 private:
-  static void postOrder(std::vector<BasicBlock *> *Output, BasicBlock *Entry);
+  static void postOrder(std::vector<BasicBlock *> &Output, BasicBlock *Entry);
+  BasicBlock * intersect(BasicBlock * Predecessor, BasicBlock * CandidateIDom);
+  // Map storing immediate dominator node
+  std::unordered_map<BasicBlock *, BasicBlock *> IDoms;
 };
 
 } // namespace cs241c

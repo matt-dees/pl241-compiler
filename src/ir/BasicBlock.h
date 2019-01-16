@@ -27,6 +27,7 @@ public:
     bool operator!=(const iterator &b) const;
   };
 
+  std::vector<BasicBlock *> Predecessors;
   std::vector<std::unique_ptr<Instruction>> Instructions;
   std::unique_ptr<BasicBlockTerminator> Terminator;
   uint32_t ID;
@@ -34,6 +35,7 @@ public:
   BasicBlock(uint32_t ID,
              std::vector<std::unique_ptr<Instruction>> Instructions = {});
 
+  void appendPredecessor(BasicBlock *BB);
   void appendInstruction(std::unique_ptr<Instruction> I);
   void terminate(std::unique_ptr<BasicBlockTerminator> T);
 
