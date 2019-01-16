@@ -52,7 +52,8 @@ TEST_CASE("Test VCG Graph Generation") {
   // store 5, 2000
   // move 600, 700
   // phi 1, 2, 3, 4
-  // bne 4, 100
+  // %1 = cmp 5, 5
+  // bne %1, 3, 4
   //
   // Edge to BB3 and BB4
   BB2->appendInstruction(std::make_unique<AddaInstruction>(
@@ -65,8 +66,11 @@ TEST_CASE("Test VCG Graph Generation") {
       Context.makeConstant(600), Context.makeConstant(700)));
   BB2->appendInstruction(std::make_unique<PhiInstruction>(
       Context.makeConstant(1), Context.makeConstant(2)));
-  BB2->terminate(
-      std::make_unique<BneInstruction>(nullptr, BB3.get(), BB4.get()));
+  auto Cmp = std::make_unique<CmpInstruction>(Context.makeConstant(5),
+                                              Context.makeConstant(5));
+  CmpInstruction *CmpP = Cmp.get();
+  BB2->appendInstruction(move(Cmp));
+  BB2->terminate(std::make_unique<BneInstruction>(CmpP, BB3.get(), BB4.get()));
 
   // Basic Block 3
   // add 1, 15
