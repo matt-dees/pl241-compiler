@@ -25,9 +25,18 @@ public:
 protected:
 private:
   static void postOrder(std::vector<BasicBlock *> &Output, BasicBlock *Entry);
-  BasicBlock * intersect(BasicBlock * Predecessor, BasicBlock * CandidateIDom);
+  void fillReversePostOrderCfg(BasicBlock *Entry);
+  void fillNodePositionMap();
+  void fillIDomMap(BasicBlock *Entry);
+
+  BasicBlock *
+  intersect(BasicBlock *Predecessor, BasicBlock *CandidateIDom,
+            std::unordered_map<BasicBlock *, uint32_t> &NodePositionMap);
+
   // Map storing immediate dominator node
   std::unordered_map<BasicBlock *, BasicBlock *> IDoms;
+  std::vector<BasicBlock *> ReversePostOrderCfg;
+  std::unordered_map<BasicBlock *, uint32_t> NodePositionMap;
 };
 
 } // namespace cs241c
