@@ -26,6 +26,7 @@ public:
 
 class Expr {
 public:
+  virtual ~Expr() = default;
   virtual Value *genIr(IrGenContext &Ctx) const = 0;
   virtual void visit(ExprVisitor *V) = 0;
 };

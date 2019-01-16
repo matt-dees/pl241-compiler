@@ -5,15 +5,9 @@
 
 namespace cs241c {
 class Value {
-protected:
-  Value() = default;
-  explicit Value(const std::string &ID);
-
 public:
-  const std::string toString();
-
-private:
-  const std::string ID;
+  virtual ~Value() = default;
+  virtual std::string toString() const = 0;
 };
 
 class ConstantValue : public Value {
@@ -21,6 +15,7 @@ public:
   int Val;
 
   explicit ConstantValue(int Val);
+  std::string toString() const override;
 };
 } // namespace cs241c
 

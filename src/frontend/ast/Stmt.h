@@ -6,6 +6,7 @@
 namespace cs241c {
 class Stmt {
 public:
+  virtual ~Stmt() = default;
   virtual void genIr(IrGenContext &Ctx) const = 0;
 };
 

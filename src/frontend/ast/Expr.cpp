@@ -17,7 +17,7 @@ Value *VarDesignator::genIr(IrGenContext &Ctx) const {
   return Ctx.lookupVariable(Ident);
 }
 
-void VarDesignator::genStore(IrGenContext &Ctx, Value *V) {}
+void VarDesignator::genStore(IrGenContext &, Value *) {}
 
 ArrayDesignator::ArrayDesignator(std::string Ident,
                                  std::vector<std::unique_ptr<Expr>> Dim)
@@ -27,7 +27,7 @@ ArrayDesignator::ArrayDesignator(std::string Ident,
   }
 }
 
-void ArrayDesignator::genStore(IrGenContext &Ctx, Value *V) {}
+void ArrayDesignator::genStore(IrGenContext &, Value *) {}
 
 Value *ArrayDesignator::genIr(IrGenContext &) const {
   throw std::runtime_error("Array access not implemented.");
@@ -58,6 +58,8 @@ Value *MathExpr::genIr(IrGenContext &Ctx) const {
   case Operation::Div:
     return Ctx.makeInstruction<DivInstruction>(X, Y);
   }
+
+  throw std::runtime_error("Not implemented.");
 }
 
 Relation::Relation(Relation::Type T, std::unique_ptr<Expr> Left,

@@ -17,6 +17,8 @@ void BasicBlock::terminate(std::unique_ptr<BasicBlockTerminator> T) {
   Terminator = move(T);
 }
 
+std::string BasicBlock::toString() const { return std::to_string(ID); }
+
 BasicBlock::iterator BasicBlock::begin() { return iterator(this); }
 BasicBlock::iterator BasicBlock::end() { return iterator(this, true); }
 

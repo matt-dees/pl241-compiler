@@ -8,10 +8,13 @@
 namespace cs241c {
 class GlobalVariable : public Value {
 public:
+  std::string Ident;
   int WordCount;
 
   explicit GlobalVariable(std::string Ident);
   GlobalVariable(std::string Ident, const std::vector<int> &ArrayDimensions);
+
+  std::string toString() const override;
 };
 } // namespace cs241c
 
