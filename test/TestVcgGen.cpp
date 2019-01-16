@@ -44,7 +44,7 @@ TEST_CASE("Test VCG Graph Generation") {
       Context.makeConstant(0), Context.makeConstant(0)));
   BB1->appendInstruction(
       std::make_unique<NegInstruction>(Context.makeConstant(2)));
-  BB1->terminate(std::make_unique<BranchInstruction>(BB2.get()));
+  BB1->terminate(std::make_unique<BraInstruction>(BB2.get()));
 
   // Basic Block 2
   // adda 1000, 2
@@ -63,11 +63,10 @@ TEST_CASE("Test VCG Graph Generation") {
       Context.makeConstant(5), Context.makeConstant(2000)));
   BB2->appendInstruction(std::make_unique<MoveInstruction>(
       Context.makeConstant(600), Context.makeConstant(700)));
-  BB2->appendInstruction(std::make_unique<PhiInstruction>(std::vector<Value *>(
-      {Context.makeConstant(1), Context.makeConstant(2),
-       Context.makeConstant(3), Context.makeConstant(4)})));
-  BB2->terminate(std::make_unique<BranchNotEqualInstruction>(nullptr, BB3.get(),
-                                                             BB4.get()));
+  BB2->appendInstruction(std::make_unique<PhiInstruction>(
+      Context.makeConstant(1), Context.makeConstant(2)));
+  BB2->terminate(
+      std::make_unique<BneInstruction>(nullptr, BB3.get(), BB4.get()));
 
   // Basic Block 3
   // add 1, 15
@@ -79,7 +78,7 @@ TEST_CASE("Test VCG Graph Generation") {
       Context.makeConstant(1), Context.makeConstant(15)));
   BB3->appendInstruction(std::make_unique<SubInstruction>(
       Context.makeConstant(16), Context.makeConstant(5)));
-  BB3->terminate(std::make_unique<BranchInstruction>(BB4.get()));
+  BB3->terminate(std::make_unique<BraInstruction>(BB4.get()));
 
   // Basic Block 4
   // div 10, 8

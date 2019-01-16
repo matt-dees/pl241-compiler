@@ -13,6 +13,7 @@ class Function;
 
 class Decl {
 public:
+  virtual ~Decl() = default;
   virtual std::unique_ptr<GlobalVariable> genIr(IrGenContext &Ctx) = 0;
 };
 

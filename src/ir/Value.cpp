@@ -2,8 +2,6 @@
 
 using namespace cs241c;
 
-Value::Value(const std::string &ID) : ID(ID) {}
+ConstantValue::ConstantValue(int Val) : Val(Val) {}
 
-const std::string Value::toString() { return ID; }
-
-ConstantValue::ConstantValue(int Val) : Value(std::to_string(Val)), Val(Val) {}
+std::string ConstantValue::toString() const { return std::to_string(Val); }

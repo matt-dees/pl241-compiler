@@ -2,12 +2,16 @@
 #define CS241C_IR_BASICBLOCK_H
 
 #include "Instruction.h"
+#include "Value.h"
 #include <cstdint>
 #include <memory>
 #include <vector>
 
 namespace cs241c {
-class BasicBlock {
+class Instruction;
+class BasicBlockTerminator;
+
+class BasicBlock : public Value {
 public:
   class iterator {
     BasicBlock *BB;
@@ -35,6 +39,8 @@ public:
 
   iterator begin();
   iterator end();
+
+  std::string toString() const override;
 };
 } // namespace cs241c
 
