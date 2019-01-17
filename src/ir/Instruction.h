@@ -209,7 +209,9 @@ public:
 
 class RetInstruction : public BaseBasicBlockTerminator<RetInstruction> {
 public:
+  RetInstruction();
   explicit RetInstruction(Value *X);
+
   std::string_view getName() const override;
 };
 

@@ -11,7 +11,6 @@
 
 namespace cs241c {
 class IrGenContext {
-  std::vector<std::unique_ptr<Value>> Values;
   std::unordered_map<std::string, Function *> Functions;
   std::unordered_map<std::string, std::unique_ptr<Value>> LocalVariables;
   std::unordered_map<std::string, GlobalVariable *> GlobalVariables;
@@ -25,7 +24,7 @@ public:
   Instruction *makeInstruction(Params... Args) {
     auto Instr = std::make_unique<T>(Args...);
     Instruction *InstrP = Instr.get();
-    Values.push_back(move(Instr));
+    CurrentBlock->appendInstruction(move(Instr));
     return InstrP;
   }
 

@@ -5,7 +5,9 @@
 using namespace cs241c;
 
 Value *IrGenContext::makeConstant(int Val) {
-  return Values.emplace_back(std::make_unique<ConstantValue>(Val)).get();
+  return CurrentBlock->Constants
+      .emplace_back(std::make_unique<ConstantValue>(Val))
+      .get();
 }
 
 void IrGenContext::declareGlobal(GlobalVariable *Var) {

@@ -5,12 +5,14 @@ using namespace cs241c;
 
 BasicBlock::BasicBlock(uint32_t ID,
                        std::vector<std::unique_ptr<Instruction>> Instructions)
-    : Instructions(std::move(Instructions)), ID(ID) {}
+    : ID(ID), Instructions(std::move(Instructions)) {}
 
 void BasicBlock::appendInstruction(std::unique_ptr<Instruction> I) {
   I->Owner = this;
   Instructions.push_back(move(I));
 }
+
+bool BasicBlock::isTerminated() { return Terminator != nullptr; }
 
 void BasicBlock::terminate(std::unique_ptr<BasicBlockTerminator> T) {
   T->Owner = this;

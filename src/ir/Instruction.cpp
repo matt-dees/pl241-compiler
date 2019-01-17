@@ -120,6 +120,7 @@ std::vector<Value *> CallInstruction::getArguments() const {
 
 void CallInstruction::visit(InstructionVisitor *V) { V->visit(this); }
 
+RetInstruction::RetInstruction() : BaseBasicBlockTerminator({}) {}
 RetInstruction::RetInstruction(Value *X) : BaseBasicBlockTerminator({X}) {}
 std::string_view RetInstruction::getName() const { return "ret"; }
 
