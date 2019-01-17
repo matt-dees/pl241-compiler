@@ -52,7 +52,8 @@ DominatorTree::createImmediateDomMap(
       createNodePositionMap(ReversePostOrderNodes);
 
   bool Changed = true;
-  IDoms[ReversePostOrderNodes.back()] = ReversePostOrderNodes.back();
+  BasicBlock *Entry = ReversePostOrderNodes.front();
+  IDoms[Entry] = Entry;
 
   while (Changed) {
     Changed = false;
@@ -66,7 +67,7 @@ DominatorTree::createImmediateDomMap(
            PredecessorIt != Node->Predecessors.end(); PredecessorIt++) {
         if (IDoms.find(*PredecessorIt) != IDoms.end()) {
           CandidateIDom =
-              intersect(*PredecessorIt, CandidateIDom, NodePositionMap);
+              intersect(*PredecessorIt, CandidateIDom, IDoms, NodePositionMap);
         }
       }
       if (IDoms[Node] != CandidateIDom) {

@@ -1,6 +1,6 @@
 #include "Instruction.h"
+#include "assert.h"
 #include <sstream>
-
 using namespace cs241c;
 
 Instruction::Instruction(int Id) : Id(Id) {}
@@ -144,7 +144,11 @@ BraInstruction::BraInstruction(int Id, BasicBlock *Y)
     : BaseBasicBlockTerminator(Id, {Y}) {}
 std::string_view BraInstruction::getName() const { return "bra"; }
 
-std::vector<BasicBlock *> BraInstruction::followingBlocks() { return {}; }
+std::vector<BasicBlock *> BraInstruction::followingBlocks() {
+  BasicBlock *Target = dynamic_cast<BasicBlock *>(getArguments()[0]);
+  assert(Target);
+  return {dynamic_cast<BasicBlock *>(getArguments()[0])};
+}
 
 BneInstruction::BneInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                                BasicBlock *Else)
