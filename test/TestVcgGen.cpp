@@ -34,21 +34,27 @@ TEST_CASE("Test VCG Graph Generation") {
   // bra 2
   //
   // Edge to BB2
-  BB1->appendInstruction(
-      std::make_unique<NegInstruction>(Context.makeConstant(1)));
+  BB1->appendInstruction(std::make_unique<NegInstruction>(
+      Context.genInstructionId(), Context.makeConstant(1)));
   BB1->appendInstruction(std::make_unique<AddInstruction>(
-      Context.makeConstant(1), Context.makeConstant(3)));
+      Context.genInstructionId(), Context.makeConstant(1),
+      Context.makeConstant(3)));
   BB1->appendInstruction(std::make_unique<SubInstruction>(
-      Context.makeConstant(10), Context.makeConstant(15)));
+      Context.genInstructionId(), Context.makeConstant(10),
+      Context.makeConstant(15)));
   BB1->appendInstruction(std::make_unique<MulInstruction>(
-      Context.makeConstant(2), Context.makeConstant(10)));
+      Context.genInstructionId(), Context.makeConstant(2),
+      Context.makeConstant(10)));
   BB1->appendInstruction(std::make_unique<DivInstruction>(
-      Context.makeConstant(20), Context.makeConstant(5)));
+      Context.genInstructionId(), Context.makeConstant(20),
+      Context.makeConstant(5)));
   BB1->appendInstruction(std::make_unique<CmpInstruction>(
-      Context.makeConstant(0), Context.makeConstant(0)));
-  BB1->appendInstruction(
-      std::make_unique<NegInstruction>(Context.makeConstant(2)));
-  BB1->terminate(std::make_unique<BraInstruction>(BB2.get()));
+      Context.genInstructionId(), Context.makeConstant(0),
+      Context.makeConstant(0)));
+  BB1->appendInstruction(std::make_unique<NegInstruction>(
+      Context.genInstructionId(), Context.makeConstant(2)));
+  BB1->terminate(
+      std::make_unique<BraInstruction>(Context.genInstructionId(), BB2.get()));
 
   // Basic Block 2
   // adda 1000, 2
@@ -61,20 +67,26 @@ TEST_CASE("Test VCG Graph Generation") {
   //
   // Edge to BB3 and BB4
   BB2->appendInstruction(std::make_unique<AddaInstruction>(
-      Context.makeConstant(1000), Context.makeConstant(2)));
-  BB2->appendInstruction(
-      std::make_unique<LoadInstruction>(Context.makeConstant(2000)));
+      Context.genInstructionId(), Context.makeConstant(1000),
+      Context.makeConstant(2)));
+  BB2->appendInstruction(std::make_unique<LoadInstruction>(
+      Context.genInstructionId(), Context.makeConstant(2000)));
   BB2->appendInstruction(std::make_unique<StoreInstruction>(
-      Context.makeConstant(5), Context.makeConstant(2000)));
+      Context.genInstructionId(), Context.makeConstant(5),
+      Context.makeConstant(2000)));
   BB2->appendInstruction(std::make_unique<MoveInstruction>(
-      Context.makeConstant(600), Context.makeConstant(700)));
+      Context.genInstructionId(), Context.makeConstant(600),
+      Context.makeConstant(700)));
   BB2->appendInstruction(std::make_unique<PhiInstruction>(
-      Context.makeConstant(1), Context.makeConstant(2)));
-  auto Cmp = std::make_unique<CmpInstruction>(Context.makeConstant(5),
+      Context.genInstructionId(), Context.makeConstant(1),
+      Context.makeConstant(2)));
+  auto Cmp = std::make_unique<CmpInstruction>(Context.genInstructionId(),
+                                              Context.makeConstant(5),
                                               Context.makeConstant(5));
   CmpInstruction *CmpP = Cmp.get();
   BB2->appendInstruction(move(Cmp));
-  BB2->terminate(std::make_unique<BneInstruction>(CmpP, BB3.get(), BB4.get()));
+  BB2->terminate(std::make_unique<BneInstruction>(Context.genInstructionId(),
+                                                  CmpP, BB3.get(), BB4.get()));
 
   // Basic Block 3
   // add 1, 15
@@ -83,17 +95,21 @@ TEST_CASE("Test VCG Graph Generation") {
   //
   // Edge to 4
   BB3->appendInstruction(std::make_unique<AddInstruction>(
-      Context.makeConstant(1), Context.makeConstant(15)));
+      Context.genInstructionId(), Context.makeConstant(1),
+      Context.makeConstant(15)));
   BB3->appendInstruction(std::make_unique<SubInstruction>(
-      Context.makeConstant(16), Context.makeConstant(5)));
-  BB3->terminate(std::make_unique<BraInstruction>(BB4.get()));
+      Context.genInstructionId(), Context.makeConstant(16),
+      Context.makeConstant(5)));
+  BB3->terminate(
+      std::make_unique<BraInstruction>(Context.genInstructionId(), BB4.get()));
 
   // Basic Block 4
   // div 10, 8
   // end
   BB4->appendInstruction(std::make_unique<DivInstruction>(
-      Context.makeConstant(10), Context.makeConstant(8)));
-  BB4->terminate(std::make_unique<EndInstruction>());
+      Context.genInstructionId(), Context.makeConstant(10),
+      Context.makeConstant(8)));
+  BB4->terminate(std::make_unique<EndInstruction>(Context.genInstructionId()));
 
   // Function 1
   //  Basic Block(s) 1

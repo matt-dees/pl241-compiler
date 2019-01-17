@@ -37,7 +37,8 @@ std::unique_ptr<Function> Func::genIr(IrGenContext &Ctx) {
   }
 
   if (!EntryBlock->isTerminated()) {
-    EntryBlock->terminate(std::make_unique<RetInstruction>());
+    EntryBlock->terminate(
+        std::make_unique<RetInstruction>(Ctx.genInstructionId()));
   }
 
   std::vector<std::unique_ptr<BasicBlock>> Blocks;

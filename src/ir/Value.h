@@ -7,6 +7,7 @@ namespace cs241c {
 class Value {
 public:
   virtual ~Value() = default;
+  virtual std::string id() const;
   virtual std::string toString() const = 0;
 };
 
