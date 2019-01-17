@@ -12,6 +12,7 @@
 namespace cs241c {
 class IrGenContext {
   std::vector<std::unique_ptr<Value>> Values;
+  std::unordered_map<std::string, Function *> Functions;
   std::unordered_map<std::string, std::unique_ptr<Value>> LocalVariables;
   std::unordered_map<std::string, GlobalVariable *> GlobalVariables;
 
@@ -33,6 +34,7 @@ public:
   void updateLocal(const std::string &Ident, Value *Val);
   void clearLocalScope();
   Value *lookupVariable(const std::string &Ident);
+  Function *lookupFuncion(const std::string &Ident);
 };
 } // namespace cs241c
 

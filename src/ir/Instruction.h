@@ -2,6 +2,7 @@
 #define CS241C_IR_INSTRUCTION_H
 
 #include "BasicBlock.h"
+#include "Function.h"
 #include "Value.h"
 #include <cstdint>
 #include <string>
@@ -9,6 +10,8 @@
 #include <vector>
 
 namespace cs241c {
+class Function;
+
 class NegInstruction;
 class AddInstruction;
 class SubInstruction;
@@ -60,14 +63,13 @@ public:
 class Instruction : public Value {
 private:
   BasicBlock *Owner{};
-  std::vector<Value *> Params;
 
 protected:
-  Instruction(std::vector<Value *> &&Params);
   virtual std::string_view getName() const = 0;
 
 public:
   BasicBlock *getOwner() const;
+  virtual std::vector<Value *> getArguments() const = 0;
   virtual void visit(InstructionVisitor *V) = 0;
   std::string toString() const override;
 
@@ -75,18 +77,26 @@ public:
 };
 
 template <typename T> class BaseInstruction : public Instruction {
+private:
+  std::vector<Value *> Arguments;
+
 protected:
   BaseInstruction(std::vector<Value *> &&Params);
 
 public:
+  std::vector<Value *> getArguments() const override;
   void visit(InstructionVisitor *V) override;
 };
 
 class BasicBlockTerminator : public Instruction {
+private:
+  std::vector<Value *> Arguments;
+
 protected:
   BasicBlockTerminator(std::vector<Value *> &&Params);
 
 public:
+  std::vector<Value *> getArguments() const override;
   virtual std::vector<BasicBlock *> followingBlocks();
 };
 
@@ -184,10 +194,17 @@ public:
   std::string_view getName() const override;
 };
 
-class CallInstruction : public BaseInstruction<CallInstruction> {
+class CallInstruction : public Instruction {
+  Function *Target;
+  std::vector<Value *> Arguments;
+
 public:
-  explicit CallInstruction(Value *X);
+  CallInstruction(Function *Target, std::vector<Value *> Arguments);
+
   std::string_view getName() const override;
+  std::vector<Value *> getArguments() const override;
+
+  void visit(InstructionVisitor *V) override;
 };
 
 class RetInstruction : public BaseBasicBlockTerminator<RetInstruction> {

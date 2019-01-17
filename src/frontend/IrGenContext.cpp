@@ -26,3 +26,7 @@ Value *IrGenContext::lookupVariable(const std::string &Ident) {
     return GlobalVariables[Ident];
   }
 }
+
+Function *IrGenContext::lookupFuncion(const std::string &Ident) {
+  return Functions[Ident];
+}

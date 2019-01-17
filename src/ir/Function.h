@@ -8,13 +8,16 @@
 #include <vector>
 
 namespace cs241c {
+class BasicBlock;
+
 class Function : public Value {
 public:
   std::string Name;
   std::vector<std::unique_ptr<BasicBlock>> BasicBlocks;
 
-  explicit Function(std::string Name,
-                    std::vector<std::unique_ptr<BasicBlock>> BasicBlocks = {});
+  Function() = default;
+  Function(std::string Name,
+           std::vector<std::unique_ptr<BasicBlock>> &&BasicBlocks);
 
   std::string toString() const override;
 };
