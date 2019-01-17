@@ -6,37 +6,37 @@
 
 namespace cs241c {
 
-class DomNode {
-public:
-  DomNode(BasicBlock *BB);
-  BasicBlock *BB;
-  std::vector<std::unique_ptr<DomNode>> DominatedNodes;
-};
-
 class DominatorTree {
 public:
-  DominatorTree() {}
+  DominatorTree(BasicBlock *CfgEntry);
 
-  // Uses algorithm proposed by Cooper, Harvey, and Kennedy from Rice
-  // to build dominator tree.
-  // https://www.cs.rice.edu/~keith/EMBED/dom.pdf
-  std::unique_ptr<DomNode> buildDomTree(BasicBlock *Entry);
-
-protected:
 private:
-  static void postOrder(std::vector<BasicBlock *> &Output, BasicBlock *Entry);
-  void fillReversePostOrderCfg(BasicBlock *Entry);
-  void fillNodePositionMap();
-  void fillIDomMap(BasicBlock *Entry);
+  struct DomNode {
+  public:
+    DomNode(BasicBlock *BB) : BB(BB){};
+    BasicBlock *BB;
+    std::vector<std::unique_ptr<DomNode>> DominatedNodes;
+  };
+
+  void buildDominatorTree(BasicBlock *Entry);
+  static std::vector<BasicBlock *> postOrder(BasicBlock *Entry);
+  std::vector<BasicBlock *> reversePostOrder(BasicBlock *Entry);
+
+  std::unordered_map<BasicBlock *, BasicBlock *>
+  createImmediateDomMap(const std::vector<BasicBlock *> &ReversePostOrderNodes);
+
+  std::unordered_map<BasicBlock *, uint32_t>
+  createNodePositionMap(const std::vector<BasicBlock *> &ReversePostOrderNodes);
 
   BasicBlock *
   intersect(BasicBlock *Predecessor, BasicBlock *CandidateIDom,
-            std::unordered_map<BasicBlock *, uint32_t> &NodePositionMap);
+            const std::unordered_map<BasicBlock *, BasicBlock *> &IDoms,
+            const std::unordered_map<BasicBlock *, uint32_t> &NodePositionMap);
 
-  // Map storing immediate dominator node
-  std::unordered_map<BasicBlock *, BasicBlock *> IDoms;
-  std::vector<BasicBlock *> ReversePostOrderCfg;
-  std::unordered_map<BasicBlock *, uint32_t> NodePositionMap;
+  std::unique_ptr<DomNode>
+  iDomMapToTree(const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap);
+
+  std::unique_ptr<DomNode> Head;
 };
 
 } // namespace cs241c
