@@ -11,13 +11,6 @@ public:
   DominatorTree(BasicBlock *CfgEntry);
 
 private:
-  struct DomNode {
-  public:
-    DomNode(BasicBlock *BB) : BB(BB){};
-    BasicBlock *BB;
-    std::vector<std::unique_ptr<DomNode>> DominatedNodes;
-  };
-
   void buildDominatorTree(BasicBlock *Entry);
   static std::vector<BasicBlock *> postOrder(BasicBlock *Entry);
   std::vector<BasicBlock *> reversePostOrder(BasicBlock *Entry);
@@ -33,10 +26,10 @@ private:
             const std::unordered_map<BasicBlock *, BasicBlock *> &IDoms,
             const std::unordered_map<BasicBlock *, uint32_t> &NodePositionMap);
 
-  std::unique_ptr<DomNode>
+  std::unordered_multimap<BasicBlock *, BasicBlock *>
   iDomMapToTree(const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap);
 
-  std::unique_ptr<DomNode> Head;
+  std::unordered_multimap<BasicBlock *, BasicBlock *> DomTree;
 };
 
 } // namespace cs241c

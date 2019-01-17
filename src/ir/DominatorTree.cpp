@@ -1,7 +1,7 @@
 #include "DominatorTree.h"
 #include <algorithm>
+#include <set>
 #include <stack>
-#include <unordered_set>
 
 using namespace cs241c;
 
@@ -15,15 +15,17 @@ void DominatorTree::buildDominatorTree(BasicBlock *Entry) {
   std::unordered_map<BasicBlock *, BasicBlock *> IDoms =
       createImmediateDomMap(ReversePostOrderCfg);
 
-  Head = move(iDomMapToTree(IDoms));
+  DomTree = iDomMapToTree(IDoms);
 }
 
-std::unique_ptr<DominatorTree::DomNode> DominatorTree::iDomMapToTree(
+std::unordered_multimap<BasicBlock *, BasicBlock *>
+DominatorTree::iDomMapToTree(
     const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap) {
-  std::unordered_set<BasicBlock *> Visited = {};
+  std::unordered_multimap<BasicBlock *, BasicBlock *> LocalDomTree = {};
   for (auto BB : IDomMap) {
-    if (!Visited.contains())
+    LocalDomTree.insert(std::make_pair(BB.second, BB.first));
   }
+  return LocalDomTree;
 }
 
 std::vector<BasicBlock *> DominatorTree::reversePostOrder(BasicBlock *Entry) {
@@ -34,11 +36,6 @@ std::vector<BasicBlock *> DominatorTree::reversePostOrder(BasicBlock *Entry) {
 
 std::vector<BasicBlock *> DominatorTree::postOrder(BasicBlock *Entry) {
   static std::vector<BasicBlock *> PostOrderNodes;
-
-  if (Entry->Terminator->followingBlocks().empty()) {
-    PostOrderNodes.push_back(Entry);
-    return PostOrderNodes;
-  }
 
   for (auto NextBlock : Entry->Terminator->followingBlocks()) {
     postOrder(NextBlock);
