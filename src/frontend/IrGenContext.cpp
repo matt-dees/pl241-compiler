@@ -4,8 +4,16 @@
 
 using namespace cs241c;
 
+std::string IrGenContext::genBasicBlockName() {
+  return std::string("BB_") + std::to_string(BasicBlockCounter++);
+}
+
+int IrGenContext::genInstructionId() { return InstructionCounter++; }
+
 Value *IrGenContext::makeConstant(int Val) {
-  return Values.emplace_back(std::make_unique<ConstantValue>(Val)).get();
+  return CurrentBlock->Constants
+      .emplace_back(std::make_unique<ConstantValue>(Val))
+      .get();
 }
 
 void IrGenContext::declareGlobal(GlobalVariable *Var) {

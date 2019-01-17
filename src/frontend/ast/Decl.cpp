@@ -28,11 +28,17 @@ Func::Func(Func::Type T, std::string Ident, std::vector<std::string> Params,
       Stmts(move(Stmts)) {}
 
 std::unique_ptr<Function> Func::genIr(IrGenContext &Ctx) {
-  std::unique_ptr<BasicBlock> EntryBlock = std::make_unique<BasicBlock>(0);
+  std::unique_ptr<BasicBlock> EntryBlock =
+      std::make_unique<BasicBlock>(Ctx.genBasicBlockName());
   Ctx.CurrentBlock = EntryBlock.get();
 
   for (const std::unique_ptr<Stmt> &S : Stmts) {
     S->genIr(Ctx);
+  }
+
+  if (!EntryBlock->isTerminated()) {
+    EntryBlock->terminate(
+        std::make_unique<RetInstruction>(Ctx.genInstructionId()));
   }
 
   std::vector<std::unique_ptr<BasicBlock>> Blocks;

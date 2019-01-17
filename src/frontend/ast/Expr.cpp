@@ -17,7 +17,9 @@ Value *VarDesignator::genIr(IrGenContext &Ctx) const {
   return Ctx.lookupVariable(Ident);
 }
 
-void VarDesignator::genStore(IrGenContext &, Value *) {}
+void VarDesignator::genStore(IrGenContext &Ctx, Value *V) {
+  Ctx.makeInstruction<MoveInstruction>(V, V);
+}
 
 ArrayDesignator::ArrayDesignator(std::string Ident,
                                  std::vector<std::unique_ptr<Expr>> Dim)

@@ -62,15 +62,20 @@ public:
 
 class Instruction : public Value {
 private:
+  int Id;
   BasicBlock *Owner{};
 
 protected:
+  Instruction(int Id);
   virtual std::string_view getName() const = 0;
 
 public:
   BasicBlock *getOwner() const;
   virtual std::vector<Value *> getArguments() const = 0;
+
   virtual void visit(InstructionVisitor *V) = 0;
+
+  std::string id() const override;
   std::string toString() const override;
 
   friend class BasicBlock;
@@ -81,7 +86,7 @@ private:
   std::vector<Value *> Arguments;
 
 protected:
-  BaseInstruction(std::vector<Value *> &&Params);
+  BaseInstruction(int Id, std::vector<Value *> &&Params);
 
 public:
   std::vector<Value *> getArguments() const override;
@@ -93,7 +98,7 @@ private:
   std::vector<Value *> Arguments;
 
 protected:
-  BasicBlockTerminator(std::vector<Value *> &&Params);
+  BasicBlockTerminator(int Id, std::vector<Value *> &&Params);
 
 public:
   std::vector<Value *> getArguments() const override;
@@ -103,7 +108,7 @@ public:
 template <typename T>
 class BaseBasicBlockTerminator : public BasicBlockTerminator {
 protected:
-  BaseBasicBlockTerminator(std::vector<Value *> &&Params);
+  BaseBasicBlockTerminator(int Id, std::vector<Value *> &&Params);
 
 public:
   void visit(InstructionVisitor *V) override;
@@ -111,7 +116,7 @@ public:
 
 class ConditionalBlockTerminator : public BasicBlockTerminator {
 protected:
-  ConditionalBlockTerminator(CmpInstruction *Cmp, BasicBlock *Then,
+  ConditionalBlockTerminator(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                              BasicBlock *Else);
 
 public:
@@ -121,7 +126,7 @@ public:
 template <typename T>
 class BaseConditionalBlockTerminator : public ConditionalBlockTerminator {
 protected:
-  BaseConditionalBlockTerminator(CmpInstruction *Cmp, BasicBlock *Then,
+  BaseConditionalBlockTerminator(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                                  BasicBlock *Else);
 
 public:
@@ -130,67 +135,67 @@ public:
 
 class NegInstruction : public BaseInstruction<NegInstruction> {
 public:
-  explicit NegInstruction(Value *X);
+  explicit NegInstruction(int Id, Value *X);
   std::string_view getName() const override;
 };
 
 class AddInstruction : public BaseInstruction<AddInstruction> {
 public:
-  AddInstruction(Value *X, Value *Y);
+  AddInstruction(int Id, Value *X, Value *Y);
   std::string_view getName() const override;
 };
 
 class SubInstruction : public BaseInstruction<SubInstruction> {
 public:
-  SubInstruction(Value *X, Value *Y);
+  SubInstruction(int Id, Value *X, Value *Y);
   std::string_view getName() const override;
 };
 
 class MulInstruction : public BaseInstruction<MulInstruction> {
 public:
-  MulInstruction(Value *X, Value *Y);
+  MulInstruction(int Id, Value *X, Value *Y);
   std::string_view getName() const override;
 };
 
 class DivInstruction : public BaseInstruction<DivInstruction> {
 public:
-  DivInstruction(Value *X, Value *Y);
+  DivInstruction(int Id, Value *X, Value *Y);
   std::string_view getName() const override;
 };
 
 class CmpInstruction : public BaseInstruction<CmpInstruction> {
 public:
-  CmpInstruction(Value *X, Value *Y);
+  CmpInstruction(int Id, Value *X, Value *Y);
   std::string_view getName() const override;
 };
 
 class AddaInstruction : public BaseInstruction<AddaInstruction> {
 public:
-  AddaInstruction(Value *X, Value *Y);
+  AddaInstruction(int Id, Value *X, Value *Y);
   std::string_view getName() const override;
 };
 
 class LoadInstruction : public BaseInstruction<LoadInstruction> {
 public:
-  explicit LoadInstruction(Value *Y);
+  explicit LoadInstruction(int Id, Value *Y);
   std::string_view getName() const override;
 };
 
 class StoreInstruction : public BaseInstruction<StoreInstruction> {
 public:
-  StoreInstruction(Value *Y, Value *X);
+  StoreInstruction(int Id, Value *Y, Value *X);
   std::string_view getName() const override;
 };
 
 class MoveInstruction : public BaseInstruction<MoveInstruction> {
 public:
-  MoveInstruction(Value *Y, Value *X);
+  MoveInstruction(int Id, Value *Y, Value *X);
   std::string_view getName() const override;
 };
 
 class PhiInstruction : public BaseInstruction<PhiInstruction> {
 public:
-  explicit PhiInstruction(Value *X1, Value *X2);
+  explicit PhiInstruction(int Id, Value *X1, Value *X2);
   std::string_view getName() const override;
 };
 
@@ -199,7 +204,7 @@ class CallInstruction : public Instruction {
   std::vector<Value *> Arguments;
 
 public:
-  CallInstruction(Function *Target, std::vector<Value *> Arguments);
+  CallInstruction(int Id, Function *Target, std::vector<Value *> Arguments);
 
   std::string_view getName() const override;
   std::vector<Value *> getArguments() const override;
@@ -209,61 +214,63 @@ public:
 
 class RetInstruction : public BaseBasicBlockTerminator<RetInstruction> {
 public:
-  explicit RetInstruction(Value *X);
+  RetInstruction(int Id);
+  explicit RetInstruction(int Id, Value *X);
+
   std::string_view getName() const override;
 };
 
 class EndInstruction : public BaseBasicBlockTerminator<EndInstruction> {
 public:
-  EndInstruction();
+  EndInstruction(int Id);
   std::string_view getName() const override;
 };
 
 class BraInstruction : public BaseBasicBlockTerminator<BraInstruction> {
 public:
-  explicit BraInstruction(BasicBlock *Y);
+  explicit BraInstruction(int Id, BasicBlock *Y);
   std::string_view getName() const override;
   std::vector<BasicBlock *> followingBlocks() override;
 };
 
 class BneInstruction : public BaseConditionalBlockTerminator<BneInstruction> {
 public:
-  explicit BneInstruction(CmpInstruction *Cmp, BasicBlock *Then,
+  explicit BneInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                           BasicBlock *Else);
   std::string_view getName() const override;
 };
 
 class BeqInstruction : public BaseConditionalBlockTerminator<BeqInstruction> {
 public:
-  explicit BeqInstruction(CmpInstruction *Cmp, BasicBlock *Then,
+  explicit BeqInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                           BasicBlock *Else);
   std::string_view getName() const override;
 };
 
 class BltInstruction : public BaseConditionalBlockTerminator<BltInstruction> {
 public:
-  explicit BltInstruction(CmpInstruction *Cmp, BasicBlock *Then,
+  explicit BltInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                           BasicBlock *Else);
   std::string_view getName() const override;
 };
 
 class BleInstruction : public BaseConditionalBlockTerminator<BleInstruction> {
 public:
-  explicit BleInstruction(CmpInstruction *Cmp, BasicBlock *Then,
+  explicit BleInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                           BasicBlock *Else);
   std::string_view getName() const override;
 };
 
 class BgeInstruction : public BaseConditionalBlockTerminator<BgeInstruction> {
 public:
-  explicit BgeInstruction(CmpInstruction *Cmp, BasicBlock *Then,
+  explicit BgeInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                           BasicBlock *Else);
   std::string_view getName() const override;
 };
 
 class BgtInstruction : public BaseConditionalBlockTerminator<BgtInstruction> {
 public:
-  explicit BgtInstruction(CmpInstruction *Cmp, BasicBlock *Then,
+  explicit BgtInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                           BasicBlock *Else);
   std::string_view getName() const override;
 };

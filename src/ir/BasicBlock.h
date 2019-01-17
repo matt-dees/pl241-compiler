@@ -27,16 +27,23 @@ public:
     bool operator!=(const iterator &b) const;
   };
 
+private:
+  std::string Name;
+
+public:
   std::vector<BasicBlock *> Predecessors;
+
+  std::vector<std::unique_ptr<ConstantValue>> Constants;
   std::vector<std::unique_ptr<Instruction>> Instructions;
   std::unique_ptr<BasicBlockTerminator> Terminator;
-  uint32_t ID;
 
-  BasicBlock(uint32_t ID,
+  BasicBlock(std::string Name,
              std::vector<std::unique_ptr<Instruction>> Instructions = {});
 
   void appendPredecessor(BasicBlock *BB);
   void appendInstruction(std::unique_ptr<Instruction> I);
+
+  bool isTerminated();
   void terminate(std::unique_ptr<BasicBlockTerminator> T);
 
   iterator begin();
