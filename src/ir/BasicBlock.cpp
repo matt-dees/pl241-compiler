@@ -3,9 +3,9 @@
 
 using namespace cs241c;
 
-BasicBlock::BasicBlock(uint32_t ID,
+BasicBlock::BasicBlock(std::string Name,
                        std::vector<std::unique_ptr<Instruction>> Instructions)
-    : ID(ID), Instructions(std::move(Instructions)) {}
+    : Name(move(Name)), Instructions(std::move(Instructions)) {}
 
 void BasicBlock::appendInstruction(std::unique_ptr<Instruction> I) {
   I->Owner = this;
@@ -19,7 +19,7 @@ void BasicBlock::terminate(std::unique_ptr<BasicBlockTerminator> T) {
   Terminator = move(T);
 }
 
-std::string BasicBlock::toString() const { return std::to_string(ID); }
+std::string BasicBlock::toString() const { return Name; }
 
 BasicBlock::iterator BasicBlock::begin() { return iterator(this); }
 BasicBlock::iterator BasicBlock::end() { return iterator(this, true); }

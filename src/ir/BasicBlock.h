@@ -27,12 +27,15 @@ public:
     bool operator!=(const iterator &b) const;
   };
 
-  uint32_t ID;
+private:
+  std::string Name;
+
+public:
   std::vector<std::unique_ptr<ConstantValue>> Constants;
   std::vector<std::unique_ptr<Instruction>> Instructions;
   std::unique_ptr<BasicBlockTerminator> Terminator;
 
-  BasicBlock(uint32_t ID,
+  BasicBlock(std::string Name,
              std::vector<std::unique_ptr<Instruction>> Instructions = {});
 
   void appendInstruction(std::unique_ptr<Instruction> I);

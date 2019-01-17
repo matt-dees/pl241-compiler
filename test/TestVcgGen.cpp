@@ -15,10 +15,14 @@ TEST_CASE("Test VCG Graph Generation") {
 
   IrGenContext Context;
   // Test with 4 BasicBlocks
-  std::unique_ptr<BasicBlock> BB1 = std::make_unique<BasicBlock>(1);
-  std::unique_ptr<BasicBlock> BB2 = std::make_unique<BasicBlock>(2);
-  std::unique_ptr<BasicBlock> BB3 = std::make_unique<BasicBlock>(3);
-  std::unique_ptr<BasicBlock> BB4 = std::make_unique<BasicBlock>(4);
+  std::unique_ptr<BasicBlock> BB1 =
+      std::make_unique<BasicBlock>(Context.genBasicBlockName());
+  std::unique_ptr<BasicBlock> BB2 =
+      std::make_unique<BasicBlock>(Context.genBasicBlockName());
+  std::unique_ptr<BasicBlock> BB3 =
+      std::make_unique<BasicBlock>(Context.genBasicBlockName());
+  std::unique_ptr<BasicBlock> BB4 =
+      std::make_unique<BasicBlock>(Context.genBasicBlockName());
 
   // Basic Block 1
   // neg 1

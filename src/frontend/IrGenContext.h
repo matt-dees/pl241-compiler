@@ -11,6 +11,8 @@
 
 namespace cs241c {
 class IrGenContext {
+  int BasicBlockCounter = 0;
+
   std::unordered_map<std::string, Function *> Functions;
   std::unordered_map<std::string, std::unique_ptr<Value>> LocalVariables;
   std::unordered_map<std::string, GlobalVariable *> GlobalVariables;
@@ -27,6 +29,8 @@ public:
     CurrentBlock->appendInstruction(move(Instr));
     return InstrP;
   }
+
+  std::string genBasicBlockName();
 
   void declareGlobal(GlobalVariable *Var);
   void declareLocal();

@@ -44,12 +44,12 @@ void VcgGen::writeBasicBlock(BasicBlock *BB, const std::string &Title) {
   VcgFileStream << "node: {" << std::endl;
 
   VcgFileStream << "title: "
-                << "\"" << BB->ID << "\"" << std::endl;
-  VcgFileStream << "label: \"" << BB->ID << std::endl;
+                << "\"" << BB->toString() << "\"" << std::endl;
+  VcgFileStream << "label: \"" << BB->toString() << std::endl;
 
   // Note: Assumes terminating instruction is in Instructions vector
 
-  for (Instruction* Instr : *BB) {
+  for (Instruction *Instr : *BB) {
     VcgFileStream << Instr->toString() << std::endl;
   }
 
@@ -65,9 +65,9 @@ void VcgGen::writeEdge(BasicBlock *Source, BasicBlock *Destination) {
   VcgFileStream << "edge: {" << std::endl;
 
   VcgFileStream << "sourcename: "
-                << "\"" << Source->ID << "\"" << std::endl;
+                << "\"" << Source->toString() << "\"" << std::endl;
   VcgFileStream << "targetname: "
-                << "\"" << Destination->ID << "\"" << std::endl;
+                << "\"" << Destination->toString() << "\"" << std::endl;
   VcgFileStream << "color: "
                 << "blue" << std::endl;
   VcgFileStream << "}" << std::endl;

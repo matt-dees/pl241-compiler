@@ -4,6 +4,10 @@
 
 using namespace cs241c;
 
+std::string IrGenContext::genBasicBlockName() {
+  return std::string("BB_") + std::to_string(BasicBlockCounter++);
+}
+
 Value *IrGenContext::makeConstant(int Val) {
   return CurrentBlock->Constants
       .emplace_back(std::make_unique<ConstantValue>(Val))
