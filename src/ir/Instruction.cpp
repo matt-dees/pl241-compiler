@@ -186,3 +186,13 @@ BgtInstruction::BgtInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
     : BaseConditionalBlockTerminator(Id, Cmp, Then, Else) {}
 
 std::string_view BgtInstruction::getName() const { return "bgt"; }
+
+ReadInstruction::ReadInstruction(int Id) : BaseInstruction(Id, {}) {}
+std::string_view ReadInstruction::getName() const { return "read"; }
+
+WriteInstruction::WriteInstruction(int Id, Value *X)
+    : BaseInstruction(Id, {X}) {}
+std::string_view WriteInstruction::getName() const { return "write"; }
+
+WriteNLInstruction::WriteNLInstruction(int Id) : BaseInstruction(Id, {}) {}
+std::string_view WriteNLInstruction::getName() const { return "writeNL"; }
