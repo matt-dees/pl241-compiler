@@ -40,6 +40,16 @@ FunctionCall::FunctionCall(std::string Ident,
     : Ident(move(Ident)), Args(move(Args)) {}
 
 Value *FunctionCall::genIr(IrGenContext &Ctx) const {
+  if (Ident == "read") {
+    return Ctx.makeInstruction<ReadInstruction>();
+  }
+  if (Ident == "write") {
+    return Ctx.makeInstruction<WriteInstruction>(Args.front()->genIr(Ctx));
+  }
+  if (Ident == "writeNl") {
+    return Ctx.makeInstruction<WriteNLInstruction>();
+  }
+
   Function *Target = Ctx.lookupFuncion(Ident);
 
   std::vector<Value *> Arguments;
