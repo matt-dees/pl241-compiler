@@ -3,6 +3,7 @@
 
 #include "BasicBlock.h"
 #include <unordered_map>
+#include <unordered_set>
 
 namespace cs241c {
 
@@ -11,6 +12,10 @@ public:
   DominatorTree(BasicBlock *CfgEntry);
 
 private:
+  struct DomNode {
+    BasicBlock *BB;
+    std::unordered_set<std::unique_ptr<DomNode>> Children;
+  };
   void buildDominatorTree(BasicBlock *Entry);
   static std::vector<BasicBlock *> postOrder(BasicBlock *Entry);
   std::vector<BasicBlock *> reversePostOrder(BasicBlock *Entry);

@@ -2,10 +2,11 @@
 #include <algorithm>
 #include <set>
 #include <stack>
+#include <unordered_set>
 
 using namespace cs241c;
 
-DominatorTree::DominatorTree(cs241c::BasicBlock *CfgEntry) {
+DominatorTree::DominatorTree(cs241c::BasicBlock *CfgEntry) : EntryBlock(Entry) {
   buildDominatorTree(CfgEntry);
 }
 
@@ -22,9 +23,12 @@ std::unordered_multimap<BasicBlock *, BasicBlock *>
 DominatorTree::iDomMapToTree(
     const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap) {
   std::unordered_multimap<BasicBlock *, BasicBlock *> LocalDomTree = {};
-  for (auto BB : IDomMap) {
-    LocalDomTree.insert(std::make_pair(BB.second, BB.first));
+  for (auto IDomEntry : IDomMap) {
+    if (IDomEntry.second != IDomEntry.first) {
+      LocalDomTree.insert(std::make_pair(IDomEntry.second, IDomEntry.first))
+    }
   }
+
   return LocalDomTree;
 }
 
@@ -36,11 +40,15 @@ std::vector<BasicBlock *> DominatorTree::reversePostOrder(BasicBlock *Entry) {
 
 std::vector<BasicBlock *> DominatorTree::postOrder(BasicBlock *Entry) {
   static std::vector<BasicBlock *> PostOrderNodes;
+  static std::unordered_set<BasicBlock *> Visited;
 
   for (auto NextBlock : Entry->Terminator->followingBlocks()) {
     postOrder(NextBlock);
   }
-  PostOrderNodes.push_back(Entry);
+  if (Visited.find(Entry) == Visited.end()) {
+    PostOrderNodes.push_back(Entry);
+    Visited.insert(Entry);
+  }
   return PostOrderNodes;
 }
 
@@ -88,10 +96,12 @@ BasicBlock *DominatorTree::intersect(
   BasicBlock *Finger2 = CandidateIDom;
 
   while (Finger1 != Finger2) {
-    while (NodePositionMap.at(Finger1) < NodePositionMap.at(Finger2)) {
+    while (NodePositionMap.at(Finger1) > NodePositionMap.at(Finger2) &&
+           NodePositionMap.at(Finger1) != 0) {
       Finger1 = IDoms.at(Finger1);
     }
-    while (NodePositionMap.at(Finger2) < NodePositionMap.at(Finger1)) {
+    while (NodePositionMap.at(Finger2) > NodePositionMap.at(Finger1) &&
+           NodePositionMap.at(Finger2) != 0) {
       Finger2 = IDoms.at(Finger2);
     }
   }
