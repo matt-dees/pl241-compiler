@@ -62,7 +62,8 @@ ConditionalBlockTerminator::ConditionalBlockTerminator(int Id,
     : BasicBlockTerminator(Id, {Cmp, Then, Else}) {}
 
 std::vector<BasicBlock *> ConditionalBlockTerminator::followingBlocks() {
-  return {};
+  return {dynamic_cast<BasicBlock *>(getArguments()[1]),
+          dynamic_cast<BasicBlock *>(getArguments()[2])};
 }
 
 template <typename T>
