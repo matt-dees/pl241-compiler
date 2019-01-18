@@ -6,7 +6,7 @@
 
 using namespace cs241c;
 
-DominatorTree::DominatorTree(cs241c::BasicBlock *CfgEntry) : EntryBlock(Entry) {
+DominatorTree::DominatorTree(cs241c::BasicBlock *CfgEntry) {
   buildDominatorTree(CfgEntry);
 }
 
@@ -25,7 +25,7 @@ DominatorTree::iDomMapToTree(
   std::unordered_multimap<BasicBlock *, BasicBlock *> LocalDomTree = {};
   for (auto IDomEntry : IDomMap) {
     if (IDomEntry.second != IDomEntry.first) {
-      LocalDomTree.insert(std::make_pair(IDomEntry.second, IDomEntry.first))
+      LocalDomTree.insert(std::make_pair(IDomEntry.second, IDomEntry.first));
     }
   }
 

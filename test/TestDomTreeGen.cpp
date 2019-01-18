@@ -17,15 +17,19 @@ TEST_CASE("Test Dominator Tree Generation 1") {
   std::unique_ptr<BasicBlock> BB4 =
       std::make_unique<BasicBlock>(Context.genBasicBlockName());
 
+  Context.CurrentBlock = BB1.get();
   BB1->terminate(
       std::make_unique<BraInstruction>(Context.genInstructionId(), BB2.get()));
 
+  Context.CurrentBlock = BB2.get();
   BB2->terminate(
       std::make_unique<BraInstruction>(Context.genInstructionId(), BB3.get()));
 
+  Context.CurrentBlock = BB3.get();
   BB3->terminate(
       std::make_unique<BraInstruction>(Context.genInstructionId(), BB4.get()));
 
+  Context.CurrentBlock = BB4.get();
   BB4->terminate(std::make_unique<EndInstruction>(Context.genInstructionId()));
 
   DominatorTree D(BB1.get());
