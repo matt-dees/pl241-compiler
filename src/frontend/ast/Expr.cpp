@@ -18,7 +18,8 @@ Value *VarDesignator::genIr(IrGenContext &Ctx) const {
 }
 
 void VarDesignator::genStore(IrGenContext &Ctx, Value *V) {
-  Ctx.makeInstruction<MoveInstruction>(V, V);
+  auto Var = Ctx.lookupVariable(Ident);
+  Ctx.makeInstruction<MoveInstruction>(V, Var);
 }
 
 ArrayDesignator::ArrayDesignator(std::string Ident,
@@ -40,13 +41,13 @@ FunctionCall::FunctionCall(std::string Ident,
     : Ident(move(Ident)), Args(move(Args)) {}
 
 Value *FunctionCall::genIr(IrGenContext &Ctx) const {
-  if (Ident == "read") {
+  if (Ident == "InputNum") {
     return Ctx.makeInstruction<ReadInstruction>();
   }
-  if (Ident == "write") {
+  if (Ident == "OutputNum") {
     return Ctx.makeInstruction<WriteInstruction>(Args.front()->genIr(Ctx));
   }
-  if (Ident == "writeNl") {
+  if (Ident == "OutputNewLine") {
     return Ctx.makeInstruction<WriteNLInstruction>();
   }
 

@@ -1,23 +1,36 @@
 #include "Decl.h"
 #include "Function.h"
 #include "IrGenContext.h"
+#include "Variable.h"
 
 using namespace cs241c;
 
 IntDecl::IntDecl(std::string Ident) : Ident(move(Ident)) {}
 
-std::unique_ptr<GlobalVariable> IntDecl::genIr(IrGenContext &Ctx) {
+std::unique_ptr<GlobalVariable> IntDecl::declareGlobal(IrGenContext &Ctx) {
   auto var = std::make_unique<GlobalVariable>(Ident);
-  Ctx.declareGlobal(var.get());
+  Ctx.declare(var.get());
+  return var;
+}
+
+std::unique_ptr<LocalVariable> IntDecl::declareLocal(IrGenContext &Ctx) {
+  auto var = std::make_unique<LocalVariable>(Ident);
+  Ctx.declare(var.get());
   return var;
 }
 
 ArrayDecl::ArrayDecl(std::string Ident, std::vector<int32_t> Dim)
     : Ident(move(Ident)), Dim(move(Dim)) {}
 
-std::unique_ptr<GlobalVariable> ArrayDecl::genIr(IrGenContext &Ctx) {
+std::unique_ptr<GlobalVariable> ArrayDecl::declareGlobal(IrGenContext &Ctx) {
   auto var = std::make_unique<GlobalVariable>(Ident, Dim);
-  Ctx.declareGlobal(var.get());
+  Ctx.declare(var.get());
+  return var;
+}
+
+std::unique_ptr<LocalVariable> ArrayDecl::declareLocal(IrGenContext &Ctx) {
+  auto var = std::make_unique<LocalVariable>(Ident, Dim);
+  Ctx.declare(var.get());
   return var;
 }
 
@@ -36,8 +49,8 @@ std::unique_ptr<Function> Func::genIr(IrGenContext &Ctx) {
     S->genIr(Ctx);
   }
 
-  if (!EntryBlock->isTerminated()) {
-    EntryBlock->terminate(
+  if (!Ctx.CurrentBlock->isTerminated()) {
+    Ctx.CurrentBlock->terminate(
         std::make_unique<RetInstruction>(Ctx.genInstructionId()));
   }
 

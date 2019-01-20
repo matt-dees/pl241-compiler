@@ -2,7 +2,7 @@
 #define CS241C_IR_MODULE_H
 
 #include "Function.h"
-#include "GlobalVariable.h"
+#include "Variable.h"
 #include <memory>
 #include <vector>
 

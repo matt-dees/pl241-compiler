@@ -1,9 +1,9 @@
 #ifndef CS241C_FRONTEND_IRGENCONTEXT_H
 #define CS241C_FRONTEND_IRGENCONTEXT_H
 
-#include "GlobalVariable.h"
 #include "Instruction.h"
 #include "Value.h"
+#include "Variable.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -15,11 +15,23 @@ class IrGenContext {
   int InstructionCounter = 0;
 
   std::unordered_map<std::string, Function *> Functions;
-  std::unordered_map<std::string, std::unique_ptr<Value>> LocalVariables;
+
   std::unordered_map<std::string, GlobalVariable *> GlobalVariables;
+  std::unordered_map<std::string, LocalVariable *> LocalVariables;
 
 public:
   BasicBlock *CurrentBlock;
+
+  std::string genBasicBlockName();
+  int genInstructionId();
+
+  void beginScope();
+
+  void declare(GlobalVariable *Var);
+  void declare(LocalVariable *Var);
+
+  Variable *lookupVariable(const std::string &Ident);
+  Function *lookupFuncion(const std::string &Ident);
 
   Value *makeConstant(int Val);
 
@@ -30,16 +42,6 @@ public:
     CurrentBlock->appendInstruction(move(Instr));
     return InstrP;
   }
-
-  std::string genBasicBlockName();
-  int genInstructionId();
-
-  void declareGlobal(GlobalVariable *Var);
-  void declareLocal();
-  void updateLocal(const std::string &Ident, Value *Val);
-  void clearLocalScope();
-  Value *lookupVariable(const std::string &Ident);
-  Function *lookupFuncion(const std::string &Ident);
 };
 } // namespace cs241c
 

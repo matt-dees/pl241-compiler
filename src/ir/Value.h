@@ -15,7 +15,7 @@ class ConstantValue : public Value {
 public:
   int Val;
 
-  explicit ConstantValue(int Val);
+  ConstantValue(int Val);
   std::string toString() const override;
 };
 } // namespace cs241c
