@@ -2,6 +2,7 @@
 #include "Function.h"
 #include "IrGenContext.h"
 #include "Variable.h"
+#include <algorithm>
 
 using namespace cs241c;
 
@@ -41,20 +42,31 @@ Func::Func(Func::Type T, std::string Ident, std::vector<std::string> Params,
       Stmts(move(Stmts)) {}
 
 std::unique_ptr<Function> Func::genIr(IrGenContext &Ctx) {
+  Ctx.beginScope();
+
+  std::vector<std::unique_ptr<LocalVariable>> Locals;
+  std::transform(Vars.begin(), Vars.end(), back_inserter(Locals),
+                 [&Ctx](const std::unique_ptr<Decl> &Var) {
+                   return Var->declareLocal(Ctx);
+                 });
+
   std::unique_ptr<BasicBlock> EntryBlock =
       std::make_unique<BasicBlock>(Ctx.genBasicBlockName());
-  Ctx.CurrentBlock = EntryBlock.get();
+  Ctx.currentBlock() = EntryBlock.get();
 
   for (const std::unique_ptr<Stmt> &S : Stmts) {
     S->genIr(Ctx);
   }
 
-  if (!Ctx.CurrentBlock->isTerminated()) {
-    Ctx.CurrentBlock->terminate(
+  if (!Ctx.currentBlock()->isTerminated()) {
+    Ctx.currentBlock()->terminate(
         std::make_unique<RetInstruction>(Ctx.genInstructionId()));
   }
 
   std::vector<std::unique_ptr<BasicBlock>> Blocks;
   Blocks.push_back(move(EntryBlock));
-  return std::make_unique<Function>(Ident, move(Blocks));
+  auto Func = std::make_unique<Function>(Ident, move(Ctx.constants()),
+                                         move(Locals), move(Blocks));
+  Ctx.declare(Func.get());
+  return Func;
 }

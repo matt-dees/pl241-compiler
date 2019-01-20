@@ -31,7 +31,6 @@ private:
   std::string Name;
 
 public:
-  std::vector<std::unique_ptr<ConstantValue>> Constants;
   std::vector<std::unique_ptr<Instruction>> Instructions;
   std::unique_ptr<BasicBlockTerminator> Terminator;
 

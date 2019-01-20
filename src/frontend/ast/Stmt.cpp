@@ -14,7 +14,8 @@ void Assignment::genIr(IrGenContext &Ctx) const {
 ReturnStmt::ReturnStmt(std::unique_ptr<Expr> E) : E(move(E)) {}
 
 void ReturnStmt::genIr(IrGenContext &Ctx) const {
-  Ctx.makeInstruction<RetInstruction>(E->genIr(Ctx));
+  Ctx.currentBlock()->terminate(
+      std::make_unique<RetInstruction>(Ctx.genInstructionId(), E->genIr(Ctx)));
 }
 
 FunctionCallStmt::FunctionCallStmt(FunctionCall CallExpr)

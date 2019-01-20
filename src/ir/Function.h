@@ -3,6 +3,7 @@
 
 #include "BasicBlock.h"
 #include "Value.h"
+#include "Variable.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -11,14 +12,21 @@ namespace cs241c {
 class BasicBlock;
 
 class Function : public Value {
-public:
   std::string Name;
+  std::vector<std::unique_ptr<ConstantValue>> Constants;
+  std::vector<std::unique_ptr<LocalVariable>> Locals;
   std::vector<std::unique_ptr<BasicBlock>> BasicBlocks;
 
+public:
   Function() = default;
   Function(std::string Name,
+           std::vector<std::unique_ptr<ConstantValue>> &&Constants,
+           std::vector<std::unique_ptr<LocalVariable>> &&Locals,
            std::vector<std::unique_ptr<BasicBlock>> &&BasicBlocks);
 
+  const std::string &name() const;
+  std::vector<std::unique_ptr<ConstantValue>> &constants();
+  const std::vector<std::unique_ptr<BasicBlock>> &basicBlocks() const;
   std::string toString() const override;
 };
 } // namespace cs241c

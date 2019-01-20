@@ -15,25 +15,29 @@ class IrGenContext {
   int InstructionCounter = 0;
 
   std::unordered_map<std::string, Function *> Functions;
-
   std::unordered_map<std::string, GlobalVariable *> GlobalVariables;
+  std::vector<std::unique_ptr<ConstantValue>> Constants;
   std::unordered_map<std::string, LocalVariable *> LocalVariables;
 
-public:
   BasicBlock *CurrentBlock;
+
+public:
+  BasicBlock *&currentBlock();
+  std::vector<std::unique_ptr<ConstantValue>> &constants();
 
   std::string genBasicBlockName();
   int genInstructionId();
 
   void beginScope();
 
+  void declare(Function *Func);
   void declare(GlobalVariable *Var);
   void declare(LocalVariable *Var);
 
   Variable *lookupVariable(const std::string &Ident);
   Function *lookupFuncion(const std::string &Ident);
 
-  Value *makeConstant(int Val);
+  ConstantValue *makeConstant(int Val);
 
   template <typename T, typename... Params>
   Instruction *makeInstruction(Params... Args) {
