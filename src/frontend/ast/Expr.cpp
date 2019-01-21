@@ -1,4 +1,5 @@
 #include "Expr.h"
+#include "Instruction.h"
 #include "IrGenContext.h"
 #include <functional>
 #include <stdexcept>
@@ -78,16 +79,54 @@ Value *MathExpr::genIr(IrGenContext &Ctx) const {
   case Operation::Div:
     return Ctx.makeInstruction<DivInstruction>(X, Y);
   }
-
-  throw std::runtime_error("Not implemented.");
 }
 
 Relation::Relation(Relation::Type T, std::unique_ptr<Expr> Left,
                    std::unique_ptr<Expr> Right)
     : T(T), Left(move(Left)), Right(move(Right)) {}
 
-Value *Relation::genCmp(IrGenContext &Ctx) const {
+CmpInstruction *Relation::genCmp(IrGenContext &Ctx) const {
   Value *X = Left->genIr(Ctx);
   Value *Y = Right->genIr(Ctx);
   return Ctx.makeInstruction<CmpInstruction>(X, Y);
+}
+
+namespace {
+using RelT = Relation::Type;
+static Relation::Type InverseRelation[] = {RelT::Ne, RelT::Eq, RelT::Ge,
+                                           RelT::Gt, RelT::Lt, RelT::Le};
+static std::unique_ptr<BasicBlockTerminator>
+makeBranch(IrGenContext &Ctx, RelT T, CmpInstruction *Cmp, BasicBlock *Then,
+           BasicBlock *Else) {
+  int Id = Ctx.genInstructionId();
+  std::unique_ptr<BasicBlockTerminator> Terminator;
+  switch (T) {
+  case RelT::Eq:
+    Terminator = std::make_unique<BeqInstruction>(Id, Cmp, Then, Else);
+    break;
+  case RelT::Ne:
+    Terminator = std::make_unique<BneInstruction>(Id, Cmp, Then, Else);
+    break;
+  case RelT::Lt:
+    Terminator = std::make_unique<BltInstruction>(Id, Cmp, Then, Else);
+    break;
+  case RelT::Le:
+    Terminator = std::make_unique<BleInstruction>(Id, Cmp, Then, Else);
+    break;
+  case RelT::Ge:
+    Terminator = std::make_unique<BgeInstruction>(Id, Cmp, Then, Else);
+    break;
+  case RelT::Gt:
+    Terminator = std::make_unique<BgtInstruction>(Id, Cmp, Then, Else);
+    break;
+  }
+  return Terminator;
+}
+} // namespace
+
+std::unique_ptr<BasicBlockTerminator>
+Relation::genBranch(IrGenContext &Ctx, CmpInstruction *Cmp, BasicBlock *Then,
+                    BasicBlock *Else) const {
+  RelT InverseT = InverseRelation[static_cast<size_t>(T)];
+  return makeBranch(Ctx, InverseT, Cmp, Then, Else);
 }

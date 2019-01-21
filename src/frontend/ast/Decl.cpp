@@ -50,9 +50,8 @@ std::unique_ptr<Function> Func::genIr(IrGenContext &Ctx) {
                    return Var->declareLocal(Ctx);
                  });
 
-  std::unique_ptr<BasicBlock> EntryBlock =
-      std::make_unique<BasicBlock>(Ctx.genBasicBlockName());
-  Ctx.currentBlock() = EntryBlock.get();
+  BasicBlock *EntryBlock = Ctx.makeBasicBlock();
+  Ctx.currentBlock() = EntryBlock;
 
   for (const std::unique_ptr<Stmt> &S : Stmts) {
     S->genIr(Ctx);
@@ -63,10 +62,8 @@ std::unique_ptr<Function> Func::genIr(IrGenContext &Ctx) {
         std::make_unique<RetInstruction>(Ctx.genInstructionId()));
   }
 
-  std::vector<std::unique_ptr<BasicBlock>> Blocks;
-  Blocks.push_back(move(EntryBlock));
   auto Func = std::make_unique<Function>(Ident, move(Ctx.constants()),
-                                         move(Locals), move(Blocks));
+                                         move(Locals), Ctx.blocks());
   Ctx.declare(Func.get());
   return Func;
 }

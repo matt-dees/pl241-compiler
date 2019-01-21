@@ -18,12 +18,14 @@ class IrGenContext {
   std::unordered_map<std::string, GlobalVariable *> GlobalVariables;
   std::vector<std::unique_ptr<ConstantValue>> Constants;
   std::unordered_map<std::string, LocalVariable *> LocalVariables;
+  std::vector<std::unique_ptr<BasicBlock>> Blocks;
 
   BasicBlock *CurrentBlock;
 
 public:
   BasicBlock *&currentBlock();
-  std::vector<std::unique_ptr<ConstantValue>> &constants();
+  std::vector<std::unique_ptr<ConstantValue>> &&constants();
+  std::vector<std::unique_ptr<BasicBlock>> &&blocks();
 
   std::string genBasicBlockName();
   int genInstructionId();
@@ -39,13 +41,14 @@ public:
 
   ConstantValue *makeConstant(int Val);
 
-  template <typename T, typename... Params>
-  Instruction *makeInstruction(Params... Args) {
+  template <typename T, typename... Params> T *makeInstruction(Params... Args) {
     auto Instr = std::make_unique<T>(genInstructionId(), Args...);
-    Instruction *InstrP = Instr.get();
+    T *InstrP = Instr.get();
     CurrentBlock->appendInstruction(move(Instr));
     return InstrP;
   }
+
+  BasicBlock *makeBasicBlock();
 };
 } // namespace cs241c
 

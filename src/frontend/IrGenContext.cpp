@@ -6,8 +6,12 @@ using namespace cs241c;
 
 BasicBlock *&IrGenContext::currentBlock() { return CurrentBlock; }
 
-std::vector<std::unique_ptr<ConstantValue>> &IrGenContext::constants() {
-  return Constants;
+std::vector<std::unique_ptr<ConstantValue>> &&IrGenContext::constants() {
+  return move(Constants);
+}
+
+std::vector<std::unique_ptr<BasicBlock>> &&IrGenContext::blocks() {
+  return move(Blocks);
 }
 
 std::string IrGenContext::genBasicBlockName() {
@@ -19,6 +23,7 @@ int IrGenContext::genInstructionId() { return InstructionCounter++; }
 void IrGenContext::beginScope() {
   Constants.clear();
   LocalVariables.clear();
+  Blocks.clear();
 }
 
 void IrGenContext::declare(Function *Func) {
@@ -68,4 +73,9 @@ Function *IrGenContext::lookupFuncion(const std::string &Ident) {
 
 ConstantValue *IrGenContext::makeConstant(int Val) {
   return Constants.emplace_back(std::make_unique<ConstantValue>(Val)).get();
+}
+
+BasicBlock *IrGenContext::makeBasicBlock() {
+  return Blocks.emplace_back(std::make_unique<BasicBlock>(genBasicBlockName()))
+      .get();
 }

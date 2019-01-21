@@ -27,7 +27,37 @@ IfStmt::IfStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Then,
                std::vector<std::unique_ptr<Stmt>> Else)
     : Rel(std::move(Rel)), Then(move(Then)), Else(move(Else)) {}
 
-void IfStmt::genIr(IrGenContext &) const {}
+void IfStmt::genIr(IrGenContext &Ctx) const {
+  auto TrueBB = Ctx.makeBasicBlock();
+  auto FalseBB = Ctx.makeBasicBlock();
+  auto FollowBB = Ctx.makeBasicBlock();
+
+  auto Comparison = Rel.genCmp(Ctx);
+  auto Branch = Rel.genBranch(Ctx, Comparison, TrueBB, FalseBB);
+  Ctx.currentBlock()->terminate(move(Branch));
+
+  Ctx.currentBlock() = TrueBB;
+  for (const std::unique_ptr<Stmt> &S : Then) {
+    S->genIr(Ctx);
+  }
+
+  if (!Ctx.currentBlock()->isTerminated()) {
+    Ctx.currentBlock()->terminate(
+        std::make_unique<BraInstruction>(Ctx.genInstructionId(), FollowBB));
+  }
+
+  Ctx.currentBlock() = FalseBB;
+  for (const std::unique_ptr<Stmt> &S : Then) {
+    S->genIr(Ctx);
+  }
+
+  if (!Ctx.currentBlock()->isTerminated()) {
+    Ctx.currentBlock()->terminate(
+        std::make_unique<BraInstruction>(Ctx.genInstructionId(), FollowBB));
+  }
+
+  Ctx.currentBlock() = FollowBB;
+}
 
 WhileStmt::WhileStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Body)
     : Rel(std::move(Rel)), Body(std::move(Body)) {}
