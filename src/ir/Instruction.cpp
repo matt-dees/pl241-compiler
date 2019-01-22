@@ -148,7 +148,7 @@ std::string_view BraInstruction::getName() const { return "bra"; }
 std::vector<BasicBlock *> BraInstruction::followingBlocks() {
   BasicBlock *Target = dynamic_cast<BasicBlock *>(getArguments()[0]);
   assert(Target);
-  return {dynamic_cast<BasicBlock *>(getArguments()[0])};
+  return {Target};
 }
 
 BneInstruction::BneInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
