@@ -62,4 +62,27 @@ void IfStmt::genIr(IrGenContext &Ctx) const {
 WhileStmt::WhileStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Body)
     : Rel(std::move(Rel)), Body(std::move(Body)) {}
 
-void WhileStmt::genIr(IrGenContext &) const {}
+void WhileStmt::genIr(IrGenContext &Ctx) const {
+  BasicBlock *HeaderBB = Ctx.makeBasicBlock();
+  Ctx.currentBlock()->terminate(
+      std::make_unique<BraInstruction>(Ctx.genInstructionId(), HeaderBB));
+  Ctx.currentBlock() = HeaderBB;
+
+  auto Comparison = Rel.genCmp(Ctx);
+  BasicBlock *BodyBB = Ctx.makeBasicBlock();
+  BasicBlock *FollowBB = Ctx.makeBasicBlock();
+  auto HeaderBranch = Rel.genBranch(Ctx, Comparison, BodyBB, FollowBB);
+  HeaderBB->terminate(move(HeaderBranch));
+
+  Ctx.currentBlock() = BodyBB;
+  for (const std::unique_ptr<Stmt> &S : Body) {
+    S->genIr(Ctx);
+  }
+
+  if (!Ctx.currentBlock()->isTerminated()) {
+    Ctx.currentBlock()->terminate(
+        std::make_unique<BraInstruction>(Ctx.genInstructionId(), HeaderBB));
+  }
+
+  Ctx.currentBlock() = FollowBB;
+}
