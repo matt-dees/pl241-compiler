@@ -34,8 +34,8 @@ void VcgGen::writeGraph() {
 }
 
 void VcgGen::writeFunction(Function *F) {
-  const std::string FunctionName = F->Name;
-  for (auto &BB : F->BasicBlocks) {
+  const std::string FunctionName = F->name();
+  for (auto &BB : F->basicBlocks()) {
     writeBasicBlock(BB.get(), FunctionName);
   }
 }

@@ -5,13 +5,13 @@ add_library(cs241c-ir
   DominatorTree.h
   Function.cpp
   Function.h
-  GlobalVariable.cpp
-  GlobalVariable.h
   Instruction.cpp
   Instruction.h
   Module.cpp
   Module.h
   Value.cpp
-  Value.h)
+  Value.h
+  Variable.cpp
+  Variable.h)
 
 target_include_directories(cs241c-ir PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

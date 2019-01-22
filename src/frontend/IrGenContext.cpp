@@ -4,37 +4,78 @@
 
 using namespace cs241c;
 
+BasicBlock *&IrGenContext::currentBlock() { return CurrentBlock; }
+
+std::vector<std::unique_ptr<ConstantValue>> &&IrGenContext::constants() {
+  return move(Constants);
+}
+
+std::vector<std::unique_ptr<BasicBlock>> &&IrGenContext::blocks() {
+  return move(Blocks);
+}
+
 std::string IrGenContext::genBasicBlockName() {
   return std::string("BB_") + std::to_string(BasicBlockCounter++);
 }
 
 int IrGenContext::genInstructionId() { return InstructionCounter++; }
 
-Value *IrGenContext::makeConstant(int Val) {
-  return CurrentBlock->Constants
-      .emplace_back(std::make_unique<ConstantValue>(Val))
-      .get();
+void IrGenContext::beginScope() {
+  Constants.clear();
+  LocalVariables.clear();
+  Blocks.clear();
 }
 
-void IrGenContext::declareGlobal(GlobalVariable *Var) {
-  if (GlobalVariables.find(Var->toString()) != GlobalVariables.end()) {
-    throw std::runtime_error(std::string("Redeclaring global ") +
-                             Var->toString());
+void IrGenContext::declare(Function *Func) {
+  if (Functions.find(Func->name()) != Functions.end()) {
+    throw std::runtime_error(std::string("Redeclaring function ") +
+                             Func->name());
   }
-  GlobalVariables[Var->toString()] = Var;
+  Functions[Func->name()] = Func;
 }
 
-void IrGenContext::clearLocalScope() { LocalVariables.clear(); }
-
-Value *IrGenContext::lookupVariable(const std::string &Ident) {
-  auto It = LocalVariables.find(Ident);
-  if (It != LocalVariables.end()) {
-    return It->second.get();
-  } else {
-    return GlobalVariables[Ident];
+void IrGenContext::declare(GlobalVariable *Var) {
+  if (GlobalVariables.find(Var->name()) != GlobalVariables.end()) {
+    throw std::runtime_error(std::string("Redeclaring global variable ") +
+                             Var->name());
   }
+  GlobalVariables[Var->name()] = Var;
+}
+
+void IrGenContext::declare(LocalVariable *Var) {
+  if (LocalVariables.find(Var->name()) != LocalVariables.end()) {
+    throw std::runtime_error(std::string("Redeclaring local variable ") +
+                             Var->name());
+  }
+  LocalVariables[Var->name()] = Var;
+}
+
+Variable *IrGenContext::lookupVariable(const std::string &Ident) {
+  auto Local = LocalVariables.find(Ident);
+  if (Local != LocalVariables.end()) {
+    return Local->second;
+  }
+  auto Global = GlobalVariables.find(Ident);
+  if (Global != GlobalVariables.end()) {
+    return Global->second;
+  }
+  throw std::runtime_error(std::string("Use of undeclared variable ") + Ident);
 }
 
 Function *IrGenContext::lookupFuncion(const std::string &Ident) {
-  return Functions[Ident];
+  auto Result = Functions.find(Ident);
+  if (Result == Functions.end()) {
+    throw std::runtime_error(std::string("Use of undeclared function ") +
+                             Ident);
+  }
+  return Result->second;
+}
+
+ConstantValue *IrGenContext::makeConstant(int Val) {
+  return Constants.emplace_back(std::make_unique<ConstantValue>(Val)).get();
+}
+
+BasicBlock *IrGenContext::makeBasicBlock() {
+  return Blocks.emplace_back(std::make_unique<BasicBlock>(genBasicBlockName()))
+      .get();
 }

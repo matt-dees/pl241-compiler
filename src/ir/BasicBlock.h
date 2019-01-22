@@ -32,8 +32,6 @@ private:
 
 public:
   std::vector<BasicBlock *> Predecessors;
-
-  std::vector<std::unique_ptr<ConstantValue>> Constants;
   std::vector<std::unique_ptr<Instruction>> Instructions;
   std::unique_ptr<BasicBlockTerminator> Terminator;
 

@@ -3,51 +3,19 @@
 
 using namespace cs241c;
 
-namespace {
-class ExprLoader : public ExprVisitor {
-  IrGenContext *Ctx;
-
-public:
-  Value *Result;
-
-  explicit ExprLoader(IrGenContext *Ctx) : Ctx(Ctx) {}
-
-  void visit(ConstantExpr *E) override {
-    Value *Constant = E->genIr(*Ctx);
-    Value *Zero = Ctx->makeConstant(0);
-    Result = Ctx->makeInstruction<AddInstruction>(Constant, Zero);
-  }
-
-  void visit(VarDesignator *E) override {
-    Value *Variable = E->genIr(*Ctx);
-    Value *Zero = Ctx->makeConstant(0);
-    Result = Ctx->makeInstruction<AddInstruction>(Variable, Zero);
-  }
-
-  void visit(ArrayDesignator *E) override { Result = E->genIr(*Ctx); }
-
-  void visit(FunctionCall *E) override { Result = E->genIr(*Ctx); }
-
-  void visit(MathExpr *E) override { Result = E->genIr(*Ctx); }
-};
-} // namespace
-
 Assignment::Assignment(std::unique_ptr<Designator> Lhs,
                        std::unique_ptr<Expr> Rhs)
     : Lhs(move(Lhs)), Rhs(move(Rhs)) {}
 
 void Assignment::genIr(IrGenContext &Ctx) const {
-  ExprLoader Loader(&Ctx);
-  Rhs->visit(&Loader);
-  Lhs->genStore(Ctx, Loader.Result);
+  Lhs->genStore(Ctx, Rhs->genIr(Ctx));
 }
 
 ReturnStmt::ReturnStmt(std::unique_ptr<Expr> E) : E(move(E)) {}
 
 void ReturnStmt::genIr(IrGenContext &Ctx) const {
-  ExprLoader Loader(&Ctx);
-  E->visit(&Loader);
-  Ctx.makeInstruction<RetInstruction>(Loader.Result);
+  Ctx.currentBlock()->terminate(
+      std::make_unique<RetInstruction>(Ctx.genInstructionId(), E->genIr(Ctx)));
 }
 
 FunctionCallStmt::FunctionCallStmt(FunctionCall CallExpr)
@@ -59,9 +27,62 @@ IfStmt::IfStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Then,
                std::vector<std::unique_ptr<Stmt>> Else)
     : Rel(std::move(Rel)), Then(move(Then)), Else(move(Else)) {}
 
-void IfStmt::genIr(IrGenContext &) const {}
+void IfStmt::genIr(IrGenContext &Ctx) const {
+  auto TrueBB = Ctx.makeBasicBlock();
+  auto FalseBB = Ctx.makeBasicBlock();
+  auto FollowBB = Ctx.makeBasicBlock();
+
+  auto Comparison = Rel.genCmp(Ctx);
+  auto Branch = Rel.genBranch(Ctx, Comparison, TrueBB, FalseBB);
+  Ctx.currentBlock()->terminate(move(Branch));
+
+  Ctx.currentBlock() = TrueBB;
+  for (const std::unique_ptr<Stmt> &S : Then) {
+    S->genIr(Ctx);
+  }
+
+  if (!Ctx.currentBlock()->isTerminated()) {
+    Ctx.currentBlock()->terminate(
+        std::make_unique<BraInstruction>(Ctx.genInstructionId(), FollowBB));
+  }
+
+  Ctx.currentBlock() = FalseBB;
+  for (const std::unique_ptr<Stmt> &S : Then) {
+    S->genIr(Ctx);
+  }
+
+  if (!Ctx.currentBlock()->isTerminated()) {
+    Ctx.currentBlock()->terminate(
+        std::make_unique<BraInstruction>(Ctx.genInstructionId(), FollowBB));
+  }
+
+  Ctx.currentBlock() = FollowBB;
+}
 
 WhileStmt::WhileStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Body)
     : Rel(std::move(Rel)), Body(std::move(Body)) {}
 
-void WhileStmt::genIr(IrGenContext &) const {}
+void WhileStmt::genIr(IrGenContext &Ctx) const {
+  BasicBlock *HeaderBB = Ctx.makeBasicBlock();
+  Ctx.currentBlock()->terminate(
+      std::make_unique<BraInstruction>(Ctx.genInstructionId(), HeaderBB));
+  Ctx.currentBlock() = HeaderBB;
+
+  auto Comparison = Rel.genCmp(Ctx);
+  BasicBlock *BodyBB = Ctx.makeBasicBlock();
+  BasicBlock *FollowBB = Ctx.makeBasicBlock();
+  auto HeaderBranch = Rel.genBranch(Ctx, Comparison, BodyBB, FollowBB);
+  HeaderBB->terminate(move(HeaderBranch));
+
+  Ctx.currentBlock() = BodyBB;
+  for (const std::unique_ptr<Stmt> &S : Body) {
+    S->genIr(Ctx);
+  }
+
+  if (!Ctx.currentBlock()->isTerminated()) {
+    Ctx.currentBlock()->terminate(
+        std::make_unique<BraInstruction>(Ctx.genInstructionId(), HeaderBB));
+  }
+
+  Ctx.currentBlock() = FollowBB;
+}

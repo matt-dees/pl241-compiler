@@ -115,8 +115,9 @@ TEST_CASE("Test VCG Graph Generation") {
   //  Basic Block(s) 1
   std::vector<std::unique_ptr<BasicBlock>> F1Blocks;
   F1Blocks.emplace_back(std::move(BB1));
-  std::unique_ptr<Function> F1 =
-      std::make_unique<Function>("F1", std::move(F1Blocks));
+  std::unique_ptr<Function> F1 = std::make_unique<Function>(
+      "F1", std::vector<std::unique_ptr<ConstantValue>>{},
+      std::vector<std::unique_ptr<LocalVariable>>{}, std::move(F1Blocks));
 
   // Function 2
   //  Basic Block(s) 2-4
@@ -124,8 +125,9 @@ TEST_CASE("Test VCG Graph Generation") {
   F2Blocks.emplace_back(std::move(BB2));
   F2Blocks.emplace_back(std::move(BB3));
   F2Blocks.emplace_back(std::move(BB4));
-  std::unique_ptr<Function> F2 =
-      std::make_unique<Function>("F2", std::move(F2Blocks));
+  std::unique_ptr<Function> F2 = std::make_unique<Function>(
+      "F2", std::vector<std::unique_ptr<ConstantValue>>{},
+      std::vector<std::unique_ptr<LocalVariable>>{}, std::move(F2Blocks));
 
   // Module
   //  Functions 1 and 2

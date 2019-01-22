@@ -1,20 +1,23 @@
 #ifndef CS241C_FRONTEND_AST_DECL_H
 #define CS241C_FRONTEND_AST_DECL_H
 
-#include "GlobalVariable.h"
 #include "Stmt.h"
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace cs241c {
-class IrGenContext;
 class Function;
+class GlobalVariable;
+class IrGenContext;
+class LocalVariable;
 
 class Decl {
 public:
   virtual ~Decl() = default;
-  virtual std::unique_ptr<GlobalVariable> genIr(IrGenContext &Ctx) = 0;
+
+  virtual std::unique_ptr<GlobalVariable> declareGlobal(IrGenContext &Ctx) = 0;
+  virtual std::unique_ptr<LocalVariable> declareLocal(IrGenContext &Ctx) = 0;
 };
 
 class IntDecl : public Decl {
@@ -23,7 +26,8 @@ class IntDecl : public Decl {
 public:
   IntDecl(std::string Ident);
 
-  std::unique_ptr<GlobalVariable> genIr(IrGenContext &Ctx) override;
+  std::unique_ptr<GlobalVariable> declareGlobal(IrGenContext &Ctx) override;
+  std::unique_ptr<LocalVariable> declareLocal(IrGenContext &Ctx) override;
 };
 
 class ArrayDecl : public Decl {
@@ -33,7 +37,8 @@ class ArrayDecl : public Decl {
 public:
   ArrayDecl(std::string Ident, std::vector<int32_t> Dim);
 
-  std::unique_ptr<GlobalVariable> genIr(IrGenContext &Ctx) override;
+  std::unique_ptr<GlobalVariable> declareGlobal(IrGenContext &Ctx) override;
+  std::unique_ptr<LocalVariable> declareLocal(IrGenContext &Ctx) override;
 };
 
 class Func {

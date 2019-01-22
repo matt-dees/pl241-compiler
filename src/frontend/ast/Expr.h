@@ -8,12 +8,15 @@
 #include <vector>
 
 namespace cs241c {
-class IrGenContext;
-class ConstantExpr;
-class VarDesignator;
 class ArrayDesignator;
+class BasicBlock;
+class BasicBlockTerminator;
+class CmpInstruction;
+class ConstantExpr;
 class FunctionCall;
+class IrGenContext;
 class MathExpr;
+class VarDesignator;
 
 class ExprVisitor {
 public:
@@ -108,7 +111,11 @@ private:
 public:
   Relation(Type T, std::unique_ptr<Expr> Left, std::unique_ptr<Expr> Right);
 
-  Value *genCmp(IrGenContext &Ctx) const;
+  CmpInstruction *genCmp(IrGenContext &Ctx) const;
+  std::unique_ptr<BasicBlockTerminator> genBranch(IrGenContext &Ctx,
+                                                  CmpInstruction *Cmp,
+                                                  BasicBlock *Then,
+                                                  BasicBlock *Else) const;
 };
 } // namespace cs241c
 
