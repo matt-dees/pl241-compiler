@@ -13,10 +13,9 @@ DominatorTree::DominatorTree(cs241c::BasicBlock *CfgEntry) {
 void DominatorTree::buildDominatorTree(BasicBlock *Entry) {
   std::vector<BasicBlock *> ReversePostOrderCfg = reversePostOrder(Entry);
 
-  std::unordered_map<BasicBlock *, BasicBlock *> IDoms =
-      createImmediateDomMap(ReversePostOrderCfg);
-
-  DomTree = iDomMapToTree(IDoms);
+  IDomMap = createImmediateDomMap(ReversePostOrderCfg);
+  DomTree = iDomMapToTree(IDomMap);
+  DominanceFrontier = createDominanceFrontier(Entry, IDomMap);
 }
 
 std::unordered_multimap<BasicBlock *, BasicBlock *>
@@ -115,4 +114,25 @@ std::unordered_map<BasicBlock *, uint32_t> DominatorTree::createNodePositionMap(
     NodePositionMap[ReversePostOrderNodes.at(i)] = i;
   }
   return NodePositionMap;
+}
+
+std::unordered_multimap<BasicBlock *, BasicBlock *>
+DominatorTree::createDominanceFrontier(
+    BasicBlock *CurrentBlock,
+    const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap) {
+  static std::unordered_multimap<BasicBlock *, BasicBlock *> DF;
+  if (CurrentBlock->Predecessors.size() > 1) {
+    return DF;
+  }
+  for (auto BB : CurrentBlock->Predecessors) {
+    BasicBlock *Runner = BB;
+    while (Runner != IDomMap.at(CurrentBlock)) {
+      DF.insert(std::make_pair(Runner, CurrentBlock));
+      Runner = IDomMap.at(Runner);
+    }
+  }
+  for (auto BB : CurrentBlock->Terminator->followingBlocks()) {
+    createDominanceFrontier(BB, IDomMap);
+  }
+  return DF;
 }

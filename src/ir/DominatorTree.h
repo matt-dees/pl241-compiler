@@ -14,23 +14,28 @@ public:
 private:
   void buildDominatorTree(BasicBlock *Entry);
   static std::vector<BasicBlock *> postOrder(BasicBlock *Entry);
-  std::vector<BasicBlock *> reversePostOrder(BasicBlock *Entry);
+  static std::vector<BasicBlock *> reversePostOrder(BasicBlock *Entry);
 
-  std::unordered_map<BasicBlock *, BasicBlock *>
+  static std::unordered_map<BasicBlock *, BasicBlock *>
   createImmediateDomMap(const std::vector<BasicBlock *> &ReversePostOrderNodes);
 
-  std::unordered_map<BasicBlock *, uint32_t>
+  static std::unordered_map<BasicBlock *, uint32_t>
   createNodePositionMap(const std::vector<BasicBlock *> &ReversePostOrderNodes);
 
-  BasicBlock *
+  static std::unordered_multimap<BasicBlock *, BasicBlock *>
+  createDominanceFrontier(BasicBlock *CurrentBlock, const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap);
+
+  static BasicBlock *
   intersect(BasicBlock *Predecessor, BasicBlock *CandidateIDom,
             const std::unordered_map<BasicBlock *, BasicBlock *> &IDoms,
             const std::unordered_map<BasicBlock *, uint32_t> &NodePositionMap);
 
-  std::unordered_multimap<BasicBlock *, BasicBlock *>
+  static std::unordered_multimap<BasicBlock *, BasicBlock *>
   iDomMapToTree(const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap);
 
+  std::unordered_multimap<BasicBlock *, BasicBlock *> DominanceFrontier;
   std::unordered_multimap<BasicBlock *, BasicBlock *> DomTree;
+  std::unordered_map<BasicBlock *, BasicBlock *> IDomMap;
 };
 
 } // namespace cs241c
