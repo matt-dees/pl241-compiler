@@ -2,6 +2,7 @@
 #define CS241C_IR_BASICBLOCK_H
 
 #include "Instruction.h"
+#include "SSAContext.h"
 #include "Value.h"
 #include <cstdint>
 #include <memory>
@@ -43,6 +44,7 @@ public:
 
   bool isTerminated();
   void terminate(std::unique_ptr<BasicBlockTerminator> T);
+  void toSSA(SSAContext &SSACtx);
 
   iterator begin();
   iterator end();

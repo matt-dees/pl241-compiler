@@ -9,6 +9,8 @@ add_library(cs241c-ir
   Instruction.h
   Module.cpp
   Module.h
+  SSAContext.cpp
+  SSAContext.h
   Value.cpp
   Value.h
   Variable.cpp

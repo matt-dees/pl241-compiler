@@ -67,3 +67,5 @@ bool BasicBlock::iterator::operator==(const BasicBlock::iterator &it) const {
 bool BasicBlock::iterator::operator!=(const BasicBlock::iterator &it) const {
   return !(*this == it);
 }
+
+void BasicBlock::toSSA(SSAContext &SSACtx) {}
