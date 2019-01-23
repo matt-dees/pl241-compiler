@@ -3,6 +3,7 @@
 #include "IrGenContext.h"
 #include <functional>
 #include <stdexcept>
+#include <algorithm>
 
 using namespace cs241c;
 
@@ -79,6 +80,7 @@ Value *MathExpr::genIr(IrGenContext &Ctx) const {
   case Operation::Div:
     return Ctx.makeInstruction<DivInstruction>(X, Y);
   }
+  throw std::logic_error("Invalid value for Op.");
 }
 
 Relation::Relation(Relation::Type T, std::unique_ptr<Expr> Left,
