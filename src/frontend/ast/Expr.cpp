@@ -1,15 +1,24 @@
 #include "Expr.h"
 #include "Instruction.h"
 #include "IrGenContext.h"
+#include <algorithm>
 #include <functional>
 #include <stdexcept>
 
 using namespace cs241c;
 
+template <typename T> void VisitedExpr<T>::visit(ExprVisitor *V) {
+  V->visit(static_cast<T *>(this));
+}
+
 ConstantExpr::ConstantExpr(int32_t Val) : Val(Val) {}
 
 Value *ConstantExpr::genIr(IrGenContext &Ctx) const {
   return Ctx.makeConstant(Val);
+}
+
+template <typename T> void VisitedDesignator<T>::visit(ExprVisitor *V) {
+  V->visit(static_cast<T *>(this));
 }
 
 VarDesignator::VarDesignator(std::string Ident) : Ident(move(Ident)) {}
@@ -79,6 +88,7 @@ Value *MathExpr::genIr(IrGenContext &Ctx) const {
   case Operation::Div:
     return Ctx.makeInstruction<DivInstruction>(X, Y);
   }
+  throw std::logic_error("Invalid value for Op.");
 }
 
 Relation::Relation(Relation::Type T, std::unique_ptr<Expr> Left,

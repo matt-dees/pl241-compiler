@@ -31,11 +31,11 @@ class Expr {
 public:
   virtual ~Expr() = default;
   virtual Value *genIr(IrGenContext &Ctx) const = 0;
-  virtual void visit(ExprVisitor *V) = 0;
+  virtual void visit(ExprVisitor *) = 0;
 };
 
-template <typename T> class VisitedExpr : public virtual Expr {
-  void visit(ExprVisitor *V) override { V->visit(static_cast<T *>(this)); }
+template <typename T> class VisitedExpr : public Expr {
+  void visit(ExprVisitor *) override;
 };
 
 class ConstantExpr : public VisitedExpr<ConstantExpr> {
@@ -47,12 +47,16 @@ public:
   Value *genIr(IrGenContext &Ctx) const override;
 };
 
-class Designator : public virtual Expr {
+class Designator : public Expr {
 public:
   virtual void genStore(IrGenContext &Ctx, Value *V) = 0;
 };
 
-class VarDesignator : public VisitedExpr<VarDesignator>, public Designator {
+template <typename T> class VisitedDesignator : public Designator {
+  void visit(ExprVisitor *) override;
+};
+
+class VarDesignator : public VisitedDesignator<VarDesignator> {
   std::string Ident;
 
 public:
@@ -62,7 +66,7 @@ public:
   void genStore(IrGenContext &Ctx, Value *V) override;
 };
 
-class ArrayDesignator : public VisitedExpr<ArrayDesignator>, public Designator {
+class ArrayDesignator : public VisitedDesignator<ArrayDesignator> {
   std::string Ident;
   std::vector<std::unique_ptr<Expr>> Dim;
 
