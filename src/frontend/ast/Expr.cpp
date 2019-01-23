@@ -1,16 +1,24 @@
 #include "Expr.h"
 #include "Instruction.h"
 #include "IrGenContext.h"
+#include <algorithm>
 #include <functional>
 #include <stdexcept>
-#include <algorithm>
 
 using namespace cs241c;
+
+template <typename T> void VisitedExpr<T>::visit(ExprVisitor *V) {
+  V->visit(static_cast<T *>(this));
+}
 
 ConstantExpr::ConstantExpr(int32_t Val) : Val(Val) {}
 
 Value *ConstantExpr::genIr(IrGenContext &Ctx) const {
   return Ctx.makeConstant(Val);
+}
+
+template <typename T> void VisitedDesignator<T>::visit(ExprVisitor *V) {
+  V->visit(static_cast<T *>(this));
 }
 
 VarDesignator::VarDesignator(std::string Ident) : Ident(move(Ident)) {}
