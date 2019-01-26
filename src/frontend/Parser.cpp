@@ -316,8 +316,9 @@ private:
     }
     case TT::Call:
       return pFuncCall();
+    default:
+      throw std::logic_error("Invalid value for Op.");
     }
-    throw std::logic_error("Invalid value for Op.");
   }
 
   std::unique_ptr<FunctionCall> pFuncCall() {
