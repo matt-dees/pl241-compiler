@@ -5,8 +5,8 @@
 using namespace cs241c;
 
 TEST_CASE("Test Dominator Tree Generation 1") {
-
-  IrGenContext Context;
+  auto CompilationUnit = std::make_unique<Module>("program");
+  IrGenContext Context(CompilationUnit.get());
   // Test with 4 BasicBlocks
   std::unique_ptr<BasicBlock> BB1 =
       std::make_unique<BasicBlock>(Context.genBasicBlockName());
@@ -37,8 +37,8 @@ TEST_CASE("Test Dominator Tree Generation 1") {
 }
 
 TEST_CASE("Test Dominator Tree Generation 2") {
-
-  IrGenContext Context;
+  auto CompilationUnit = std::make_unique<Module>("program");
+  IrGenContext Context(CompilationUnit.get());
   // Test with 4 BasicBlocks
   std::unique_ptr<BasicBlock> BB1 =
       std::make_unique<BasicBlock>(Context.genBasicBlockName());

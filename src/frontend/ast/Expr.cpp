@@ -27,9 +27,44 @@ Value *VarDesignator::genIr(IrGenContext &Ctx) const {
   return Ctx.lookupVariable(Ident);
 }
 
+namespace {
+class BaseAddressLoader : public VariableVisitor {
+  IrGenContext *Ctx;
+  bool AddressDirectly;
+
+public:
+  Value *Result;
+
+  BaseAddressLoader(IrGenContext *Ctx, bool AddressDirectly)
+      : Ctx(Ctx), AddressDirectly(AddressDirectly) {}
+
+  void visit(GlobalVariable *V) override {
+    if (AddressDirectly) {
+      Result = Ctx->makeInstruction<AddaInstruction>(Ctx->globalBase(), V);
+    } else {
+      Result = Ctx->makeInstruction<AddInstruction>(Ctx->globalBase(), V);
+    }
+  }
+
+  void visit(LocalVariable *V) override { Result = V; }
+};
+} // namespace
+
 void VarDesignator::genStore(IrGenContext &Ctx, Value *V) {
   auto Var = Ctx.lookupVariable(Ident);
-  Ctx.makeInstruction<MoveInstruction>(V, Var);
+  if (Var->isMoveable()) {
+    Ctx.makeInstruction<MoveInstruction>(V, Var);
+  } else {
+    BaseAddressLoader BAL(&Ctx, true);
+    Var->visit(&BAL);
+    Value *BaseAddress = BAL.Result;
+    Ctx.makeInstruction<StoreInstruction>(V, BaseAddress);
+  }
+}
+
+Value *ArrayDesignator::calculateMemoryOffset(IrGenContext &Ctx) const {
+  Value *Expr = Dim.front()->genIr(Ctx);
+  return Ctx.makeInstruction<MulInstruction>(Expr, Ctx.makeConstant(4));
 }
 
 ArrayDesignator::ArrayDesignator(std::string Ident,
@@ -40,10 +75,26 @@ ArrayDesignator::ArrayDesignator(std::string Ident,
   }
 }
 
-void ArrayDesignator::genStore(IrGenContext &, Value *) {}
+void ArrayDesignator::genStore(IrGenContext &Ctx, Value *V) {
+  auto Var = Ctx.lookupVariable(Ident);
+  BaseAddressLoader BAL(&Ctx, false);
+  Var->visit(&BAL);
+  Value *BaseAddress = BAL.Result;
+  Value *Offset = calculateMemoryOffset(Ctx);
+  Value *TargetAddress =
+      Ctx.makeInstruction<AddaInstruction>(BaseAddress, Offset);
+  Ctx.makeInstruction<StoreInstruction>(V, TargetAddress);
+}
 
-Value *ArrayDesignator::genIr(IrGenContext &) const {
-  throw std::runtime_error("Array access not implemented.");
+Value *ArrayDesignator::genIr(IrGenContext &Ctx) const {
+  auto Var = Ctx.lookupVariable(Ident);
+  BaseAddressLoader BAL(&Ctx, false);
+  Var->visit(&BAL);
+  Value *BaseAddress = BAL.Result;
+  Value *Offset = calculateMemoryOffset(Ctx);
+  Value *TargetAddress =
+      Ctx.makeInstruction<AddaInstruction>(BaseAddress, Offset);
+  return Ctx.makeInstruction<LoadInstruction>(TargetAddress);
 }
 
 FunctionCall::FunctionCall(std::string Ident,

@@ -3,25 +3,38 @@
 
 using namespace cs241c;
 
-GlobalVariable::GlobalVariable(std::string Ident)
-    : Ident(move(Ident)), WordCount(1) {}
+Variable::Variable(std::string Ident, int WordCount)
+    : Ident(move(Ident)), WordCount(WordCount) {}
+
+std::string Variable::name() { return Ident; }
+
+std::string Variable::toString() const {
+  auto Prefix = !isMoveable() ? "&" : "";
+  return Prefix + Ident;
+}
+
+GlobalVariable::GlobalVariable(std::string Ident) : Variable(move(Ident), 4) {}
 
 GlobalVariable::GlobalVariable(std::string Ident,
                                const std::vector<int> &ArrayDimensions)
-    : Ident(move(Ident)),
-      WordCount(std::accumulate(ArrayDimensions.begin(), ArrayDimensions.end(),
-                                1, std::multiplies<>())) {}
+    : Variable(move(Ident),
+               std::accumulate(ArrayDimensions.begin(), ArrayDimensions.end(),
+                               4, std::multiplies<>())) {}
 
-std::string GlobalVariable::name() { return Ident; }
-std::string GlobalVariable::toString() const { return Ident; }
+bool GlobalVariable::isMoveable() const { return false; }
 
-LocalVariable::LocalVariable(std::string Name) : Name(move(Name)) {}
+void GlobalVariable::visit(VariableVisitor *V) { V->visit(this); }
+
+LocalVariable::LocalVariable(std::string Name)
+    : Variable(move(Name), 4), IsArray(false) {}
 
 LocalVariable::LocalVariable(std::string Name,
                              const std::vector<int> &ArrayDimensions)
-    : Name(move(Name)),
-      WordCount(std::accumulate(ArrayDimensions.begin(), ArrayDimensions.end(),
-                                1, std::multiplies<>())) {}
+    : Variable(move(Name),
+               std::accumulate(ArrayDimensions.begin(), ArrayDimensions.end(),
+                               4, std::multiplies<>())),
+      IsArray(true) {}
 
-std::string LocalVariable::name() { return Name; }
-std::string LocalVariable::toString() const { return Name; }
+bool LocalVariable::isMoveable() const { return !IsArray; }
+
+void LocalVariable::visit(VariableVisitor *V) { V->visit(this); }

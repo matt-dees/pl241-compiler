@@ -13,7 +13,7 @@ class Computation {
 
 public:
   Computation(std::vector<std::unique_ptr<Decl>> Vars, std::vector<Func> Funcs);
-  Module genIr();
+  std::unique_ptr<Module> genIr();
 };
 } // namespace cs241c
 

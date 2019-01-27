@@ -18,6 +18,14 @@ public:
   ConstantValue(int Val);
   std::string toString() const override;
 };
+
+class NamedValue : public Value {
+  std::string Name;
+
+public:
+  NamedValue(std::string Name);
+  std::string toString() const override;
+};
 } // namespace cs241c
 
 #endif

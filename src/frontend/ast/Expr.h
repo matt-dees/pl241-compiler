@@ -70,6 +70,8 @@ class ArrayDesignator : public VisitedDesignator<ArrayDesignator> {
   std::string Ident;
   std::vector<std::unique_ptr<Expr>> Dim;
 
+  Value* calculateMemoryOffset(IrGenContext &) const;
+
 public:
   ArrayDesignator(std::string Ident, std::vector<std::unique_ptr<Expr>> Dim);
 

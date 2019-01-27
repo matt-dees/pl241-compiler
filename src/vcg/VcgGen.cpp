@@ -26,7 +26,7 @@ void VcgGen::writeGraph() {
 
   writeProperties();
 
-  for (auto &F : InputModule->Functions) {
+  for (auto &F : InputModule->functions()) {
     writeFunction(F.get());
   }
 

@@ -34,7 +34,7 @@ int main(int ArgC, char **ArgV) {
   auto IR = AST.genIr();
 
   if (GenerateVcg) {
-    VcgGen VcgGenerator = VcgGen(&IR);
+    VcgGen VcgGenerator = VcgGen(IR.get());
     std::string VcgOutput{std::string(InputFile) + ".vcg"};
     std::filesystem::remove(VcgOutput);
     VcgGenerator.generate(VcgOutput);

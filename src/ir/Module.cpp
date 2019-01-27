@@ -2,9 +2,23 @@
 
 using namespace cs241c;
 
-Module::Module(std::string ModuleName,
-               std::vector<std::unique_ptr<GlobalVariable>> &&Globals,
-               std::vector<std::unique_ptr<Function>> &&Functions)
-    : Name(move(ModuleName)), Globals(move(Globals)),
-      Functions(std::move(Functions)) {}
+Module::Module(std::string ModuleName) : Name(move(ModuleName)) {}
+
+Value *Module::globalBase() { return &GlobalBase; }
 std::string Module::getIdentifier() const { return Name; }
+
+std::vector<std::unique_ptr<GlobalVariable>> &Module::globals() {
+  return Globals;
+}
+
+const std::vector<std::unique_ptr<GlobalVariable>> &Module::globals() const {
+  return Globals;
+}
+
+std::vector<std::unique_ptr<Function>> &Module::functions() {
+  return Functions;
+}
+
+const std::vector<std::unique_ptr<Function>> &Module::functions() const {
+  return Functions;
+}
