@@ -1,8 +1,8 @@
+#include "Filesystem.h"
 #include "Lexer.h"
 #include "Parser.h"
 #include "VcgGen.h"
 #include <algorithm>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string_view>
@@ -36,7 +36,7 @@ int main(int ArgC, char **ArgV) {
   if (GenerateVcg) {
     VcgGen VcgGenerator = VcgGen(IR.get());
     std::string VcgOutput{std::string(InputFile) + ".vcg"};
-    std::filesystem::remove(VcgOutput);
+    removeFile(VcgOutput);
     VcgGenerator.generate(VcgOutput);
   }
 

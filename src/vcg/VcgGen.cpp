@@ -1,15 +1,14 @@
 #include "VcgGen.h"
-#include <filesystem>
+#include "Filesystem.h"
 
 #include <stdexcept>
 
 using namespace cs241c;
-namespace fs = std::filesystem;
 
 VcgGen::VcgGen(const Module *InputModule) : InputModule(InputModule) {}
 
 void VcgGen::generate(const std::string &OutFilePath) {
-  if (fs::exists(OutFilePath)) {
+  if (fileExists(OutFilePath)) {
     throw std::runtime_error("VcgGen Error: File already exists: " +
                              OutFilePath);
   }

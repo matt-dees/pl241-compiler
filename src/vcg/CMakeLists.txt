@@ -3,7 +3,4 @@ add_library(cs241c-vcg
   VcgGen.h)
 
 target_include_directories(cs241c-vcg PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(cs241c-vcg cs241c-ir)
-if (UNIX)
-  target_link_libraries(cs241c-vcg "stdc++fs")
-endif ()
+target_link_libraries(cs241c-vcg cs241c-ir cs241c-util)

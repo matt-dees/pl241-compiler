@@ -1,8 +1,8 @@
+#include "Filesystem.h"
 #include "Instruction.h"
 #include "IrGenContext.h"
 #include "VcgGen.h"
 #include <catch.hpp>
-#include <filesystem>
 #include <utility>
 
 using namespace cs241c;
@@ -11,7 +11,7 @@ TEST_CASE("Test VCG Graph Generation") {
 
   const std::string TEST_PATH =
       std::string(CS241C_VCG_TEST_DIR) + "/test_vcg_input.vcg";
-  std::filesystem::remove(TEST_PATH);
+  removeFile(TEST_PATH);
 
   auto CompilationUnit = std::make_unique<Module>("program");
   IrGenContext Context(CompilationUnit.get());
