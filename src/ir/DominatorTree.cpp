@@ -136,3 +136,13 @@ DominatorTree::createDominanceFrontier(
   }
   return DF;
 }
+
+std::vector<BasicBlock *>
+DominatorTree::dominanceFrontier(cs241c::BasicBlock *BB) {
+  auto FrontierEntries = DominanceFrontier.equal_range(BB);
+  std::vector<BasicBlock *> Ret;
+  for (auto it = FrontierEntries.first; it != FrontierEntries.second; it++) {
+    Ret.push_back(it->second);
+  }
+  return Ret;
+}

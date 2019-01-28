@@ -88,11 +88,9 @@ public:
 };
 
 template <typename T> class BaseInstruction : public Instruction {
-private:
-  std::vector<Value *> Arguments;
-
 protected:
   BaseInstruction(int Id, std::vector<Value *> &&Params);
+  std::vector<Value *> Arguments;
 
 public:
   std::vector<Value *> getArguments() const override;
@@ -100,11 +98,9 @@ public:
 };
 
 class BasicBlockTerminator : public Instruction {
-private:
-  std::vector<Value *> Arguments;
-
 protected:
   BasicBlockTerminator(int Id, std::vector<Value *> &&Params);
+  std::vector<Value *> Arguments;
 
 public:
   std::vector<Value *> getArguments() const override;
@@ -197,6 +193,9 @@ class MoveInstruction : public BaseInstruction<MoveInstruction> {
 public:
   MoveInstruction(int Id, Value *Y, Value *X);
   std::string_view getName() const override;
+  void updateArgs(Value *NewTarget, Value *NewSource);
+  Value *Target;
+  Value *Source;
 };
 
 class PhiInstruction : public BaseInstruction<PhiInstruction> {

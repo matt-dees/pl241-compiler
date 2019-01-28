@@ -21,5 +21,7 @@ Module Computation::genIr() {
   std::transform(Funcs.begin(), Funcs.end(), back_inserter(Functions),
                  [&Ctx](Func &F) { return F.genIr(Ctx); });
 
-  return Module("program", move(Globals), move(Functions));
+  Module M = Module("program", move(Globals), move(Functions));
+  M.toSSA(Ctx);
+  return M;
 }

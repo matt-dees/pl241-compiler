@@ -5,8 +5,8 @@
 #include "SSAContext.h"
 #include "Value.h"
 #include <cstdint>
+#include <deque>
 #include <memory>
-#include <vector>
 
 namespace cs241c {
 class BasicBlockTerminator;
@@ -16,7 +16,7 @@ class BasicBlock : public Value {
 public:
   class iterator {
     BasicBlock *BB;
-    std::vector<std::unique_ptr<Instruction>>::iterator InstructionsIt;
+    std::deque<std::unique_ptr<Instruction>>::iterator InstructionsIt;
     bool End;
 
   public:
@@ -30,22 +30,26 @@ public:
 
 private:
   std::string Name;
+  std::unordered_map<Variable *, Instruction *> PhiInstrMap;
 
 public:
   std::vector<BasicBlock *> Predecessors;
-  std::vector<std::unique_ptr<Instruction>> Instructions;
+  std::deque<std::unique_ptr<Instruction>> Instructions;
   std::unique_ptr<BasicBlockTerminator> Terminator;
 
   BasicBlock(std::string Name,
-             std::vector<std::unique_ptr<Instruction>> Instructions = {});
+             std::deque<std::unique_ptr<Instruction>> Instructions = {});
 
   void appendPredecessor(BasicBlock *BB);
   void appendInstruction(std::unique_ptr<Instruction> I);
 
   bool isTerminated();
   void terminate(std::unique_ptr<BasicBlockTerminator> T);
-  void toSSA(SSAContext &SSACtx);
+  void toSSA(SSAContext &SSACtx,
+             std::unordered_multimap<BasicBlock *, BasicBlock *>::iterator DF);
 
+  void insertPhiInstruction(Variable *Var, Value *Val, int Id,
+                            BasicBlock *Inserter);
   iterator begin();
   iterator end();
 

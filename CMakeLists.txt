@@ -4,7 +4,7 @@ project(cs241c)
 set(CMAKE_CXX_STANDARD 17)
 
 if (UNIX)
-  add_compile_options(-Wall -Wextra)
+  add_compile_options(-Wall -Wextra -g)
 endif ()
 
 add_subdirectory(vendor)

@@ -9,7 +9,9 @@ namespace cs241c {
 
 class DominatorTree {
 public:
-  DominatorTree(BasicBlock *CfgEntry);
+  explicit DominatorTree(BasicBlock *CfgEntry);
+
+  std::vector<BasicBlock *> dominanceFrontier(BasicBlock *BB);
 
 private:
   void buildDominatorTree(BasicBlock *Entry);
@@ -23,7 +25,9 @@ private:
   createNodePositionMap(const std::vector<BasicBlock *> &ReversePostOrderNodes);
 
   static std::unordered_multimap<BasicBlock *, BasicBlock *>
-  createDominanceFrontier(BasicBlock *CurrentBlock, const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap);
+  createDominanceFrontier(
+      BasicBlock *CurrentBlock,
+      const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap);
 
   static BasicBlock *
   intersect(BasicBlock *Predecessor, BasicBlock *CandidateIDom,

@@ -2,6 +2,7 @@
 #define CS241C_IR_FUNCTION_H
 
 #include "BasicBlock.h"
+#include "SSAContext.h"
 #include "Value.h"
 #include "Variable.h"
 #include <memory>

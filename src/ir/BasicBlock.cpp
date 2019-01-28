@@ -1,10 +1,12 @@
 #include "BasicBlock.h"
+#include <algorithm>
+#include <cassert>
 #include <utility>
 
 using namespace cs241c;
 
 BasicBlock::BasicBlock(std::string Name,
-                       std::vector<std::unique_ptr<Instruction>> Instructions)
+                       std::deque<std::unique_ptr<Instruction>> Instructions)
     : Name(move(Name)), Predecessors({}),
       Instructions(std::move(Instructions)) {}
 
@@ -68,4 +70,44 @@ bool BasicBlock::iterator::operator!=(const BasicBlock::iterator &it) const {
   return !(*this == it);
 }
 
-void BasicBlock::toSSA(SSAContext &SSACtx) {}
+void BasicBlock::toSSA(
+    SSAContext &SSACtx,
+    std::unordered_multimap<BasicBlock *, BasicBlock *>::iterator DF) {
+  for (auto InstIter = Instructions.begin(); InstIter != Instructions.end();
+       InstIter++) {
+    if (auto MovInst = dynamic_cast<MoveInstruction *>(InstIter->get())) {
+      if (auto Target = dynamic_cast<Variable *>(MovInst->Target)) {
+        SSACtx.updateVariable(Target, MovInst->Source);
+      }
+      Instructions.erase(InstIter);
+      continue;
+    }
+    for (auto &Arg : (*InstIter)->getArguments()) {
+      if (auto Var = dynamic_cast<Variable *>(Arg)) {
+        Arg = SSACtx.lookupVariable(Var);
+      }
+    }
+  }
+}
+
+void BasicBlock::insertPhiInstruction(Variable *Var, Value *Val, int Id,
+                                      BasicBlock *Inserter) {
+  auto PhiMapEntry = PhiInstrMap.find(Var);
+  if (PhiMapEntry == PhiInstrMap.end()) {
+    // Basic Block does not contain a Phi node for this variable.
+    // Create one and add it to the front of the instruction double ended queue.
+    auto Phi = std::make_unique<PhiInstruction>(Id, Val, Val);
+    Instructions.push_front(std::move(Phi));
+    PhiInstrMap.at(Var) = Phi.get();
+    return;
+  }
+  // Basic Block does contain Phi node for this variable. Update args
+  // accordingly.
+  auto It = std::find(Predecessors.begin(), Predecessors.end(), Inserter);
+  if (It == Predecessors.end()) {
+    assert(false);
+  }
+  long Index = std::distance(Predecessors.begin(), It);
+  (*PhiMapEntry).second->getArguments().at(static_cast<unsigned long>(Index)) =
+      Val;
+}

@@ -111,8 +111,13 @@ StoreInstruction::StoreInstruction(int Id, Value *Y, Value *X)
 std::string_view StoreInstruction::getName() const { return "store"; }
 
 MoveInstruction::MoveInstruction(int Id, Value *Y, Value *X)
-    : BaseInstruction(Id, {Y, X}) {}
+    : Target(X), Source(Y), BaseInstruction(Id, {Y, X}) {}
 std::string_view MoveInstruction::getName() const { return "move"; }
+void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) {
+  Target = NewTarget;
+  Source = NewSource;
+  Arguments = {NewSource, NewTarget};
+}
 
 PhiInstruction::PhiInstruction(int Id, Value *X1, Value *X2)
     : BaseInstruction(Id, {X1, X2}) {}

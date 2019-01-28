@@ -7,6 +7,8 @@ add_library(cs241c-ir
   Function.h
   Instruction.cpp
   Instruction.h
+  IrGenContext.cpp
+  IrGenContext.h
   Module.cpp
   Module.h
   SSAContext.cpp
