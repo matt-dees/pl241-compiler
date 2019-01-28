@@ -7,7 +7,9 @@ Instruction::Instruction(int Id) : Id(Id) {}
 
 BasicBlock *Instruction::getOwner() const { return Owner; }
 
-std::string Instruction::id() const { return std::to_string(Id); }
+std::string Instruction::id() const {
+  return std::string("(") + std::to_string(Id) + ")";
+}
 
 std::string Instruction::toString() const {
   std::stringstream Result;

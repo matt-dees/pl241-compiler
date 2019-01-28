@@ -11,6 +11,11 @@
 #include <vector>
 
 namespace cs241c {
+struct Symbol {
+  Variable *Var;
+  std::vector<int> Dimensions;
+};
+
 class IrGenContext {
   int BasicBlockCounter = 0;
   int InstructionCounter = 0;
@@ -18,9 +23,9 @@ class IrGenContext {
   Module *CompilationUnit;
 
   std::unordered_map<std::string, Function *> FunctionTable;
-  std::unordered_map<std::string, GlobalVariable *> GlobalsTable;
+  std::unordered_map<std::string, Symbol> GlobalsTable;
   std::vector<std::unique_ptr<ConstantValue>> Constants;
-  std::unordered_map<std::string, LocalVariable *> LocalsTable;
+  std::unordered_map<std::string, Symbol> LocalsTable;
   std::vector<std::unique_ptr<BasicBlock>> Blocks;
 
   BasicBlock *CurrentBlock;
@@ -40,10 +45,10 @@ public:
   void beginScope();
 
   void declare(std::unique_ptr<Function> Func);
-  void declare(std::unique_ptr<GlobalVariable> Var);
-  void declare(LocalVariable *Var);
+  void declare(Symbol Sym, std::unique_ptr<GlobalVariable> Var);
+  void declare(Symbol Sym);
 
-  Variable *lookupVariable(const std::string &Ident);
+  Symbol lookupVariable(const std::string &Ident);
   Function *lookupFuncion(const std::string &Ident);
 
   ConstantValue *makeConstant(int Val);

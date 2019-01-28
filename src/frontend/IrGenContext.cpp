@@ -40,24 +40,25 @@ void IrGenContext::declare(std::unique_ptr<Function> Func) {
   CompilationUnit->functions().push_back(move(Func));
 }
 
-void IrGenContext::declare(std::unique_ptr<GlobalVariable> Var) {
+void IrGenContext::declare(Symbol Sym, std::unique_ptr<GlobalVariable> Var) {
   if (GlobalsTable.find(Var->name()) != GlobalsTable.end()) {
     throw std::runtime_error(std::string("Redeclaring global variable ") +
                              Var->name());
   }
-  GlobalsTable[Var->name()] = Var.get();
+  GlobalsTable[Var->name()] = Sym;
   CompilationUnit->globals().push_back(move(Var));
 }
 
-void IrGenContext::declare(LocalVariable *Var) {
-  if (LocalsTable.find(Var->name()) != LocalsTable.end()) {
+void IrGenContext::declare(Symbol Sym) {
+  const std::string &VarName = Sym.Var->name();
+  if (LocalsTable.find(VarName) != LocalsTable.end()) {
     throw std::runtime_error(std::string("Redeclaring local variable ") +
-                             Var->name());
+                             VarName);
   }
-  LocalsTable[Var->name()] = Var;
+  LocalsTable[VarName] = Sym;
 }
 
-Variable *IrGenContext::lookupVariable(const std::string &Ident) {
+Symbol IrGenContext::lookupVariable(const std::string &Ident) {
   auto Local = LocalsTable.find(Ident);
   if (Local != LocalsTable.end()) {
     return Local->second;
