@@ -47,7 +47,7 @@ void IfStmt::genIr(IrGenContext &Ctx) const {
   }
 
   Ctx.currentBlock() = FalseBB;
-  for (const std::unique_ptr<Stmt> &S : Then) {
+  for (const std::unique_ptr<Stmt> &S : Else) {
     S->genIr(Ctx);
   }
 
