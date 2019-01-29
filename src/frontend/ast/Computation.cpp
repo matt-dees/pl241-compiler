@@ -21,6 +21,6 @@ std::unique_ptr<Module> Computation::genIr() {
   }
 
   CompilationUnit->buildDominatorTree();
-  CompilationUnit->toSSA(Ctx);
+  Ctx.compUnitToSSA();
   return CompilationUnit;
 }

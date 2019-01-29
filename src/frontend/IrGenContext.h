@@ -30,6 +30,8 @@ class IrGenContext {
 
   BasicBlock *CurrentBlock;
 
+  void insertPhiInstructions(BasicBlock *BB);
+
 public:
   IrGenContext(Module *CompilationUnit);
 
@@ -61,6 +63,9 @@ public:
   }
 
   BasicBlock *makeBasicBlock();
+
+  void genPhiInstructions();
+  void compUnitToSSA();
 };
 } // namespace cs241c
 

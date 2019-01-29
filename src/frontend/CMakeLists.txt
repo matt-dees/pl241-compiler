@@ -7,6 +7,8 @@ add_library(cs241c-frontend
   ast/Expr.h
   ast/Stmt.cpp
   ast/Stmt.h
+  IrGenContext.cpp
+  IrGenContext.h
   Lexer.cpp
   Lexer.h
   Parser.cpp

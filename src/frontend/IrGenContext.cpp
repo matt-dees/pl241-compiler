@@ -87,3 +87,29 @@ BasicBlock *IrGenContext::makeBasicBlock() {
   return Blocks.emplace_back(std::make_unique<BasicBlock>(genBasicBlockName()))
       .get();
 }
+
+void IrGenContext::genPhiInstructions() {
+  for (auto &F : CompilationUnit->functions()) {
+    for (auto &BB : F->basicBlocks()) {
+      insertPhiInstructions(BB.get());
+    }
+  }
+}
+
+void IrGenContext::insertPhiInstructions(cs241c::BasicBlock *BB) {
+  for (auto I : *BB) {
+    if (auto MI = dynamic_cast<MoveInstruction *>(I)) {
+      if (auto Var = dynamic_cast<Variable *>(MI->Target)) {
+        for (auto DFEntry : CompilationUnit->DT.dominanceFrontier(BB)) {
+          DFEntry->insertPhiInstruction(Var, MI->Source, genInstructionId(),
+                                        BB);
+        }
+      }
+    }
+  }
+}
+
+void IrGenContext::compUnitToSSA() {
+  genPhiInstructions();
+  CompilationUnit->toSSA();
+}

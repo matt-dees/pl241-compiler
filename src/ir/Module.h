@@ -3,7 +3,6 @@
 
 #include "DominatorTree.h"
 #include "Function.h"
-#include "IrGenContext.h"
 #include "Value.h"
 #include "Variable.h"
 #include <memory>
@@ -14,7 +13,8 @@ class Module {
   NamedValue GlobalBase{"GlobalBase"};
   const std::string Name;
 
-  void insertPhiInstructions(BasicBlock *BB, IrGenContext &Ctx);
+private:
+  SSAContext nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx);
 
 public:
   std::vector<std::unique_ptr<GlobalVariable>> Globals;
@@ -26,8 +26,7 @@ public:
   void buildDominatorTree();
   Value *globalBase();
   std::string getIdentifier() const;
-  void toSSA(IrGenContext &Ctx);
-  SSAContext cfgToSSA(BasicBlock *CurrentBB, SSAContext SSACtx);
+  void toSSA();
   std::vector<std::unique_ptr<GlobalVariable>> &globals();
   const std::vector<std::unique_ptr<GlobalVariable>> &globals() const;
   std::vector<std::unique_ptr<Function>> &functions();
