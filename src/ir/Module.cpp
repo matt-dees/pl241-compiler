@@ -3,13 +3,6 @@
 
 using namespace cs241c;
 
-Module::Module(std::string ModuleName,
-               std::vector<std::unique_ptr<GlobalVariable>> &&Globals,
-               std::vector<std::unique_ptr<Function>> &&Functions)
-    : Name(move(ModuleName)), Globals(move(Globals)),
-      Functions(std::move(Functions)),
-      DT(this->Functions.at(0)->basicBlocks().at(0).get()) {}
-std::string Module::getIdentifier() const { return Name; }
 void Module::toSSA(IrGenContext &Ctx) {
 
   // Conversion to SSA requires two passes:
@@ -61,4 +54,35 @@ void Module::insertPhiInstructions(cs241c::BasicBlock *BB, IrGenContext &Ctx) {
       }
     }
   }
+}
+Module::Module(std::string ModuleName) : Name(move(ModuleName)) {}
+
+Value *Module::globalBase() { return &GlobalBase; }
+std::string Module::getIdentifier() const { return Name; }
+
+std::vector<std::unique_ptr<GlobalVariable>> &Module::globals() {
+  return Globals;
+}
+
+const std::vector<std::unique_ptr<GlobalVariable>> &Module::globals() const {
+  return Globals;
+}
+
+std::vector<std::unique_ptr<Function>> &Module::functions() {
+  return Functions;
+}
+
+const std::vector<std::unique_ptr<Function>> &Module::functions() const {
+  return Functions;
+}
+
+void Module::buildDominatorTree() {
+  if (Functions.empty()) {
+    return;
+  }
+  Function *FuncStart = Functions.at(0).get();
+  if (FuncStart->basicBlocks().empty()) {
+    return;
+  }
+  DT.buildDominatorTree(FuncStart->basicBlocks().at(0).get());
 }

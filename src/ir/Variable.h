@@ -6,30 +6,50 @@
 #include <vector>
 
 namespace cs241c {
-class Variable : public Value {};
+class GlobalVariable;
+class LocalVariable;
 
-class GlobalVariable : public Variable {
+class VariableVisitor {
 public:
+  virtual ~VariableVisitor() = default;
+
+  virtual void visit(GlobalVariable *) = 0;
+  virtual void visit(LocalVariable *) = 0;
+};
+
+class Variable : public Value {
+protected:
   std::string Ident;
   int WordCount;
 
+  Variable(std::string Ident, int WordCount);
+
+public:
+  virtual bool isMoveable() const = 0;
+  std::string name();
+  std::string toString() const override;
+
+  virtual void visit(VariableVisitor *) = 0;
+};
+
+class GlobalVariable : public Variable {
+public:
   GlobalVariable(std::string Ident);
   GlobalVariable(std::string Ident, const std::vector<int> &ArrayDimensions);
 
-  std::string name();
-  std::string toString() const override;
+  bool isMoveable() const override;
+  virtual void visit(VariableVisitor *) override;
 };
 
 class LocalVariable : public Variable {
-  std::string Name;
-  int WordCount;
+  bool IsArray;
 
 public:
   LocalVariable(std::string Name);
   LocalVariable(std::string Name, const std::vector<int> &ArrayDimensions);
 
-  std::string name();
-  std::string toString() const override;
+  bool isMoveable() const override;
+  virtual void visit(VariableVisitor *) override;
 };
 } // namespace cs241c
 

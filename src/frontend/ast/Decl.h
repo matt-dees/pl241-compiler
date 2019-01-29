@@ -16,7 +16,7 @@ class Decl {
 public:
   virtual ~Decl() = default;
 
-  virtual std::unique_ptr<GlobalVariable> declareGlobal(IrGenContext &Ctx) = 0;
+  virtual void declareGlobal(IrGenContext &Ctx) = 0;
   virtual std::unique_ptr<LocalVariable> declareLocal(IrGenContext &Ctx) = 0;
 };
 
@@ -26,7 +26,7 @@ class IntDecl : public Decl {
 public:
   IntDecl(std::string Ident);
 
-  std::unique_ptr<GlobalVariable> declareGlobal(IrGenContext &Ctx) override;
+  void declareGlobal(IrGenContext &Ctx) override;
   std::unique_ptr<LocalVariable> declareLocal(IrGenContext &Ctx) override;
 };
 
@@ -37,7 +37,7 @@ class ArrayDecl : public Decl {
 public:
   ArrayDecl(std::string Ident, std::vector<int32_t> Dim);
 
-  std::unique_ptr<GlobalVariable> declareGlobal(IrGenContext &Ctx) override;
+  void declareGlobal(IrGenContext &Ctx) override;
   std::unique_ptr<LocalVariable> declareLocal(IrGenContext &Ctx) override;
 };
 
@@ -57,7 +57,7 @@ public:
        std::vector<std::unique_ptr<Decl>> Vars,
        std::vector<std::unique_ptr<Stmt>> Stmts);
 
-  std::unique_ptr<Function> genIr(IrGenContext &Ctx);
+  void genIr(IrGenContext &Ctx);
 };
 } // namespace cs241c
 

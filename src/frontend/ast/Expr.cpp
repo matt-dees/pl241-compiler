@@ -23,13 +23,69 @@ template <typename T> void VisitedDesignator<T>::visit(ExprVisitor *V) {
 
 VarDesignator::VarDesignator(std::string Ident) : Ident(move(Ident)) {}
 
+namespace {
+class BaseAddressLoader : public VariableVisitor {
+  IrGenContext *Ctx;
+  bool AddressDirectly;
+
+public:
+  Value *Result;
+
+  BaseAddressLoader(IrGenContext *Ctx, bool AddressDirectly)
+      : Ctx(Ctx), AddressDirectly(AddressDirectly) {}
+
+  void visit(GlobalVariable *V) override {
+    if (AddressDirectly) {
+      Result = Ctx->makeInstruction<AddaInstruction>(Ctx->globalBase(), V);
+    } else {
+      Result = Ctx->makeInstruction<AddInstruction>(Ctx->globalBase(), V);
+    }
+  }
+
+  void visit(LocalVariable *V) override { Result = V; }
+};
+} // namespace
+
 Value *VarDesignator::genIr(IrGenContext &Ctx) const {
-  return Ctx.lookupVariable(Ident);
+  auto Var = Ctx.lookupVariable(Ident).Var;
+  if (Var->isMoveable()) {
+    return Var;
+  } else {
+    BaseAddressLoader BAL(&Ctx, true);
+    Var->visit(&BAL);
+    Value *BaseAddress = BAL.Result;
+    return Ctx.makeInstruction<LoadInstruction>(BaseAddress);
+  }
 }
 
 void VarDesignator::genStore(IrGenContext &Ctx, Value *V) {
-  auto Var = Ctx.lookupVariable(Ident);
-  Ctx.makeInstruction<MoveInstruction>(V, Var);
+  auto Var = Ctx.lookupVariable(Ident).Var;
+  if (Var->isMoveable()) {
+    Ctx.makeInstruction<MoveInstruction>(V, Var);
+  } else {
+    BaseAddressLoader BAL(&Ctx, true);
+    Var->visit(&BAL);
+    Value *BaseAddress = BAL.Result;
+    Ctx.makeInstruction<StoreInstruction>(V, BaseAddress);
+  }
+}
+
+Value *ArrayDesignator::calculateMemoryOffset(IrGenContext &Ctx) const {
+  Value *Offset = Dim.front()->genIr(Ctx);
+
+  auto Sym = Ctx.lookupVariable(Ident);
+  auto DimensionsEnd = Sym.Dimensions.end() - 1;
+  for (auto Dimension = Sym.Dimensions.begin(); Dimension != DimensionsEnd;
+       ++Dimension) {
+    Offset = Ctx.makeInstruction<MulInstruction>(Offset,
+                                                 Ctx.makeConstant(*Dimension));
+    Offset = Ctx.makeInstruction<AddInstruction>(
+        Offset, Dim.at(Dimension - Sym.Dimensions.begin() + 1)->genIr(Ctx));
+  }
+
+  Offset = Ctx.makeInstruction<MulInstruction>(Offset, Ctx.makeConstant(4));
+
+  return Offset;
 }
 
 ArrayDesignator::ArrayDesignator(std::string Ident,
@@ -40,10 +96,26 @@ ArrayDesignator::ArrayDesignator(std::string Ident,
   }
 }
 
-void ArrayDesignator::genStore(IrGenContext &, Value *) {}
+Value *ArrayDesignator::genIr(IrGenContext &Ctx) const {
+  auto Var = Ctx.lookupVariable(Ident).Var;
+  BaseAddressLoader BAL(&Ctx, false);
+  Var->visit(&BAL);
+  Value *BaseAddress = BAL.Result;
+  Value *Offset = calculateMemoryOffset(Ctx);
+  Value *TargetAddress =
+      Ctx.makeInstruction<AddaInstruction>(BaseAddress, Offset);
+  return Ctx.makeInstruction<LoadInstruction>(TargetAddress);
+}
 
-Value *ArrayDesignator::genIr(IrGenContext &) const {
-  throw std::runtime_error("Array access not implemented.");
+void ArrayDesignator::genStore(IrGenContext &Ctx, Value *V) {
+  auto Var = Ctx.lookupVariable(Ident).Var;
+  BaseAddressLoader BAL(&Ctx, false);
+  Var->visit(&BAL);
+  Value *BaseAddress = BAL.Result;
+  Value *Offset = calculateMemoryOffset(Ctx);
+  Value *TargetAddress =
+      Ctx.makeInstruction<AddaInstruction>(BaseAddress, Offset);
+  Ctx.makeInstruction<StoreInstruction>(V, TargetAddress);
 }
 
 FunctionCall::FunctionCall(std::string Ident,

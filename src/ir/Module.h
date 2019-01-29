@@ -4,12 +4,14 @@
 #include "DominatorTree.h"
 #include "Function.h"
 #include "IrGenContext.h"
+#include "Value.h"
 #include "Variable.h"
 #include <memory>
 #include <vector>
 
 namespace cs241c {
 class Module {
+  NamedValue GlobalBase{"GlobalBase"};
   const std::string Name;
 
   void insertPhiInstructions(BasicBlock *BB, IrGenContext &Ctx);
@@ -19,12 +21,17 @@ public:
   std::vector<std::unique_ptr<Function>> Functions;
   DominatorTree DT;
 
-  Module(std::string ModuleName,
-         std::vector<std::unique_ptr<GlobalVariable>> &&Globals,
-         std::vector<std::unique_ptr<Function>> &&Functions);
+public:
+  Module(std::string ModuleName);
+  void buildDominatorTree();
+  Value *globalBase();
   std::string getIdentifier() const;
   void toSSA(IrGenContext &Ctx);
   SSAContext cfgToSSA(BasicBlock *CurrentBB, SSAContext SSACtx);
+  std::vector<std::unique_ptr<GlobalVariable>> &globals();
+  const std::vector<std::unique_ptr<GlobalVariable>> &globals() const;
+  std::vector<std::unique_ptr<Function>> &functions();
+  const std::vector<std::unique_ptr<Function>> &functions() const;
 };
 } // namespace cs241c
 

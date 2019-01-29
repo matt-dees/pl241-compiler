@@ -4,4 +4,5 @@
 cmake-build-*/
 build/
 doc/
-test/vcg_test_files
+*.vcg
+.DS_store

@@ -2,6 +2,7 @@
 #define CS241C_FRONTEND_IRGENCONTEXT_H
 
 #include "Instruction.h"
+#include "Module.h"
 #include "Value.h"
 #include "Variable.h"
 #include <memory>
@@ -10,19 +11,30 @@
 #include <vector>
 
 namespace cs241c {
+struct Symbol {
+  Variable *Var;
+  std::vector<int> Dimensions;
+};
+
 class IrGenContext {
   int BasicBlockCounter = 0;
   int InstructionCounter = 0;
 
-  std::unordered_map<std::string, Function *> Functions;
-  std::unordered_map<std::string, GlobalVariable *> GlobalVariables;
+  Module *CompilationUnit;
+
+  std::unordered_map<std::string, Function *> FunctionTable;
+  std::unordered_map<std::string, Symbol> GlobalsTable;
   std::vector<std::unique_ptr<ConstantValue>> Constants;
-  std::unordered_map<std::string, LocalVariable *> LocalVariables;
+  std::unordered_map<std::string, Symbol> LocalsTable;
   std::vector<std::unique_ptr<BasicBlock>> Blocks;
 
   BasicBlock *CurrentBlock;
 
 public:
+  IrGenContext(Module *CompilationUnit);
+
+  Value *globalBase();
+
   BasicBlock *&currentBlock();
   std::vector<std::unique_ptr<ConstantValue>> &&constants();
   std::vector<std::unique_ptr<BasicBlock>> &&blocks();
@@ -32,11 +44,11 @@ public:
 
   void beginScope();
 
-  void declare(Function *Func);
-  void declare(GlobalVariable *Var);
-  void declare(LocalVariable *Var);
+  void declare(std::unique_ptr<Function> Func);
+  void declare(Symbol Sym, std::unique_ptr<GlobalVariable> Var);
+  void declare(Symbol Sym);
 
-  Variable *lookupVariable(const std::string &Ident);
+  Symbol lookupVariable(const std::string &Ident);
   Function *lookupFuncion(const std::string &Ident);
 
   ConstantValue *makeConstant(int Val);

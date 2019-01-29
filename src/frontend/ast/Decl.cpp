@@ -8,31 +8,33 @@ using namespace cs241c;
 
 IntDecl::IntDecl(std::string Ident) : Ident(move(Ident)) {}
 
-std::unique_ptr<GlobalVariable> IntDecl::declareGlobal(IrGenContext &Ctx) {
-  auto var = std::make_unique<GlobalVariable>(Ident);
-  Ctx.declare(var.get());
-  return var;
+void IntDecl::declareGlobal(IrGenContext &Ctx) {
+  auto Var = std::make_unique<GlobalVariable>(Ident);
+  Symbol Sym{Var.get(), {}};
+  Ctx.declare(Sym, move(Var));
 }
 
 std::unique_ptr<LocalVariable> IntDecl::declareLocal(IrGenContext &Ctx) {
-  auto var = std::make_unique<LocalVariable>(Ident);
-  Ctx.declare(var.get());
-  return var;
+  auto Var = std::make_unique<LocalVariable>(Ident);
+  Symbol Sym{Var.get(), {}};
+  Ctx.declare(Sym);
+  return Var;
 }
 
 ArrayDecl::ArrayDecl(std::string Ident, std::vector<int32_t> Dim)
     : Ident(move(Ident)), Dim(move(Dim)) {}
 
-std::unique_ptr<GlobalVariable> ArrayDecl::declareGlobal(IrGenContext &Ctx) {
-  auto var = std::make_unique<GlobalVariable>(Ident, Dim);
-  Ctx.declare(var.get());
-  return var;
+void ArrayDecl::declareGlobal(IrGenContext &Ctx) {
+  auto Var = std::make_unique<GlobalVariable>(Ident, Dim);
+  Symbol Sym{Var.get(), Dim};
+  Ctx.declare(Sym, move(Var));
 }
 
 std::unique_ptr<LocalVariable> ArrayDecl::declareLocal(IrGenContext &Ctx) {
-  auto var = std::make_unique<LocalVariable>(Ident, Dim);
-  Ctx.declare(var.get());
-  return var;
+  auto Var = std::make_unique<LocalVariable>(Ident, Dim);
+  Symbol Sym{Var.get(), Dim};
+  Ctx.declare(Sym);
+  return Var;
 }
 
 Func::Func(Func::Type T, std::string Ident, std::vector<std::string> Params,
@@ -41,7 +43,7 @@ Func::Func(Func::Type T, std::string Ident, std::vector<std::string> Params,
     : T(T), Ident(move(Ident)), Params(move(Params)), Vars(move(Vars)),
       Stmts(move(Stmts)) {}
 
-std::unique_ptr<Function> Func::genIr(IrGenContext &Ctx) {
+void Func::genIr(IrGenContext &Ctx) {
   Ctx.beginScope();
 
   std::vector<std::unique_ptr<LocalVariable>> Locals;
@@ -64,6 +66,5 @@ std::unique_ptr<Function> Func::genIr(IrGenContext &Ctx) {
 
   auto Func = std::make_unique<Function>(Ident, move(Ctx.constants()),
                                          move(Locals), Ctx.blocks());
-  Ctx.declare(Func.get());
-  return Func;
+  Ctx.declare(move(Func));
 }

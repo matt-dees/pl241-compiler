@@ -9,12 +9,12 @@ namespace cs241c {
 
 class DominatorTree {
 public:
-  explicit DominatorTree(BasicBlock *CfgEntry);
+  DominatorTree() = default;
 
   std::unordered_set<BasicBlock *> dominanceFrontier(BasicBlock *BB);
+  void buildDominatorTree(BasicBlock *Entry);
 
 private:
-  void buildDominatorTree(BasicBlock *Entry);
   static std::vector<BasicBlock *> postOrder(BasicBlock *Entry);
   static std::vector<BasicBlock *> reversePostOrder(BasicBlock *Entry);
 

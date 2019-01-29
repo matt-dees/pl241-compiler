@@ -1,8 +1,8 @@
+#include "Filesystem.h"
 #include "Instruction.h"
 #include "IrGenContext.h"
 #include "VcgGen.h"
 #include <catch.hpp>
-#include <filesystem>
 #include <utility>
 
 using namespace cs241c;
@@ -11,9 +11,10 @@ TEST_CASE("Test VCG Graph Generation") {
 
   const std::string TEST_PATH =
       std::string(CS241C_VCG_TEST_DIR) + "/test_vcg_input.vcg";
-  std::filesystem::remove(TEST_PATH);
+  removeFile(TEST_PATH);
 
-  IrGenContext Context;
+  auto CompilationUnit = std::make_unique<Module>("program");
+  IrGenContext Context(CompilationUnit.get());
   // Test with 4 BasicBlocks
   std::unique_ptr<BasicBlock> BB1 =
       std::make_unique<BasicBlock>(Context.genBasicBlockName());
@@ -138,10 +139,7 @@ TEST_CASE("Test VCG Graph Generation") {
 
   std::vector<std::unique_ptr<GlobalVariable>> TestModuleGlobals;
 
-  std::unique_ptr<Module> M =
-      std::make_unique<Module>("TestModule", std::move(TestModuleGlobals),
-                               std::move(TestModuleFunctions));
-  VcgGen VcgGenerator = VcgGen(M.get());
+  VcgGen VcgGenerator = VcgGen(CompilationUnit.get());
   VcgGenerator.generate(TEST_PATH);
   CHECK(true);
 }

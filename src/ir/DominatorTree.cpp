@@ -6,10 +6,6 @@
 
 using namespace cs241c;
 
-DominatorTree::DominatorTree(cs241c::BasicBlock *CfgEntry) {
-  buildDominatorTree(CfgEntry);
-}
-
 void DominatorTree::buildDominatorTree(BasicBlock *Entry) {
   std::vector<BasicBlock *> ReversePostOrderCfg = reversePostOrder(Entry);
 
