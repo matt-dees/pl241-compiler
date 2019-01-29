@@ -45,8 +45,7 @@ public:
 
   bool isTerminated();
   void terminate(std::unique_ptr<BasicBlockTerminator> T);
-  void toSSA(SSAContext &SSACtx,
-             std::unordered_multimap<BasicBlock *, BasicBlock *>::iterator DF);
+  void toSSA(SSAContext &SSACtx);
 
   void insertPhiInstruction(Variable *Var, Value *Val, int Id,
                             BasicBlock *Inserter);

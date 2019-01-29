@@ -11,7 +11,9 @@ private:
   std::unordered_map<Variable *, Value *> SSAVariableMap;
 
 public:
-  Value *updateVariable(Variable *Arg, Value *NewVal);
+  std::unordered_map<Variable *, Value *> getMap() const;
+  void merge(const SSAContext &Source);
+  void updateVariable(Variable *Arg, Value *NewVal);
   Value *lookupVariable(Variable *Arg);
 };
 } // namespace cs241c

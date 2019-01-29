@@ -3,6 +3,7 @@
 
 #include "BasicBlock.h"
 #include "Function.h"
+#include "SSAContext.h"
 #include "Value.h"
 #include <cstdint>
 #include <string>
@@ -78,8 +79,9 @@ protected:
 public:
   BasicBlock *getOwner() const;
   virtual std::vector<Value *> getArguments() const = 0;
-
+  virtual void updateArg(const unsigned long Index, Value *NewVal) = 0;
   virtual void visit(InstructionVisitor *V) = 0;
+  virtual void argsToSSA(SSAContext &) {}
 
   std::string id() const override;
   std::string toString() const override;
@@ -93,6 +95,8 @@ protected:
   std::vector<Value *> Arguments;
 
 public:
+  void updateArg(const unsigned long Index, Value *NewVal) override;
+  void argsToSSA(SSAContext &SSACtx) override;
   std::vector<Value *> getArguments() const override;
   void visit(InstructionVisitor *V) override;
 };
@@ -103,6 +107,7 @@ protected:
   std::vector<Value *> Arguments;
 
 public:
+  void updateArg(const unsigned long Index, Value *NewVal) override;
   std::vector<Value *> getArguments() const override;
   virtual std::vector<BasicBlock *> followingBlocks();
 };
@@ -213,6 +218,7 @@ public:
 
   std::string_view getName() const override;
   std::vector<Value *> getArguments() const override;
+  void updateArg(const unsigned long Index, Value *NewVal) override;
 
   void visit(InstructionVisitor *V) override;
 };

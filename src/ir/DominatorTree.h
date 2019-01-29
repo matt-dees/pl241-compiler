@@ -11,7 +11,7 @@ class DominatorTree {
 public:
   explicit DominatorTree(BasicBlock *CfgEntry);
 
-  std::vector<BasicBlock *> dominanceFrontier(BasicBlock *BB);
+  std::unordered_set<BasicBlock *> dominanceFrontier(BasicBlock *BB);
 
 private:
   void buildDominatorTree(BasicBlock *Entry);
@@ -24,7 +24,7 @@ private:
   static std::unordered_map<BasicBlock *, uint32_t>
   createNodePositionMap(const std::vector<BasicBlock *> &ReversePostOrderNodes);
 
-  static std::unordered_multimap<BasicBlock *, BasicBlock *>
+  static std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>>
   createDominanceFrontier(
       BasicBlock *CurrentBlock,
       const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap);
@@ -37,7 +37,8 @@ private:
   static std::unordered_multimap<BasicBlock *, BasicBlock *>
   iDomMapToTree(const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap);
 
-  std::unordered_multimap<BasicBlock *, BasicBlock *> DominanceFrontier;
+  std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>>
+      DominanceFrontier;
   std::unordered_multimap<BasicBlock *, BasicBlock *> DomTree;
   std::unordered_map<BasicBlock *, BasicBlock *> IDomMap;
 };

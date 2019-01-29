@@ -31,6 +31,21 @@ std::vector<Value *> BaseInstruction<T>::getArguments() const {
   return Arguments;
 }
 
+template <typename T>
+void BaseInstruction<T>::argsToSSA(cs241c::SSAContext &SSACtx) {
+  std::vector<Value *> Args = getArguments();
+  for (long unsigned int i = 0; i < Args.size(); ++i) {
+    if (auto Var = dynamic_cast<Variable *>(Args.at(i))) {
+      updateArg(i, SSACtx.lookupVariable(Var));
+    }
+  }
+}
+
+template <typename T>
+void BaseInstruction<T>::updateArg(const unsigned long Index, Value *NewVal) {
+  Arguments.at(Index) = NewVal;
+}
+
 template <typename T> void BaseInstruction<T>::visit(InstructionVisitor *V) {
   V->visit(static_cast<T *>(this));
 }
@@ -41,6 +56,10 @@ BasicBlockTerminator::BasicBlockTerminator(int Id,
 
 std::vector<Value *> BasicBlockTerminator::getArguments() const {
   return Arguments;
+}
+
+void BasicBlockTerminator::updateArg(const unsigned long Index, Value *NewVal) {
+  Arguments.at(Index) = NewVal;
 }
 
 std::vector<BasicBlock *> BasicBlockTerminator::followingBlocks() { return {}; }
@@ -111,7 +130,7 @@ StoreInstruction::StoreInstruction(int Id, Value *Y, Value *X)
 std::string_view StoreInstruction::getName() const { return "store"; }
 
 MoveInstruction::MoveInstruction(int Id, Value *Y, Value *X)
-    : Target(X), Source(Y), BaseInstruction(Id, {Y, X}) {}
+    : BaseInstruction(Id, {Y, X}), Target(X), Source(Y) {}
 std::string_view MoveInstruction::getName() const { return "move"; }
 void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) {
   Target = NewTarget;
@@ -134,6 +153,10 @@ std::vector<Value *> CallInstruction::getArguments() const {
   Result.push_back(Target);
   std::copy(Arguments.begin(), Arguments.end(), std::back_inserter(Result));
   return Result;
+}
+
+void CallInstruction::updateArg(const unsigned long Index, Value *NewVal) {
+  Arguments.at(Index) = NewVal;
 }
 
 void CallInstruction::visit(InstructionVisitor *V) { V->visit(this); }

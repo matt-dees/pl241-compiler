@@ -24,6 +24,7 @@ public:
          std::vector<std::unique_ptr<Function>> &&Functions);
   std::string getIdentifier() const;
   void toSSA(IrGenContext &Ctx);
+  SSAContext cfgToSSA(BasicBlock *CurrentBB, SSAContext SSACtx);
 };
 } // namespace cs241c
 

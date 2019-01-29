@@ -116,18 +116,19 @@ std::unordered_map<BasicBlock *, uint32_t> DominatorTree::createNodePositionMap(
   return NodePositionMap;
 }
 
-std::unordered_multimap<BasicBlock *, BasicBlock *>
+std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>>
 DominatorTree::createDominanceFrontier(
     BasicBlock *CurrentBlock,
     const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap) {
-  static std::unordered_multimap<BasicBlock *, BasicBlock *> DF;
-  if (CurrentBlock->Predecessors.size() > 1) {
-    return DF;
-  }
+  static std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>> DF;
   for (auto BB : CurrentBlock->Predecessors) {
     BasicBlock *Runner = BB;
     while (Runner != IDomMap.at(CurrentBlock)) {
-      DF.insert(std::make_pair(Runner, CurrentBlock));
+      if (DF.find(Runner) == DF.end()) {
+        DF[Runner] = {CurrentBlock};
+      } else {
+        DF.at(Runner).insert(CurrentBlock);
+      }
       Runner = IDomMap.at(Runner);
     }
   }
@@ -137,12 +138,10 @@ DominatorTree::createDominanceFrontier(
   return DF;
 }
 
-std::vector<BasicBlock *>
+std::unordered_set<BasicBlock *>
 DominatorTree::dominanceFrontier(cs241c::BasicBlock *BB) {
-  auto FrontierEntries = DominanceFrontier.equal_range(BB);
-  std::vector<BasicBlock *> Ret;
-  for (auto it = FrontierEntries.first; it != FrontierEntries.second; it++) {
-    Ret.push_back(it->second);
+  if (DominanceFrontier.find(BB) == DominanceFrontier.end()) {
+    return {};
   }
-  return Ret;
+  return DominanceFrontier.at(BB);
 }
