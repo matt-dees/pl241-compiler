@@ -1,5 +1,6 @@
 #include "DominatorTree.h"
 #include "IrGenContext.h"
+#include "Module.h"
 #include <catch.hpp>
 
 using namespace cs241c;
@@ -32,7 +33,8 @@ TEST_CASE("Test Dominator Tree Generation 1") {
   Context.currentBlock() = BB4.get();
   BB4->terminate(std::make_unique<EndInstruction>(Context.genInstructionId()));
 
-  DominatorTree D(BB1.get());
+  DominatorTree D;
+  D.buildDominatorTree(BB1.get());
   CHECK(true);
 }
 
@@ -77,6 +79,7 @@ TEST_CASE("Test Dominator Tree Generation 2") {
 
   Context.currentBlock() = BB5.get();
   BB5->terminate(std::make_unique<EndInstruction>(Context.genInstructionId()));
-  DominatorTree D(DominatorTree(BB1.get()));
+  DominatorTree D;
+  D.buildDominatorTree(BB1.get());
   CHECK(true);
 }

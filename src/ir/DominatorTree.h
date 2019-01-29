@@ -1,16 +1,14 @@
 #ifndef CS241C_IR_DOMINATORTREE_H
 #define CS241C_IR_DOMINATORTREE_H
 
-#include "BasicBlock.h"
 #include <unordered_map>
 #include <unordered_set>
 
 namespace cs241c {
+class BasicBlock;
 
 class DominatorTree {
 public:
-  DominatorTree() = default;
-
   std::unordered_set<BasicBlock *> dominanceFrontier(BasicBlock *BB);
   void buildDominatorTree(BasicBlock *Entry);
 
