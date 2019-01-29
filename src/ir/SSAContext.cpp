@@ -7,7 +7,14 @@ void SSAContext::updateVariable(Variable *Arg, Value *NewVal) {
 }
 
 Value *SSAContext::lookupVariable(Variable *Arg) {
+  if (!contains(Arg)) {
+    return Arg;
+  }
   return SSAVariableMap.at(Arg);
+}
+
+bool SSAContext::contains(Variable *Arg) {
+  return SSAVariableMap.find(Arg) != SSAVariableMap.end();
 }
 
 void SSAContext::merge(const SSAContext &Source) {

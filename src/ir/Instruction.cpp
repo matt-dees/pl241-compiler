@@ -24,6 +24,8 @@ std::string Instruction::toString() const {
   return Result.str();
 }
 
+void Instruction::setId(int NewId) { Id = NewId; }
+
 template <typename T>
 BaseInstruction<T>::BaseInstruction(int Id, std::vector<Value *> &&Arguments)
     : Instruction(Id), Arguments(move(Arguments)) {}
@@ -140,8 +142,8 @@ void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) {
   Arguments = {NewSource, NewTarget};
 }
 
-PhiInstruction::PhiInstruction(int Id, Value *X1, Value *X2)
-    : BaseInstruction(Id, {X1, X2}) {}
+PhiInstruction::PhiInstruction(int Id, Variable *Target, Value *X1, Value *X2)
+    : BaseInstruction(Id, {X1, X2}), Target(Target) {}
 std::string_view PhiInstruction::getName() const { return "phi"; }
 
 CallInstruction::CallInstruction(int Id, Function *Target,

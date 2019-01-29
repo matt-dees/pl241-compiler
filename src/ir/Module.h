@@ -13,9 +13,6 @@ class Module {
   NamedValue GlobalBase{"GlobalBase"};
   const std::string Name;
 
-private:
-  SSAContext nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx);
-
 public:
   std::vector<std::unique_ptr<GlobalVariable>> Globals;
   std::vector<std::unique_ptr<Function>> Functions;
@@ -26,7 +23,6 @@ public:
   void buildDominatorTree();
   Value *globalBase();
   std::string getIdentifier() const;
-  void toSSA();
   std::vector<std::unique_ptr<GlobalVariable>> &globals();
   const std::vector<std::unique_ptr<GlobalVariable>> &globals() const;
   std::vector<std::unique_ptr<Function>> &functions();

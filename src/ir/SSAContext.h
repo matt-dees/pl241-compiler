@@ -15,6 +15,7 @@ public:
   void merge(const SSAContext &Source);
   void updateVariable(Variable *Arg, Value *NewVal);
   Value *lookupVariable(Variable *Arg);
+  bool contains(Variable *Arg);
 };
 } // namespace cs241c
 #endif // CS241C_SSACONTEXT_H

@@ -11,6 +11,7 @@
 namespace cs241c {
 class BasicBlockTerminator;
 class Instruction;
+class PhiInstruction;
 
 class BasicBlock : public Value {
 public:
@@ -31,6 +32,7 @@ public:
 private:
   std::string Name;
   std::unordered_map<Variable *, Instruction *> PhiInstrMap;
+  bool Dirty;
 
 public:
   std::vector<BasicBlock *> Predecessors;
@@ -44,11 +46,12 @@ public:
   void appendInstruction(std::unique_ptr<Instruction> I);
 
   bool isTerminated();
+  bool isDirty() { return Dirty; }
   void terminate(std::unique_ptr<BasicBlockTerminator> T);
-  void toSSA(SSAContext &SSACtx);
+  std::vector<std::unique_ptr<PhiInstruction>> toSSA(SSAContext &SSACtx);
 
-  void insertPhiInstruction(Variable *Var, Value *Val, int Id,
-                            BasicBlock *Inserter);
+  void insertPhiInstruction(BasicBlock *FromBlock,
+                            std::unique_ptr<PhiInstruction> Phi);
   iterator begin();
   iterator end();
 

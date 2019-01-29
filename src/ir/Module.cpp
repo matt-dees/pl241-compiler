@@ -3,33 +3,6 @@
 
 using namespace cs241c;
 
-void Module::toSSA() {
-  BasicBlock *Entry = Functions.at(0)->basicBlocks().at(0).get();
-  SSAContext SSACtx;
-  nodeToSSA(Entry, SSACtx);
-}
-
-SSAContext Module::nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx) {
-  static std::unordered_set<BasicBlock *> Visited = {};
-  for (auto Pred : CurrentBB->Predecessors) {
-    if (Visited.find(Pred) == Visited.end()) {
-      // Not all predecessors have been explored.
-      return SSACtx;
-    }
-  }
-  if (Visited.find(CurrentBB) != Visited.end()) {
-    // Already visited this node. Skip.
-    return SSACtx;
-  }
-  CurrentBB->toSSA(SSACtx);
-  Visited.insert(CurrentBB);
-  for (auto BB : CurrentBB->Terminator->followingBlocks()) {
-    SSAContext Ret = nodeToSSA(BB, SSACtx);
-    SSACtx.merge(Ret);
-  }
-  return SSACtx;
-}
-
 Module::Module(std::string ModuleName) : Name(move(ModuleName)) {}
 
 Value *Module::globalBase() { return &GlobalBase; }

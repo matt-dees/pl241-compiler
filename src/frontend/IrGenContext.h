@@ -30,7 +30,10 @@ class IrGenContext {
 
   BasicBlock *CurrentBlock;
 
-  void insertPhiInstructions(BasicBlock *BB);
+private:
+  SSAContext nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx);
+  void propagatePhiNodes(BasicBlock *BB,
+                         std::vector<std::unique_ptr<PhiInstruction>> Phis);
 
 public:
   IrGenContext(Module *CompilationUnit);
@@ -64,7 +67,6 @@ public:
 
   BasicBlock *makeBasicBlock();
 
-  void genPhiInstructions();
   void compUnitToSSA();
 };
 } // namespace cs241c

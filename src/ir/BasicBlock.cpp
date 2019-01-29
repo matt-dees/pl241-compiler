@@ -7,7 +7,7 @@ using namespace cs241c;
 
 BasicBlock::BasicBlock(std::string Name,
                        std::deque<std::unique_ptr<Instruction>> Instructions)
-    : Name(move(Name)), Predecessors({}),
+    : Name(move(Name)), Dirty(false), Predecessors({}),
       Instructions(std::move(Instructions)) {}
 
 void BasicBlock::appendInstruction(std::unique_ptr<Instruction> I) {
@@ -70,7 +70,10 @@ bool BasicBlock::iterator::operator!=(const BasicBlock::iterator &it) const {
   return !(*this == it);
 }
 
-void BasicBlock::toSSA(SSAContext &SSACtx) {
+std::vector<std::unique_ptr<PhiInstruction>>
+BasicBlock::toSSA(SSAContext &SSACtx) {
+
+  std::vector<std::unique_ptr<PhiInstruction>> PhisToPropagate;
   // Need to update SSACtx with Phi nodes.
   // Note: Could also store Variable * inside Phi instruction and then
   // check Phi instructions similarly to Move instructions inside of the loops.
@@ -80,6 +83,13 @@ void BasicBlock::toSSA(SSAContext &SSACtx) {
   for (auto InstIter = Instructions.begin(); InstIter != Instructions.end();) {
     if (auto MovInst = dynamic_cast<MoveInstruction *>(InstIter->get())) {
       if (auto Target = dynamic_cast<Variable *>(MovInst->Target)) {
+
+        Value *AltVal = MovInst->Source;
+        if (SSACtx.contains(Target)) {
+          AltVal = SSACtx.lookupVariable(Target);
+        }
+        PhisToPropagate.push_back(std::make_unique<PhiInstruction>(
+            0, Target, MovInst->Source, AltVal));
         SSACtx.updateVariable(Target, MovInst->Source);
       }
       InstIter = Instructions.erase(InstIter);
@@ -88,25 +98,30 @@ void BasicBlock::toSSA(SSAContext &SSACtx) {
     (*InstIter)->argsToSSA(SSACtx);
     InstIter++;
   }
+  Dirty = false;
+  return PhisToPropagate;
 }
 
-void BasicBlock::insertPhiInstruction(Variable *Var, Value *Val, int Id,
-                                      BasicBlock *Inserter) {
-  auto PhiMapEntry = PhiInstrMap.find(Var);
+void BasicBlock::insertPhiInstruction(BasicBlock *FromBlock,
+                                      std::unique_ptr<PhiInstruction> Phi) {
+  auto PhiMapEntry = PhiInstrMap.find(Phi->Target);
   if (PhiMapEntry == PhiInstrMap.end()) {
     // Basic Block does not contain a Phi node for this variable.
     // Create one and add it to the front of the instruction double ended queue.
-    auto Phi = std::make_unique<PhiInstruction>(Id, Val, Val);
-    PhiInstrMap[Var] = Phi.get();
+    PhiInstrMap[Phi->Target] = Phi.get();
     Instructions.push_front(std::move(Phi));
+    Dirty = true;
     return;
   }
   // Basic Block does contain Phi node for this variable. Update args
   // accordingly.
-  auto It = std::find(Predecessors.begin(), Predecessors.end(), Inserter);
+  auto It = std::find(Predecessors.begin(), Predecessors.end(), FromBlock);
   if (It == Predecessors.end()) {
-    assert(false);
+    throw std::runtime_error("Invalid PHI insertion from block: " +
+                             std::string(FromBlock->toString()));
   }
   long Index = std::distance(Predecessors.begin(), It);
-  (*PhiMapEntry).second->updateArg(static_cast<unsigned long>(Index), Val);
+  (*PhiMapEntry)
+      .second->updateArg(static_cast<unsigned long>(Index),
+                         Phi->getArguments().at(Index));
 }

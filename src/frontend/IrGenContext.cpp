@@ -88,28 +88,43 @@ BasicBlock *IrGenContext::makeBasicBlock() {
       .get();
 }
 
-void IrGenContext::genPhiInstructions() {
-  for (auto &F : CompilationUnit->functions()) {
-    for (auto &BB : F->basicBlocks()) {
-      insertPhiInstructions(BB.get());
-    }
-  }
-}
-
-void IrGenContext::insertPhiInstructions(cs241c::BasicBlock *BB) {
-  for (auto I : *BB) {
-    if (auto MI = dynamic_cast<MoveInstruction *>(I)) {
-      if (auto Var = dynamic_cast<Variable *>(MI->Target)) {
-        for (auto DFEntry : CompilationUnit->DT.dominanceFrontier(BB)) {
-          DFEntry->insertPhiInstruction(Var, MI->Source, genInstructionId(),
-                                        BB);
-        }
-      }
-    }
-  }
-}
-
 void IrGenContext::compUnitToSSA() {
-  genPhiInstructions();
-  CompilationUnit->toSSA();
+  for (auto &F : CompilationUnit->Functions) {
+    // Note: Assumes entry is the first basic block
+    BasicBlock *Entry = F->basicBlocks().at(0).get();
+    SSAContext SSACtx;
+    nodeToSSA(Entry, SSACtx);
+  }
+}
+
+SSAContext IrGenContext::nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx) {
+  static std::unordered_set<BasicBlock *> Visited = {};
+  for (auto Pred : CurrentBB->Predecessors) {
+    if (Visited.find(Pred) == Visited.end()) {
+      // Not all predecessors have been explored.
+      return SSACtx;
+    }
+  }
+  if (Visited.find(CurrentBB) != Visited.end() && !CurrentBB->isDirty()) {
+    // Already visited this node. Skip.
+    return SSACtx;
+  }
+
+  propagatePhiNodes(CurrentBB, CurrentBB->toSSA(SSACtx));
+  Visited.insert(CurrentBB);
+  for (auto BB : CurrentBB->Terminator->followingBlocks()) {
+    SSAContext Ret = nodeToSSA(BB, SSACtx);
+    SSACtx.merge(Ret);
+  }
+  return SSACtx;
+}
+
+void IrGenContext::propagatePhiNodes(
+    BasicBlock *BB, std::vector<std::unique_ptr<cs241c::PhiInstruction>> Phis) {
+  for (auto DFEntry : CompilationUnit->DT.dominanceFrontier(BB)) {
+    for (auto &Phi : Phis) {
+      Phi->setId(genInstructionId());
+      DFEntry->insertPhiInstruction(BB, std::move(Phi));
+    }
+  }
 }

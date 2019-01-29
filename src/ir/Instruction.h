@@ -81,8 +81,9 @@ public:
   virtual std::vector<Value *> getArguments() const = 0;
   virtual void updateArg(const unsigned long Index, Value *NewVal) = 0;
   virtual void visit(InstructionVisitor *V) = 0;
-  virtual void argsToSSA(SSAContext &) {}
 
+  virtual void argsToSSA(SSAContext &) {}
+  void setId(int NewID);
   std::string id() const override;
   std::string toString() const override;
 
@@ -205,8 +206,9 @@ public:
 
 class PhiInstruction : public BaseInstruction<PhiInstruction> {
 public:
-  PhiInstruction(int Id, Value *X1, Value *X2);
+  PhiInstruction(int Id, Variable *Target, Value *X1, Value *X2);
   std::string_view getName() const override;
+  Variable *Target;
 };
 
 class CallInstruction : public Instruction {
