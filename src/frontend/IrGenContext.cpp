@@ -109,7 +109,7 @@ SSAContext IrGenContext::nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx) {
   CurrentBB->toSSA(SSACtx);
   Visited.insert(CurrentBB);
 
-  for (auto VarChange : SSACtx.changes()) {
+  for (auto VarChange : SSACtx.ssaVariableMap()) {
     propagateChangeToPhis(CurrentBB, VarChange.first, VarChange.second);
   }
   for (auto BB : CurrentBB->terminator()->followingBlocks()) {

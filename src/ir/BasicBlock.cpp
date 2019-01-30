@@ -102,6 +102,9 @@ std::vector<std::unique_ptr<PhiInstruction>> BasicBlock::genPhis() {
 void BasicBlock::updatePhiInst(cs241c::BasicBlock *From,
                                cs241c::Variable *VarToChange,
                                cs241c::Value *NewVal) {
+  if (PhiInstrMap.find(VarToChange) == PhiInstrMap.end()) {
+    return;
+  }
   PhiInstruction *Phi = PhiInstrMap.at(VarToChange);
   long Index = getPredecessorIndex(From);
   if (Index == -1) {
