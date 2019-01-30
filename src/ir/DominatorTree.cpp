@@ -1,4 +1,5 @@
 #include "DominatorTree.h"
+#include "BasicBlock.h"
 #include <algorithm>
 #include <set>
 #include <stack>

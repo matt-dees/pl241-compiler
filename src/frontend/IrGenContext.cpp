@@ -1,4 +1,5 @@
 #include "IrGenContext.h"
+#include "Module.h"
 #include <stdexcept>
 #include <string_view>
 

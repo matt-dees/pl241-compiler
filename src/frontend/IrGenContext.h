@@ -2,7 +2,6 @@
 #define CS241C_FRONTEND_IRGENCONTEXT_H
 
 #include "Instruction.h"
-#include "Module.h"
 #include "Value.h"
 #include "Variable.h"
 #include <memory>
@@ -11,6 +10,8 @@
 #include <vector>
 
 namespace cs241c {
+class Module;
+
 struct Symbol {
   Variable *Var;
   std::vector<int> Dimensions;
