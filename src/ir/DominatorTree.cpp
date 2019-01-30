@@ -43,7 +43,7 @@ std::vector<BasicBlock *> DominatorTree::postOrder(BasicBlock *Entry) {
   }
   Visited.insert(Entry);
 
-  for (auto NextBlock : Entry->Terminator->followingBlocks()) {
+  for (auto NextBlock : Entry->terminator()->followingBlocks()) {
     postOrder(NextBlock);
   }
   PostOrderNodes.push_back(Entry);
@@ -64,13 +64,13 @@ DominatorTree::createImmediateDomMap(
   while (Changed) {
     Changed = false;
     for (auto Node : ReversePostOrderNodes) {
-      if (Node->Predecessors.empty()) {
+      if (Node->predecessors().empty()) {
         // Unreachable Node or start node. Will not include in dominator tree.
         continue;
       }
-      BasicBlock *CandidateIDom = Node->Predecessors.at(0);
-      for (auto PredecessorIt = Node->Predecessors.begin() + 1;
-           PredecessorIt != Node->Predecessors.end(); PredecessorIt++) {
+      BasicBlock *CandidateIDom = Node->predecessors().at(0);
+      for (auto PredecessorIt = Node->predecessors().begin() + 1;
+           PredecessorIt != Node->predecessors().end(); PredecessorIt++) {
         if (IDoms.find(*PredecessorIt) != IDoms.end()) {
           CandidateIDom =
               intersect(*PredecessorIt, CandidateIDom, IDoms, NodePositionMap);
@@ -120,7 +120,7 @@ DominatorTree::createDominanceFrontier(
     BasicBlock *CurrentBlock,
     const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap) {
   static std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>> DF;
-  for (auto BB : CurrentBlock->Predecessors) {
+  for (auto BB : CurrentBlock->predecessors()) {
     BasicBlock *Runner = BB;
     while (Runner != IDomMap.at(CurrentBlock) && Runner != CurrentBlock) {
       if (DF.find(Runner) == DF.end()) {
@@ -131,7 +131,7 @@ DominatorTree::createDominanceFrontier(
       Runner = IDomMap.at(Runner);
     }
   }
-  for (auto BB : CurrentBlock->Terminator->followingBlocks()) {
+  for (auto BB : CurrentBlock->terminator()->followingBlocks()) {
     if (DF.find(BB) == DF.end()) {
       // Only explore next block if it hasn't already been added to frontier map
       createDominanceFrontier(BB, IDomMap);

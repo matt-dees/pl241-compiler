@@ -62,7 +62,6 @@ TEST_CASE("Test VCG Graph Generation") {
   // load 2000
   // store 5, 2000
   // move 600, 700
-  // phi 1, 2, 3, 4
   // %1 = cmp 5, 5
   // bne %1, 3, 4
   //
@@ -78,9 +77,6 @@ TEST_CASE("Test VCG Graph Generation") {
   BB2->appendInstruction(std::make_unique<MoveInstruction>(
       Context.genInstructionId(), Context.makeConstant(600),
       Context.makeConstant(700)));
-  BB2->appendInstruction(std::make_unique<PhiInstruction>(
-      Context.genInstructionId(), Context.makeConstant(1),
-      Context.makeConstant(2)));
   auto Cmp = std::make_unique<CmpInstruction>(Context.genInstructionId(),
                                               Context.makeConstant(5),
                                               Context.makeConstant(5));

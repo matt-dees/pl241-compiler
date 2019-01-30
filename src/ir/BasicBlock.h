@@ -15,31 +15,22 @@ class PhiInstruction;
 
 class BasicBlock : public Value {
 public:
-  class iterator {
-    BasicBlock *BB;
-    std::deque<std::unique_ptr<Instruction>>::iterator InstructionsIt;
-    bool End;
-
-  public:
-    iterator(BasicBlock *BB, bool End = false);
-
-    iterator &operator++();
-    Instruction *operator*();
-    bool operator==(const iterator &b) const;
-    bool operator!=(const iterator &b) const;
-  };
+  using iterator = std::deque<std::unique_ptr<Instruction>>::iterator;
 
 private:
   std::string Name;
   std::unordered_map<Variable *, PhiInstruction *> PhiInstrMap;
 
-public:
   std::vector<BasicBlock *> Predecessors;
   std::deque<std::unique_ptr<Instruction>> Instructions;
-  std::unique_ptr<BasicBlockTerminator> Terminator;
 
+public:
   BasicBlock(std::string Name,
              std::deque<std::unique_ptr<Instruction>> Instructions = {});
+
+  std::vector<BasicBlock *> &predecessors();
+  std::deque<std::unique_ptr<Instruction>> &instructions();
+  BasicBlockTerminator *terminator();
 
   void appendPredecessor(BasicBlock *BB);
   void appendInstruction(std::unique_ptr<Instruction> I);

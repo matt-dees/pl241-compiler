@@ -112,7 +112,7 @@ SSAContext IrGenContext::nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx) {
   for (auto VarChange : SSACtx.changes()) {
     propagateChangeToPhis(CurrentBB, VarChange.first, VarChange.second);
   }
-  for (auto BB : CurrentBB->Terminator->followingBlocks()) {
+  for (auto BB : CurrentBB->terminator()->followingBlocks()) {
     SSAContext Ret = nodeToSSA(BB, SSACtx);
     SSACtx.merge(Ret);
   }
@@ -132,7 +132,7 @@ void IrGenContext::genAllPhiInstructions(BasicBlock *CurrentBB) {
       DFEntry->insertPhiInstruction(CurrentBB, std::move(Phi));
     }
   }
-  for (auto BB : CurrentBB->Terminator->followingBlocks()) {
+  for (auto BB : CurrentBB->terminator()->followingBlocks()) {
     genAllPhiInstructions(BB);
   }
 }
