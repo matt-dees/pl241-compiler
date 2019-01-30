@@ -2,6 +2,15 @@
 
 using namespace cs241c;
 
+std::unordered_map<Variable *, Value *> &SSAContext::changes() {
+  return Changes;
+}
+
+const std::unordered_map<Variable *, Value *> &
+SSAContext::ssaVariableMap() const {
+  return SSAVariableMap;
+}
+
 void SSAContext::updateVariable(Variable *Arg, Value *NewVal) {
   SSAVariableMap[Arg] = NewVal;
   Changes[Arg] = NewVal;
@@ -19,11 +28,8 @@ bool SSAContext::contains(Variable *Arg) {
 }
 
 void SSAContext::merge(const SSAContext &Source) {
-  SSAVariableMap.insert(Source.getMap().begin(), Source.getMap().end());
-}
-
-std::unordered_map<Variable *, Value *> SSAContext::getMap() const {
-  return SSAVariableMap;
+  SSAVariableMap.insert(Source.ssaVariableMap().begin(),
+                        Source.ssaVariableMap().end());
 }
 
 void SSAContext::clearChanges() { Changes.clear(); }
