@@ -175,8 +175,6 @@ CmpInstruction *Relation::genCmp(IrGenContext &Ctx) const {
 
 namespace {
 using RelT = Relation::Type;
-static Relation::Type InverseRelation[] = {RelT::Ne, RelT::Eq, RelT::Ge,
-                                           RelT::Gt, RelT::Lt, RelT::Le};
 static std::unique_ptr<BasicBlockTerminator>
 makeBranch(IrGenContext &Ctx, RelT T, CmpInstruction *Cmp, BasicBlock *Then,
            BasicBlock *Else) {
@@ -209,6 +207,5 @@ makeBranch(IrGenContext &Ctx, RelT T, CmpInstruction *Cmp, BasicBlock *Then,
 std::unique_ptr<BasicBlockTerminator>
 Relation::genBranch(IrGenContext &Ctx, CmpInstruction *Cmp, BasicBlock *Then,
                     BasicBlock *Else) const {
-  RelT InverseT = InverseRelation[static_cast<size_t>(T)];
-  return makeBranch(Ctx, InverseT, Cmp, Then, Else);
+  return makeBranch(Ctx, T, Cmp, Then, Else);
 }
