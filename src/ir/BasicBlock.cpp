@@ -71,13 +71,7 @@ bool BasicBlock::iterator::operator!=(const BasicBlock::iterator &it) const {
 }
 
 void BasicBlock::toSSA(SSAContext &SSACtx) {
-
-  // Need to update SSACtx with Phi nodes.
-  // Note: Could also store Variable * inside Phi instruction and then
-  // check Phi instructions similarly to Move instructions inside of the loops.
-  for (auto PhiMapEntry : PhiInstrMap) {
-    SSACtx.updateVariable(PhiMapEntry.first, PhiMapEntry.second);
-  }
+  // Remove MOVE instructions and update SSA context accordingly.
   for (auto InstIter = Instructions.begin(); InstIter != Instructions.end();) {
     if (auto MovInst = dynamic_cast<MoveInstruction *>(InstIter->get())) {
       if (auto Target = dynamic_cast<Variable *>(MovInst->Target)) {
@@ -87,6 +81,9 @@ void BasicBlock::toSSA(SSAContext &SSACtx) {
       continue;
     }
     (*InstIter)->argsToSSA(SSACtx);
+    if (auto PhiInst = dynamic_cast<PhiInstruction *>(InstIter->get())) {
+      SSACtx.updateVariable(PhiInst->Target, PhiInst);
+    }
     InstIter++;
   }
 }
