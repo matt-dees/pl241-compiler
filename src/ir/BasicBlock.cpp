@@ -100,12 +100,11 @@ void BasicBlock::insertPhiInstruction(BasicBlock *FromBlock,
   }
   // Basic Block does contain Phi node for this variable. Update args
   // accordingly.
-  auto It = std::find(Predecessors.begin(), Predecessors.end(), FromBlock);
-  if (It == Predecessors.end()) {
+  long Index = getPredecessorIndex(FromBlock);
+  if (Index == -1) {
     throw std::runtime_error("Invalid PHI insertion from block: " +
                              std::string(FromBlock->toString()));
   }
-  long Index = std::distance(Predecessors.begin(), It);
   (*PhiMapEntry)
       .second->updateArg(static_cast<unsigned long>(Index),
                          Phi->getArguments().at(Index));
@@ -127,4 +126,24 @@ std::vector<std::unique_ptr<PhiInstruction>> BasicBlock::genPhis() {
   }
 
   return PhisToPropagate;
+}
+
+void BasicBlock::updatePhiInst(cs241c::BasicBlock *From,
+                               cs241c::Variable *VarToChange,
+                               cs241c::Value *NewVal) {
+  PhiInstruction *Phi = PhiInstrMap.at(VarToChange);
+  long Index = getPredecessorIndex(From);
+  if (Index == -1) {
+    throw std::runtime_error("Invalid PHI update from block: " +
+                             std::string(From->toString()));
+  }
+  Phi->updateArg(static_cast<unsigned long>(Index), NewVal);
+}
+
+long BasicBlock::getPredecessorIndex(cs241c::BasicBlock *Predecessor) {
+  auto It = std::find(Predecessors.begin(), Predecessors.end(), Predecessor);
+  if (It == Predecessors.end()) {
+    return -1;
+  }
+  return std::distance(Predecessors.begin(), It);
 }

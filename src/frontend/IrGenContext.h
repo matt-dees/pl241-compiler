@@ -33,8 +33,8 @@ class IrGenContext {
 
 private:
   SSAContext nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx);
-  void propagatePhiNodes(BasicBlock *BB,
-                         std::vector<std::unique_ptr<PhiInstruction>> Phis);
+  void propagateChangeToPhis(BasicBlock *SourceBB, Variable *ChangedVar,
+                             Value *NewVal);
   void genAllPhiInstructions(BasicBlock *CurrentBB);
 
 public:

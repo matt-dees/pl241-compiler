@@ -31,7 +31,7 @@ public:
 
 private:
   std::string Name;
-  std::unordered_map<Variable *, Instruction *> PhiInstrMap;
+  std::unordered_map<Variable *, PhiInstruction *> PhiInstrMap;
 
 public:
   std::vector<BasicBlock *> Predecessors;
@@ -50,6 +50,9 @@ public:
 
   void insertPhiInstruction(BasicBlock *FromBlock,
                             std::unique_ptr<PhiInstruction> Phi);
+  void updatePhiInst(BasicBlock *From, Variable *VarToChange, Value *NewVal);
+
+  long getPredecessorIndex(BasicBlock *Predecessor);
 
   std::vector<std::unique_ptr<PhiInstruction>> genPhis();
 

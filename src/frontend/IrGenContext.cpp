@@ -108,6 +108,10 @@ SSAContext IrGenContext::nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx) {
 
   CurrentBB->toSSA(SSACtx);
   Visited.insert(CurrentBB);
+
+  for (auto VarChange : SSACtx.changes()) {
+    propagateChangeToPhis(CurrentBB, VarChange.first, VarChange.second);
+  }
   for (auto BB : CurrentBB->Terminator->followingBlocks()) {
     SSAContext Ret = nodeToSSA(BB, SSACtx);
     SSACtx.merge(Ret);
@@ -130,5 +134,13 @@ void IrGenContext::genAllPhiInstructions(BasicBlock *CurrentBB) {
   }
   for (auto BB : CurrentBB->Terminator->followingBlocks()) {
     genAllPhiInstructions(BB);
+  }
+}
+
+void IrGenContext::propagateChangeToPhis(cs241c::BasicBlock *SourceBB,
+                                         cs241c::Variable *ChangedVar,
+                                         cs241c::Value *NewVal) {
+  for (auto BB : CompilationUnit->DT.dominanceFrontier(SourceBB)) {
+    BB->updatePhiInst(SourceBB, ChangedVar, NewVal);
   }
 }

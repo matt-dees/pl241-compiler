@@ -4,6 +4,7 @@ using namespace cs241c;
 
 void SSAContext::updateVariable(Variable *Arg, Value *NewVal) {
   SSAVariableMap[Arg] = NewVal;
+  Changes[Arg] = NewVal;
 }
 
 Value *SSAContext::lookupVariable(Variable *Arg) {
@@ -24,3 +25,5 @@ void SSAContext::merge(const SSAContext &Source) {
 std::unordered_map<Variable *, Value *> SSAContext::getMap() const {
   return SSAVariableMap;
 }
+
+void SSAContext::clearChanges() { Changes.clear(); }
