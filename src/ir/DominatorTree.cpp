@@ -37,13 +37,15 @@ std::vector<BasicBlock *> DominatorTree::postOrder(BasicBlock *Entry) {
   static std::vector<BasicBlock *> PostOrderNodes;
   static std::unordered_set<BasicBlock *> Visited;
 
+  if (Visited.find(Entry) != Visited.end()) {
+    return PostOrderNodes;
+  }
+  Visited.insert(Entry);
+
   for (auto NextBlock : Entry->Terminator->followingBlocks()) {
     postOrder(NextBlock);
   }
-  if (Visited.find(Entry) == Visited.end()) {
-    PostOrderNodes.push_back(Entry);
-    Visited.insert(Entry);
-  }
+  PostOrderNodes.push_back(Entry);
   return PostOrderNodes;
 }
 
@@ -119,7 +121,7 @@ DominatorTree::createDominanceFrontier(
   static std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>> DF;
   for (auto BB : CurrentBlock->Predecessors) {
     BasicBlock *Runner = BB;
-    while (Runner != IDomMap.at(CurrentBlock)) {
+    while (Runner != IDomMap.at(CurrentBlock) && Runner != CurrentBlock) {
       if (DF.find(Runner) == DF.end()) {
         DF[Runner] = {CurrentBlock};
       } else {
@@ -129,7 +131,10 @@ DominatorTree::createDominanceFrontier(
     }
   }
   for (auto BB : CurrentBlock->Terminator->followingBlocks()) {
-    createDominanceFrontier(BB, IDomMap);
+    if (DF.find(BB) == DF.end()) {
+      // Only explore next block if it hasn't already been added to frontier map
+      createDominanceFrontier(BB, IDomMap);
+    }
   }
   return DF;
 }

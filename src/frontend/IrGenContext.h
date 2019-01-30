@@ -34,6 +34,7 @@ private:
   SSAContext nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx);
   void propagatePhiNodes(BasicBlock *BB,
                          std::vector<std::unique_ptr<PhiInstruction>> Phis);
+  void genAllPhiInstructions(BasicBlock *CurrentBB);
 
 public:
   IrGenContext(Module *CompilationUnit);

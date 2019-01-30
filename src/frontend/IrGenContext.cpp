@@ -93,24 +93,19 @@ void IrGenContext::compUnitToSSA() {
     // Note: Assumes entry is the first basic block
     BasicBlock *Entry = F->basicBlocks().at(0).get();
     SSAContext SSACtx;
+    genAllPhiInstructions(Entry);
     nodeToSSA(Entry, SSACtx);
   }
 }
 
 SSAContext IrGenContext::nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx) {
   static std::unordered_set<BasicBlock *> Visited = {};
-  for (auto Pred : CurrentBB->Predecessors) {
-    if (Visited.find(Pred) == Visited.end()) {
-      // Not all predecessors have been explored.
-      return SSACtx;
-    }
-  }
-  if (Visited.find(CurrentBB) != Visited.end() && !CurrentBB->isDirty()) {
+  if (Visited.find(CurrentBB) != Visited.end()) {
     // Already visited this node. Skip.
     return SSACtx;
   }
 
-  propagatePhiNodes(CurrentBB, CurrentBB->toSSA(SSACtx));
+  CurrentBB->toSSA(SSACtx);
   Visited.insert(CurrentBB);
   for (auto BB : CurrentBB->Terminator->followingBlocks()) {
     SSAContext Ret = nodeToSSA(BB, SSACtx);
@@ -119,12 +114,20 @@ SSAContext IrGenContext::nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx) {
   return SSACtx;
 }
 
-void IrGenContext::propagatePhiNodes(
-    BasicBlock *BB, std::vector<std::unique_ptr<cs241c::PhiInstruction>> Phis) {
-  for (auto DFEntry : CompilationUnit->DT.dominanceFrontier(BB)) {
+void IrGenContext::genAllPhiInstructions(BasicBlock *CurrentBB) {
+  static std::unordered_set<BasicBlock *> Visited;
+  if (Visited.find(CurrentBB) != Visited.end()) {
+    return;
+  }
+  auto Phis = CurrentBB->genPhis();
+  Visited.insert(CurrentBB);
+  for (auto DFEntry : CompilationUnit->DT.dominanceFrontier(CurrentBB)) {
     for (auto &Phi : Phis) {
       Phi->setId(genInstructionId());
-      DFEntry->insertPhiInstruction(BB, std::move(Phi));
+      DFEntry->insertPhiInstruction(CurrentBB, std::move(Phi));
     }
+  }
+  for (auto BB : CurrentBB->Terminator->followingBlocks()) {
+    genAllPhiInstructions(BB);
   }
 }
