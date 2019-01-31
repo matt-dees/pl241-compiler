@@ -1,5 +1,6 @@
 #include "IrGenContext.h"
 #include "Module.h"
+#include <algorithm>
 #include <stdexcept>
 #include <string_view>
 
@@ -141,6 +142,9 @@ void IrGenContext::propagateChangeToPhis(cs241c::BasicBlock *SourceBB,
                                          cs241c::Variable *ChangedVar,
                                          cs241c::Value *NewVal) {
   for (auto BB : CompilationUnit->DT.dominanceFrontier(SourceBB)) {
-    BB->updatePhiInst(SourceBB, ChangedVar, NewVal);
+    if (std::find(BB->predecessors().begin(), BB->predecessors().end(),
+                  SourceBB) != BB->predecessors().end()) {
+      BB->updatePhiInst(SourceBB, ChangedVar, NewVal);
+    }
   }
 }

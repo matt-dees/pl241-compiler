@@ -119,7 +119,9 @@ std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>>
 DominatorTree::createDominanceFrontier(
     BasicBlock *CurrentBlock,
     const std::unordered_map<BasicBlock *, BasicBlock *> &IDomMap) {
+  static std::unordered_set<BasicBlock *> Visited;
   static std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>> DF;
+  Visited.insert(CurrentBlock);
   for (auto BB : CurrentBlock->predecessors()) {
     BasicBlock *Runner = BB;
     while (Runner != IDomMap.at(CurrentBlock) && Runner != CurrentBlock) {
@@ -132,8 +134,7 @@ DominatorTree::createDominanceFrontier(
     }
   }
   for (auto BB : CurrentBlock->terminator()->followingBlocks()) {
-    if (DF.find(BB) == DF.end()) {
-      // Only explore next block if it hasn't already been added to frontier map
+    if (Visited.find(BB) == Visited.end()) {
       createDominanceFrontier(BB, IDomMap);
     }
   }
