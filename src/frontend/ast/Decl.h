@@ -28,7 +28,6 @@ public:
 
   void declareGlobal(IrGenContext &Ctx) override;
   std::unique_ptr<LocalVariable> declareLocal(IrGenContext &Ctx) override;
-  void genIr(IrGenContext &Ctx);
 };
 
 class ArrayDecl : public Decl {
