@@ -59,8 +59,7 @@ void BasicBlock::toSSA(SSAContext &SSACtx) {
   }
 }
 
-void BasicBlock::insertPhiInstruction(BasicBlock *FromBlock,
-                                      std::unique_ptr<PhiInstruction> Phi) {
+void BasicBlock::insertPhiInstruction(std::unique_ptr<PhiInstruction> Phi) {
   auto PhiMapEntry = PhiInstrMap.find(Phi->Target);
   if (PhiMapEntry == PhiInstrMap.end()) {
     // Basic Block does not contain a Phi node for this variable.
@@ -69,16 +68,6 @@ void BasicBlock::insertPhiInstruction(BasicBlock *FromBlock,
     Instructions.push_front(std::move(Phi));
     return;
   }
-  // Basic Block does contain Phi node for this variable. Update args
-  // accordingly.
-  long Index = getPredecessorIndex(FromBlock);
-  if (Index == -1) {
-    throw std::runtime_error("Invalid PHI insertion from block: " +
-                             std::string(FromBlock->toString()));
-  }
-  (*PhiMapEntry)
-      .second->updateArg(static_cast<unsigned long>(Index),
-                         Phi->getArguments().at(Index));
 }
 
 std::vector<std::unique_ptr<PhiInstruction>> BasicBlock::genPhis() {

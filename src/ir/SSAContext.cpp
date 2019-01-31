@@ -12,6 +12,9 @@ SSAContext::ssaVariableMap() const {
 }
 
 void SSAContext::updateVariable(Variable *Arg, Value *NewVal) {
+  if (auto VarVal = dynamic_cast<Variable *>(NewVal)) {
+    NewVal = SSAVariableMap.at(VarVal);
+  }
   SSAVariableMap[Arg] = NewVal;
   Changes[Arg] = NewVal;
 }

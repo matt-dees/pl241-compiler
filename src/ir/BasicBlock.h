@@ -39,8 +39,7 @@ public:
   void terminate(std::unique_ptr<BasicBlockTerminator> T);
   void toSSA(SSAContext &SSACtx);
 
-  void insertPhiInstruction(BasicBlock *FromBlock,
-                            std::unique_ptr<PhiInstruction> Phi);
+  void insertPhiInstruction(std::unique_ptr<PhiInstruction> Phi);
   void updatePhiInst(BasicBlock *From, Variable *VarToChange, Value *NewVal);
 
   long getPredecessorIndex(BasicBlock *Predecessor);

@@ -130,7 +130,7 @@ void IrGenContext::genAllPhiInstructions(BasicBlock *CurrentBB) {
   for (auto DFEntry : CompilationUnit->DT.dominanceFrontier(CurrentBB)) {
     for (auto &Phi : Phis) {
       Phi->setId(genInstructionId());
-      DFEntry->insertPhiInstruction(CurrentBB, std::move(Phi));
+      DFEntry->insertPhiInstruction(std::move(Phi));
     }
   }
   for (auto BB : CurrentBB->terminator()->followingBlocks()) {
