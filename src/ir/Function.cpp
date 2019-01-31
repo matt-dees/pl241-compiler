@@ -16,6 +16,8 @@ std::vector<std::unique_ptr<ConstantValue>> &Function::constants() {
   return Constants;
 }
 
+BasicBlock *Function::entryBlock() const { return BasicBlocks.front().get(); }
+
 const std::vector<std::unique_ptr<BasicBlock>> &Function::basicBlocks() const {
   return BasicBlocks;
 }

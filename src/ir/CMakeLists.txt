@@ -5,6 +5,8 @@ add_library(cs241c-ir
   DominatorTree.h
   Function.cpp
   Function.h
+  Global2LocalPass.cpp
+  Global2LocalPass.h
   Instruction.cpp
   Instruction.h
   Module.cpp
