@@ -25,7 +25,6 @@ public:
            std::vector<std::unique_ptr<LocalVariable>> &&Locals,
            std::vector<std::unique_ptr<BasicBlock>> &&BasicBlocks);
 
-  const std::string &name() const;
   std::vector<std::unique_ptr<ConstantValue>> &constants();
   BasicBlock *entryBlock() const;
   const std::vector<std::unique_ptr<BasicBlock>> &basicBlocks() const;

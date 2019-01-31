@@ -2,7 +2,7 @@
 
 using namespace cs241c;
 
-std::string Value::id() const { return toString(); }
+std::string Value::name() const { return toString(); }
 
 ConstantValue::ConstantValue(int Val) : Val(Val) {}
 std::string ConstantValue::toString() const {

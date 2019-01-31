@@ -10,8 +10,6 @@ Function::Function(std::string Name,
     : Name(move(Name)), Constants(move(Constants)), Locals(move(Locals)),
       BasicBlocks(move(BasicBlocks)) {}
 
-const std::string &Function::name() const { return Name; }
-
 std::vector<std::unique_ptr<ConstantValue>> &Function::constants() {
   return Constants;
 }
