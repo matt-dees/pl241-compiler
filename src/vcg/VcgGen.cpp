@@ -44,7 +44,8 @@ void VcgGen::writeBasicBlock(BasicBlock *BB, const std::string &Title) {
 
   VcgFileStream << "title: "
                 << "\"" << BB->toString() << "\"" << std::endl;
-  VcgFileStream << "label: \"" << BB->toString() << std::endl;
+  VcgFileStream << "label: \""
+                << "[" << Title << "]" << BB->toString() << std::endl;
 
   // Note: Assumes terminating instruction is in Instructions vector
 
@@ -75,5 +76,4 @@ void VcgGen::writeEdge(BasicBlock *Source, BasicBlock *Destination) {
 void VcgGen::writeProperties() {
   VcgFileStream << "layoutalgorithm: dfs" << std::endl;
   VcgFileStream << "manhattan_edges: yes" << std::endl;
-  VcgFileStream << "smanhattan_edges: yes" << std::endl;
 }
