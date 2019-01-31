@@ -177,13 +177,13 @@ BltInstruction::BltInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                                BasicBlock *Else)
     : ConditionalBlockTerminator(Id, Cmp, Then, Else) {}
 
-std::string_view BltInstruction::getName() const { return "ble"; }
+std::string_view BltInstruction::getName() const { return "blt"; }
 
 BleInstruction::BleInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                                BasicBlock *Else)
     : ConditionalBlockTerminator(Id, Cmp, Then, Else) {}
 
-std::string_view BleInstruction::getName() const { return "blt"; }
+std::string_view BleInstruction::getName() const { return "ble"; }
 
 BgeInstruction::BgeInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                                BasicBlock *Else)
