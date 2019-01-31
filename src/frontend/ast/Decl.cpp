@@ -18,6 +18,7 @@ std::unique_ptr<LocalVariable> IntDecl::declareLocal(IrGenContext &Ctx) {
   auto Var = std::make_unique<LocalVariable>(Ident);
   Symbol Sym{Var.get(), {}};
   Ctx.declare(Sym);
+  Ctx.makeInstruction<MoveInstruction>(Ctx.makeConstant(0), Var.get());
   return Var;
 }
 
@@ -46,14 +47,14 @@ Func::Func(Func::Type T, std::string Ident, std::vector<std::string> Params,
 void Func::genIr(IrGenContext &Ctx) {
   Ctx.beginScope();
 
+  BasicBlock *EntryBlock = Ctx.makeBasicBlock();
+  Ctx.currentBlock() = EntryBlock;
+
   std::vector<std::unique_ptr<LocalVariable>> Locals;
   std::transform(Vars.begin(), Vars.end(), back_inserter(Locals),
                  [&Ctx](const std::unique_ptr<Decl> &Var) {
                    return Var->declareLocal(Ctx);
                  });
-
-  BasicBlock *EntryBlock = Ctx.makeBasicBlock();
-  Ctx.currentBlock() = EntryBlock;
 
   for (const std::unique_ptr<Stmt> &S : Stmts) {
     S->genIr(Ctx);
