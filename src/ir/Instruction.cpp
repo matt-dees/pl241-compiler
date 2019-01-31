@@ -57,6 +57,15 @@ void BasicBlockTerminator::updateArg(const unsigned long Index, Value *NewVal) {
   Arguments.at(Index) = NewVal;
 }
 
+void BasicBlockTerminator::argsToSSA(cs241c::SSAContext &SSACtx) {
+  std::vector<Value *> Args = getArguments();
+  for (long unsigned int i = 0; i < Args.size(); ++i) {
+    if (auto Var = dynamic_cast<Variable *>(Args.at(i))) {
+      updateArg(i, SSACtx.lookupVariable(Var));
+    }
+  }
+}
+
 std::vector<BasicBlock *> BasicBlockTerminator::followingBlocks() { return {}; }
 
 ConditionalBlockTerminator::ConditionalBlockTerminator(int Id,

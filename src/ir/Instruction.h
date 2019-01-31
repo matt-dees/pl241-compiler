@@ -56,6 +56,7 @@ protected:
 
 public:
   void updateArg(const unsigned long Index, Value *NewVal) override;
+  void argsToSSA(SSAContext &SSACtx) override;
   std::vector<Value *> getArguments() const override;
   virtual std::vector<BasicBlock *> followingBlocks();
 };
