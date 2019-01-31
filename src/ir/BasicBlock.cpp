@@ -95,7 +95,7 @@ void BasicBlock::updatePhiInst(cs241c::BasicBlock *From,
     return;
   }
   PhiInstruction *Phi = PhiInstrMap.at(VarToChange);
-  long Index = getPredecessorIndex(From);
+  auto Index = getPredecessorIndex(From);
   if (Index == -1) {
     throw std::runtime_error("Invalid PHI update from block: " +
                              std::string(From->toString()));
@@ -103,7 +103,8 @@ void BasicBlock::updatePhiInst(cs241c::BasicBlock *From,
   Phi->updateArg(static_cast<unsigned long>(Index), NewVal);
 }
 
-long BasicBlock::getPredecessorIndex(cs241c::BasicBlock *Predecessor) {
+std::vector<BasicBlock *>::difference_type
+BasicBlock::getPredecessorIndex(cs241c::BasicBlock *Predecessor) {
   auto It = std::find(Predecessors.begin(), Predecessors.end(), Predecessor);
   if (It == Predecessors.end()) {
     return -1;

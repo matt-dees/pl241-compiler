@@ -23,38 +23,14 @@ template <typename T> void VisitedDesignator<T>::visit(ExprVisitor *V) {
 
 VarDesignator::VarDesignator(std::string Ident) : Ident(move(Ident)) {}
 
-namespace {
-class BaseAddressLoader : public VariableVisitor {
-  IrGenContext *Ctx;
-  bool AddressDirectly;
-
-public:
-  Value *Result;
-
-  BaseAddressLoader(IrGenContext *Ctx, bool AddressDirectly)
-      : Ctx(Ctx), AddressDirectly(AddressDirectly) {}
-
-  void visit(GlobalVariable *V) override {
-    if (AddressDirectly) {
-      Result = Ctx->makeInstruction<AddaInstruction>(Ctx->globalBase(), V);
-    } else {
-      Result = Ctx->makeInstruction<AddInstruction>(Ctx->globalBase(), V);
-    }
-  }
-
-  void visit(LocalVariable *V) override { Result = V; }
-};
-} // namespace
-
 Value *VarDesignator::genIr(IrGenContext &Ctx) const {
   auto Var = Ctx.lookupVariable(Ident).Var;
   if (Var->isMoveable()) {
     return Var;
   } else {
-    BaseAddressLoader BAL(&Ctx, true);
-    Var->visit(&BAL);
-    Value *BaseAddress = BAL.Result;
-    return Ctx.makeInstruction<LoadInstruction>(BaseAddress);
+    auto BaseAddress =
+        Ctx.makeInstruction<AddaInstruction>(Ctx.globalBase(), Var);
+    return Ctx.makeInstruction<LoadInstruction>(Var, BaseAddress);
   }
 }
 
@@ -63,10 +39,9 @@ void VarDesignator::genStore(IrGenContext &Ctx, Value *V) {
   if (Var->isMoveable()) {
     Ctx.makeInstruction<MoveInstruction>(V, Var);
   } else {
-    BaseAddressLoader BAL(&Ctx, true);
-    Var->visit(&BAL);
-    Value *BaseAddress = BAL.Result;
-    Ctx.makeInstruction<StoreInstruction>(V, BaseAddress);
+    auto BaseAddress =
+        Ctx.makeInstruction<AddaInstruction>(Ctx.globalBase(), Var);
+    Ctx.makeInstruction<StoreInstruction>(Var, V, BaseAddress);
   }
 }
 
@@ -96,26 +71,31 @@ ArrayDesignator::ArrayDesignator(std::string Ident,
   }
 }
 
+namespace {
+Value *genBaseAddress(IrGenContext &Ctx, Variable *Var) {
+  if (dynamic_cast<GlobalVariable *>(Var)) {
+    return Ctx.makeInstruction<AddInstruction>(Ctx.globalBase(), Var);
+  }
+  return Var;
+}
+} // namespace
+
 Value *ArrayDesignator::genIr(IrGenContext &Ctx) const {
   auto Var = Ctx.lookupVariable(Ident).Var;
-  BaseAddressLoader BAL(&Ctx, false);
-  Var->visit(&BAL);
-  Value *BaseAddress = BAL.Result;
+  Value *BaseAddress = genBaseAddress(Ctx, Var);
   Value *Offset = calculateMemoryOffset(Ctx);
-  Value *TargetAddress =
+  auto TargetAddress =
       Ctx.makeInstruction<AddaInstruction>(BaseAddress, Offset);
-  return Ctx.makeInstruction<LoadInstruction>(TargetAddress);
+  return Ctx.makeInstruction<LoadInstruction>(Var, TargetAddress);
 }
 
 void ArrayDesignator::genStore(IrGenContext &Ctx, Value *V) {
   auto Var = Ctx.lookupVariable(Ident).Var;
-  BaseAddressLoader BAL(&Ctx, false);
-  Var->visit(&BAL);
-  Value *BaseAddress = BAL.Result;
+  Value *BaseAddress = genBaseAddress(Ctx, Var);
   Value *Offset = calculateMemoryOffset(Ctx);
-  Value *TargetAddress =
+  auto TargetAddress =
       Ctx.makeInstruction<AddaInstruction>(BaseAddress, Offset);
-  Ctx.makeInstruction<StoreInstruction>(V, TargetAddress);
+  Ctx.makeInstruction<StoreInstruction>(Var, V, TargetAddress);
 }
 
 FunctionCall::FunctionCall(std::string Ident,

@@ -27,12 +27,14 @@ std::string Instruction::toString() const {
 
 void Instruction::setId(int NewId) { Id = NewId; }
 
-BaseInstruction::BaseInstruction(int Id, std::vector<Value *> &&Arguments)
+BasicInstruction::BasicInstruction(int Id, std::vector<Value *> &&Arguments)
     : Instruction(Id), Arguments(move(Arguments)) {}
 
-std::vector<Value *> BaseInstruction::getArguments() const { return Arguments; }
+std::vector<Value *> BasicInstruction::getArguments() const {
+  return Arguments;
+}
 
-void BaseInstruction::argsToSSA(cs241c::SSAContext &SSACtx) {
+void BasicInstruction::argsToSSA(cs241c::SSAContext &SSACtx) {
   std::vector<Value *> Args = getArguments();
   for (long unsigned int i = 0; i < Args.size(); ++i) {
     if (auto Var = dynamic_cast<Variable *>(Args.at(i))) {
@@ -41,9 +43,13 @@ void BaseInstruction::argsToSSA(cs241c::SSAContext &SSACtx) {
   }
 }
 
-void BaseInstruction::updateArg(const unsigned long Index, Value *NewVal) {
+void BasicInstruction::updateArg(unsigned long Index, Value *NewVal) {
   Arguments.at(Index) = NewVal;
 }
+
+MemoryInstruction::MemoryInstruction(int Id, Variable *Object,
+                                     AddaInstruction *Address)
+    : Instruction(Id), Object(Object), Address(Address) {}
 
 BasicBlockTerminator::BasicBlockTerminator(int Id,
                                            std::vector<Value *> &&Arguments)
@@ -53,7 +59,7 @@ std::vector<Value *> BasicBlockTerminator::getArguments() const {
   return Arguments;
 }
 
-void BasicBlockTerminator::updateArg(const unsigned long Index, Value *NewVal) {
+void BasicBlockTerminator::updateArg(unsigned long Index, Value *NewVal) {
   Arguments.at(Index) = NewVal;
 }
 
@@ -79,42 +85,84 @@ std::vector<BasicBlock *> ConditionalBlockTerminator::followingBlocks() {
           dynamic_cast<BasicBlock *>(getArguments()[2])};
 }
 
-NegInstruction::NegInstruction(int Id, Value *X) : BaseInstruction(Id, {X}) {}
+NegInstruction::NegInstruction(int Id, Value *X) : BasicInstruction(Id, {X}) {}
 std::string_view NegInstruction::getName() const { return "neg"; }
 
 AddInstruction::AddInstruction(int Id, Value *X, Value *Y)
-    : BaseInstruction(Id, {X, Y}) {}
+    : BasicInstruction(Id, {X, Y}) {}
 std::string_view AddInstruction::getName() const { return "add"; }
 
 SubInstruction::SubInstruction(int Id, Value *X, Value *Y)
-    : BaseInstruction(Id, {X, Y}) {}
+    : BasicInstruction(Id, {X, Y}) {}
 std::string_view SubInstruction::getName() const { return "sub"; }
 
 MulInstruction::MulInstruction(int Id, Value *X, Value *Y)
-    : BaseInstruction(Id, {X, Y}) {}
+    : BasicInstruction(Id, {X, Y}) {}
 std::string_view MulInstruction::getName() const { return "mul"; }
 
 DivInstruction::DivInstruction(int Id, Value *X, Value *Y)
-    : BaseInstruction(Id, {X, Y}) {}
+    : BasicInstruction(Id, {X, Y}) {}
 std::string_view DivInstruction::getName() const { return "div"; }
 
 CmpInstruction::CmpInstruction(int Id, Value *X, Value *Y)
-    : BaseInstruction(Id, {X, Y}) {}
+    : BasicInstruction(Id, {X, Y}) {}
 std::string_view CmpInstruction::getName() const { return "cmp"; }
 
 AddaInstruction::AddaInstruction(int Id, Value *X, Value *Y)
-    : BaseInstruction(Id, {X, Y}) {}
+    : BasicInstruction(Id, {X, Y}) {}
 std::string_view AddaInstruction::getName() const { return "adda"; }
 
-LoadInstruction::LoadInstruction(int Id, Value *Y) : BaseInstruction(Id, {Y}) {}
+LoadInstruction::LoadInstruction(int Id, Variable *Object,
+                                 AddaInstruction *Address)
+    : MemoryInstruction(Id, Object, Address) {}
+
+std::vector<Value *> LoadInstruction::getArguments() const { return {Address}; }
+
+void cs241c::LoadInstruction::updateArg(unsigned long Index, Value *NewVal) {
+  if (Index == 0) {
+    Address = dynamic_cast<AddaInstruction *>(NewVal);
+    if (!Address) {
+      throw std::logic_error(
+          "Paramater of LoadInstruction is not AddaInstruction.");
+    }
+  } else {
+    throw std::range_error(
+        "Index is not within the range of a LoadInstruction.");
+  }
+}
+
 std::string_view LoadInstruction::getName() const { return "load"; }
 
-StoreInstruction::StoreInstruction(int Id, Value *Y, Value *X)
-    : BaseInstruction(Id, {Y, X}) {}
+StoreInstruction::StoreInstruction(int Id, Variable *Object, Value *Y,
+                                   AddaInstruction *Address)
+    : MemoryInstruction(Id, Object, Address), Y(Y) {}
+
+std::vector<Value *> StoreInstruction::getArguments() const {
+  return {Y, Address};
+}
+
+void StoreInstruction::updateArg(unsigned long Index, Value *NewVal) {
+  switch (Index) {
+  case 0:
+    Y = NewVal;
+    break;
+  case 1:
+    Address = dynamic_cast<AddaInstruction *>(NewVal);
+    if (!Address) {
+      throw std::logic_error(
+          "Second paramater of StoreInstruction is not AddaInstruction.");
+    }
+    break;
+  default:
+    throw std::range_error(
+        "Index is not within the range of a StoreInstruction.");
+  }
+}
+
 std::string_view StoreInstruction::getName() const { return "store"; }
 
 MoveInstruction::MoveInstruction(int Id, Value *Y, Value *X)
-    : BaseInstruction(Id, {Y, X}), Target(X), Source(Y) {}
+    : BasicInstruction(Id, {Y, X}), Target(X), Source(Y) {}
 std::string_view MoveInstruction::getName() const { return "move"; }
 void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) {
   Target = NewTarget;
@@ -123,7 +171,7 @@ void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) {
 }
 
 PhiInstruction::PhiInstruction(int Id, Variable *Target, Value *X1, Value *X2)
-    : BaseInstruction(Id, {X1, X2}), Target(Target) {}
+    : BasicInstruction(Id, {X1, X2}), Target(Target) {}
 std::string_view PhiInstruction::getName() const { return "phi"; }
 
 CallInstruction::CallInstruction(int Id, Function *Target,
@@ -139,7 +187,7 @@ std::vector<Value *> CallInstruction::getArguments() const {
   return Result;
 }
 
-void CallInstruction::updateArg(const unsigned long Index, Value *NewVal) {
+void CallInstruction::updateArg(unsigned long Index, Value *NewVal) {
   Arguments.at(Index) = NewVal;
 }
 
@@ -197,12 +245,12 @@ BgtInstruction::BgtInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
 
 std::string_view BgtInstruction::getName() const { return "bgt"; }
 
-ReadInstruction::ReadInstruction(int Id) : BaseInstruction(Id, {}) {}
+ReadInstruction::ReadInstruction(int Id) : BasicInstruction(Id, {}) {}
 std::string_view ReadInstruction::getName() const { return "read"; }
 
 WriteInstruction::WriteInstruction(int Id, Value *X)
-    : BaseInstruction(Id, {X}) {}
+    : BasicInstruction(Id, {X}) {}
 std::string_view WriteInstruction::getName() const { return "write"; }
 
-WriteNLInstruction::WriteNLInstruction(int Id) : BaseInstruction(Id, {}) {}
+WriteNLInstruction::WriteNLInstruction(int Id) : BasicInstruction(Id, {}) {}
 std::string_view WriteNLInstruction::getName() const { return "writeNL"; }

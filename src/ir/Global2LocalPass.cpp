@@ -7,6 +7,8 @@ namespace {
 class FunctionEliminator {
   Function *F;
 
+  std::unordered_map<Variable *, LocalVariable *> LocalSubstitues;
+
 public:
   void run(Function *F) {
     this->F = F;
@@ -20,6 +22,8 @@ private:
   BasicBlock *run(BasicBlock *BB) {
     auto BBEnd = BB->end();
     for (auto Instr = BB->begin(); Instr != BBEnd; ++Instr) {
+      if (auto Load = dynamic_cast<LoadInstruction *>(Instr->get())) {
+      }
     }
     return nullptr;
   }

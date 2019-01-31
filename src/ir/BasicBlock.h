@@ -42,7 +42,8 @@ public:
   void insertPhiInstruction(std::unique_ptr<PhiInstruction> Phi);
   void updatePhiInst(BasicBlock *From, Variable *VarToChange, Value *NewVal);
 
-  long getPredecessorIndex(BasicBlock *Predecessor);
+  std::vector<BasicBlock *>::difference_type
+  getPredecessorIndex(BasicBlock *Predecessor);
 
   std::vector<std::unique_ptr<PhiInstruction>> genPhis();
 

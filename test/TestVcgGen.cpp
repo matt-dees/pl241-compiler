@@ -66,14 +66,15 @@ TEST_CASE("Test VCG Graph Generation") {
   // bne %1, 3, 4
   //
   // Edge to BB3 and BB4
-  BB2->appendInstruction(std::make_unique<AddaInstruction>(
-      Context.genInstructionId(), Context.makeConstant(1000),
-      Context.makeConstant(2)));
+  auto Adda = std::make_unique<AddaInstruction>(Context.genInstructionId(),
+                                                Context.makeConstant(1000),
+                                                Context.makeConstant(2));
+  auto AddaPtr = Adda.get();
+  BB2->appendInstruction(move(Adda));
   BB2->appendInstruction(std::make_unique<LoadInstruction>(
-      Context.genInstructionId(), Context.makeConstant(2000)));
+      Context.genInstructionId(), nullptr, AddaPtr));
   BB2->appendInstruction(std::make_unique<StoreInstruction>(
-      Context.genInstructionId(), Context.makeConstant(5),
-      Context.makeConstant(2000)));
+      Context.genInstructionId(), nullptr, Context.makeConstant(5), AddaPtr));
   BB2->appendInstruction(std::make_unique<MoveInstruction>(
       Context.genInstructionId(), Context.makeConstant(600),
       Context.makeConstant(700)));
