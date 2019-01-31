@@ -2,7 +2,7 @@
 
 using namespace cs241c;
 
-std::unordered_map<Variable *, Value *> &SSAContext::changes() {
+const std::unordered_map<Variable *, Value *> &SSAContext::changes() {
   return Changes;
 }
 

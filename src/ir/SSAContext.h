@@ -12,7 +12,7 @@ private:
   std::unordered_map<Variable *, Value *> Changes;
 
 public:
-  std::unordered_map<Variable *, Value *> &changes();
+  const std::unordered_map<Variable *, Value *> &changes();
   const std::unordered_map<Variable *, Value *> &ssaVariableMap() const;
 
   void merge(const SSAContext &Source);
