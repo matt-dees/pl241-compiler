@@ -1,6 +1,7 @@
 #include "Instruction.h"
 #include "assert.h"
 #include <sstream>
+
 using namespace cs241c;
 
 Instruction::Instruction(int Id) : Id(Id) {}
@@ -26,17 +27,12 @@ std::string Instruction::toString() const {
 
 void Instruction::setId(int NewId) { Id = NewId; }
 
-template <typename T>
-BaseInstruction<T>::BaseInstruction(int Id, std::vector<Value *> &&Arguments)
+BaseInstruction::BaseInstruction(int Id, std::vector<Value *> &&Arguments)
     : Instruction(Id), Arguments(move(Arguments)) {}
 
-template <typename T>
-std::vector<Value *> BaseInstruction<T>::getArguments() const {
-  return Arguments;
-}
+std::vector<Value *> BaseInstruction::getArguments() const { return Arguments; }
 
-template <typename T>
-void BaseInstruction<T>::argsToSSA(cs241c::SSAContext &SSACtx) {
+void BaseInstruction::argsToSSA(cs241c::SSAContext &SSACtx) {
   std::vector<Value *> Args = getArguments();
   for (long unsigned int i = 0; i < Args.size(); ++i) {
     if (auto Var = dynamic_cast<Variable *>(Args.at(i))) {
@@ -45,13 +41,8 @@ void BaseInstruction<T>::argsToSSA(cs241c::SSAContext &SSACtx) {
   }
 }
 
-template <typename T>
-void BaseInstruction<T>::updateArg(const unsigned long Index, Value *NewVal) {
+void BaseInstruction::updateArg(const unsigned long Index, Value *NewVal) {
   Arguments.at(Index) = NewVal;
-}
-
-template <typename T> void BaseInstruction<T>::visit(InstructionVisitor *V) {
-  V->visit(static_cast<T *>(this));
 }
 
 BasicBlockTerminator::BasicBlockTerminator(int Id,
@@ -68,16 +59,6 @@ void BasicBlockTerminator::updateArg(const unsigned long Index, Value *NewVal) {
 
 std::vector<BasicBlock *> BasicBlockTerminator::followingBlocks() { return {}; }
 
-template <typename T>
-BaseBasicBlockTerminator<T>::BaseBasicBlockTerminator(
-    int Id, std::vector<Value *> &&Params)
-    : BasicBlockTerminator(Id, move(Params)) {}
-
-template <typename T>
-void BaseBasicBlockTerminator<T>::visit(InstructionVisitor *V) {
-  V->visit(static_cast<T *>(this));
-}
-
 ConditionalBlockTerminator::ConditionalBlockTerminator(int Id,
                                                        CmpInstruction *Cmp,
                                                        BasicBlock *Then,
@@ -87,16 +68,6 @@ ConditionalBlockTerminator::ConditionalBlockTerminator(int Id,
 std::vector<BasicBlock *> ConditionalBlockTerminator::followingBlocks() {
   return {dynamic_cast<BasicBlock *>(getArguments()[1]),
           dynamic_cast<BasicBlock *>(getArguments()[2])};
-}
-
-template <typename T>
-BaseConditionalBlockTerminator<T>::BaseConditionalBlockTerminator(
-    int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else)
-    : ConditionalBlockTerminator(Id, Cmp, Then, Else) {}
-
-template <typename T>
-void BaseConditionalBlockTerminator<T>::visit(InstructionVisitor *V) {
-  V->visit(static_cast<T *>(this));
 }
 
 NegInstruction::NegInstruction(int Id, Value *X) : BaseInstruction(Id, {X}) {}
@@ -163,18 +134,16 @@ void CallInstruction::updateArg(const unsigned long Index, Value *NewVal) {
   Arguments.at(Index) = NewVal;
 }
 
-void CallInstruction::visit(InstructionVisitor *V) { V->visit(this); }
-
-RetInstruction::RetInstruction(int Id) : BaseBasicBlockTerminator(Id, {}) {}
+RetInstruction::RetInstruction(int Id) : BasicBlockTerminator(Id, {}) {}
 RetInstruction::RetInstruction(int Id, Value *X)
-    : BaseBasicBlockTerminator(Id, {X}) {}
+    : BasicBlockTerminator(Id, {X}) {}
 std::string_view RetInstruction::getName() const { return "ret"; }
 
-EndInstruction::EndInstruction(int Id) : BaseBasicBlockTerminator(Id, {}) {}
+EndInstruction::EndInstruction(int Id) : BasicBlockTerminator(Id, {}) {}
 std::string_view EndInstruction::getName() const { return "end"; }
 
 BraInstruction::BraInstruction(int Id, BasicBlock *Y)
-    : BaseBasicBlockTerminator(Id, {Y}) {}
+    : BasicBlockTerminator(Id, {Y}) {}
 std::string_view BraInstruction::getName() const { return "bra"; }
 
 std::vector<BasicBlock *> BraInstruction::followingBlocks() {
@@ -185,37 +154,37 @@ std::vector<BasicBlock *> BraInstruction::followingBlocks() {
 
 BneInstruction::BneInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                                BasicBlock *Else)
-    : BaseConditionalBlockTerminator(Id, Cmp, Then, Else) {}
+    : ConditionalBlockTerminator(Id, Cmp, Then, Else) {}
 
 std::string_view BneInstruction::getName() const { return "bne"; }
 
 BeqInstruction::BeqInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                                BasicBlock *Else)
-    : BaseConditionalBlockTerminator(Id, Cmp, Then, Else) {}
+    : ConditionalBlockTerminator(Id, Cmp, Then, Else) {}
 
 std::string_view BeqInstruction::getName() const { return "beq"; }
 
 BltInstruction::BltInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                                BasicBlock *Else)
-    : BaseConditionalBlockTerminator(Id, Cmp, Then, Else) {}
+    : ConditionalBlockTerminator(Id, Cmp, Then, Else) {}
 
 std::string_view BltInstruction::getName() const { return "ble"; }
 
 BleInstruction::BleInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                                BasicBlock *Else)
-    : BaseConditionalBlockTerminator(Id, Cmp, Then, Else) {}
+    : ConditionalBlockTerminator(Id, Cmp, Then, Else) {}
 
 std::string_view BleInstruction::getName() const { return "blt"; }
 
 BgeInstruction::BgeInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                                BasicBlock *Else)
-    : BaseConditionalBlockTerminator(Id, Cmp, Then, Else) {}
+    : ConditionalBlockTerminator(Id, Cmp, Then, Else) {}
 
 std::string_view BgeInstruction::getName() const { return "bge"; }
 
 BgtInstruction::BgtInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
                                BasicBlock *Else)
-    : BaseConditionalBlockTerminator(Id, Cmp, Then, Else) {}
+    : ConditionalBlockTerminator(Id, Cmp, Then, Else) {}
 
 std::string_view BgtInstruction::getName() const { return "bgt"; }
 
