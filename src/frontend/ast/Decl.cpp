@@ -21,6 +21,11 @@ std::unique_ptr<LocalVariable> IntDecl::declareLocal(IrGenContext &Ctx) {
   return Var;
 }
 
+void IntDecl::genIr(IrGenContext &Ctx) {
+  Ctx.makeInstruction<MoveInstruction>(Ctx.makeConstant(0),
+                                       Ctx.lookupVariable(Ident).Var);
+}
+
 ArrayDecl::ArrayDecl(std::string Ident, std::vector<int32_t> Dim)
     : Ident(move(Ident)), Dim(move(Dim)) {}
 
@@ -55,6 +60,11 @@ void Func::genIr(IrGenContext &Ctx) {
   BasicBlock *EntryBlock = Ctx.makeBasicBlock();
   Ctx.currentBlock() = EntryBlock;
 
+  for (const std::unique_ptr<Decl> &D : Vars) {
+    if (auto IntD = dynamic_cast<IntDecl *>(D.get())) {
+      IntD->genIr(Ctx);
+    }
+  }
   for (const std::unique_ptr<Stmt> &S : Stmts) {
     S->genIr(Ctx);
   }
