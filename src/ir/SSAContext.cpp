@@ -1,4 +1,5 @@
 #include "SSAContext.h"
+#include "Variable.h"
 
 using namespace cs241c;
 

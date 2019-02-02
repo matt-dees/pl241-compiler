@@ -1,10 +1,17 @@
 #include "Instruction.h"
-#include "assert.h"
+#include "BasicBlock.h"
+#include "Function.h"
+#include "SSAContext.h"
+#include "Variable.h"
+#include <algorithm>
+#include <cassert>
+#include <iterator>
 #include <sstream>
 
 using namespace cs241c;
 
-Instruction::Instruction(int Id) : Id(Id) {}
+Instruction::Instruction(int Id, std::vector<Value *> &&Arguments)
+    : Id(Id), Arguments(move(Arguments)) {}
 
 BasicBlock *Instruction::getOwner() const { return Owner; }
 
@@ -27,12 +34,10 @@ std::string Instruction::toString() const {
 
 void Instruction::setId(int Id) { this->Id = Id; }
 
-BasicInstruction::BasicInstruction(int Id, std::vector<Value *> &&Arguments)
-    : Instruction(Id), Arguments(move(Arguments)) {}
+std::vector<Value *> &Instruction::arguments() { return Arguments; }
+const std::vector<Value *> &Instruction::arguments() const { return Arguments; }
 
-std::vector<Value *> BasicInstruction::arguments() const { return Arguments; }
-
-void BasicInstruction::argsToSSA(cs241c::SSAContext &SSACtx) {
+void Instruction::argsToSSA(SSAContext &SSACtx) {
   std::vector<Value *> Args = arguments();
   for (long unsigned int i = 0; i < Args.size(); ++i) {
     if (auto Var = dynamic_cast<Variable *>(Args.at(i))) {
@@ -41,27 +46,21 @@ void BasicInstruction::argsToSSA(cs241c::SSAContext &SSACtx) {
   }
 }
 
-void BasicInstruction::updateArg(unsigned long Index, Value *NewVal) {
+void Instruction::updateArg(unsigned long Index, Value *NewVal) {
   Arguments.at(Index) = NewVal;
 }
 
 MemoryInstruction::MemoryInstruction(int Id, Variable *Object,
-                                     AddaInstruction *Address)
-    : Instruction(Id), Object(Object), Address(Address) {}
+                                     std::vector<Value *> &&Arguments)
+    : Instruction(Id, move(Arguments)), Object(Object) {}
+
+Variable *MemoryInstruction::object() const { return Object; }
 
 BasicBlockTerminator::BasicBlockTerminator(int Id,
                                            std::vector<Value *> &&Arguments)
-    : Instruction(Id), Arguments(move(Arguments)) {}
+    : Instruction(Id, move(Arguments)) {}
 
-std::vector<Value *> BasicBlockTerminator::arguments() const {
-  return Arguments;
-}
-
-void BasicBlockTerminator::updateArg(unsigned long Index, Value *NewVal) {
-  Arguments.at(Index) = NewVal;
-}
-
-void BasicBlockTerminator::argsToSSA(cs241c::SSAContext &SSACtx) {
+void BasicBlockTerminator::argsToSSA(SSAContext &SSACtx) {
   std::vector<Value *> Args = arguments();
   for (long unsigned int i = 0; i < Args.size(); ++i) {
     if (auto Var = dynamic_cast<Variable *>(Args.at(i))) {
@@ -83,111 +82,92 @@ std::vector<BasicBlock *> ConditionalBlockTerminator::followingBlocks() {
           dynamic_cast<BasicBlock *>(arguments()[2])};
 }
 
-NegInstruction::NegInstruction(int Id, Value *X) : BasicInstruction(Id, {X}) {}
+NegInstruction::NegInstruction(int Id, Value *X) : Instruction(Id, {X}) {}
 std::string_view NegInstruction::mnemonic() const { return "neg"; }
 
 AddInstruction::AddInstruction(int Id, Value *X, Value *Y)
-    : BasicInstruction(Id, {X, Y}) {}
+    : Instruction(Id, {X, Y}) {}
 std::string_view AddInstruction::mnemonic() const { return "add"; }
 
 SubInstruction::SubInstruction(int Id, Value *X, Value *Y)
-    : BasicInstruction(Id, {X, Y}) {}
+    : Instruction(Id, {X, Y}) {}
 std::string_view SubInstruction::mnemonic() const { return "sub"; }
 
 MulInstruction::MulInstruction(int Id, Value *X, Value *Y)
-    : BasicInstruction(Id, {X, Y}) {}
+    : Instruction(Id, {X, Y}) {}
 std::string_view MulInstruction::mnemonic() const { return "mul"; }
 
 DivInstruction::DivInstruction(int Id, Value *X, Value *Y)
-    : BasicInstruction(Id, {X, Y}) {}
+    : Instruction(Id, {X, Y}) {}
 std::string_view DivInstruction::mnemonic() const { return "div"; }
 
 CmpInstruction::CmpInstruction(int Id, Value *X, Value *Y)
-    : BasicInstruction(Id, {X, Y}) {}
+    : Instruction(Id, {X, Y}) {}
 std::string_view CmpInstruction::mnemonic() const { return "cmp"; }
 
 AddaInstruction::AddaInstruction(int Id, Value *X, Value *Y)
-    : BasicInstruction(Id, {X, Y}) {}
+    : Instruction(Id, {X, Y}) {}
 std::string_view AddaInstruction::mnemonic() const { return "adda"; }
 
 LoadInstruction::LoadInstruction(int Id, Variable *Object,
                                  AddaInstruction *Address)
-    : MemoryInstruction(Id, Object, Address) {}
+    : MemoryInstruction(Id, Object, {Address}) {}
 
-std::vector<Value *> LoadInstruction::arguments() const { return {Address}; }
-
-void cs241c::LoadInstruction::updateArg(unsigned long Index, Value *NewVal) {
-  if (Index == 0) {
-    Address = dynamic_cast<AddaInstruction *>(NewVal);
-    if (!Address) {
-      throw std::logic_error(
-          "Paramater of LoadInstruction is not AddaInstruction.");
-    }
-  } else {
-    throw std::range_error(
-        "Index is not within the range of a LoadInstruction.");
+void LoadInstruction::updateArg(unsigned long Index, Value *NewVal) {
+  if (Index == 0 && !dynamic_cast<AddaInstruction *>(NewVal)) {
+    throw std::logic_error(
+        "Paramater of LoadInstruction is not AddaInstruction.");
   }
+  MemoryInstruction::updateArg(Index, NewVal);
 }
 
 std::string_view LoadInstruction::mnemonic() const { return "load"; }
 
 StoreInstruction::StoreInstruction(int Id, Variable *Object, Value *Y,
                                    AddaInstruction *Address)
-    : MemoryInstruction(Id, Object, Address), Y(Y) {}
-
-std::vector<Value *> StoreInstruction::arguments() const {
-  return {Y, Address};
-}
+    : MemoryInstruction(Id, Object, {Y, Address}) {}
 
 void StoreInstruction::updateArg(unsigned long Index, Value *NewVal) {
-  switch (Index) {
-  case 0:
-    Y = NewVal;
-    break;
-  case 1:
-    Address = dynamic_cast<AddaInstruction *>(NewVal);
-    if (!Address) {
-      throw std::logic_error(
-          "Second paramater of StoreInstruction is not AddaInstruction.");
-    }
-    break;
-  default:
-    throw std::range_error(
-        "Index is not within the range of a StoreInstruction.");
+  if (Index == 1 && !dynamic_cast<AddaInstruction *>(NewVal)) {
+    throw std::logic_error(
+        "Second paramater of StoreInstruction is not AddaInstruction.");
   }
+  MemoryInstruction::updateArg(Index, NewVal);
 }
 
 std::string_view StoreInstruction::mnemonic() const { return "store"; }
 
 MoveInstruction::MoveInstruction(int Id, Value *Y, Value *X)
-    : BasicInstruction(Id, {Y, X}), Target(X), Source(Y) {}
+    : Instruction(Id, {Y, X}), Target(X), Source(Y) {}
 std::string_view MoveInstruction::mnemonic() const { return "move"; }
+
 void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) {
   Target = NewTarget;
   Source = NewSource;
-  Arguments = {NewSource, NewTarget};
+  arguments() = {NewSource, NewTarget};
 }
 
 PhiInstruction::PhiInstruction(int Id, Variable *Target, Value *X1, Value *X2)
-    : BasicInstruction(Id, {X1, X2}), Target(Target) {}
+    : Instruction(Id, {X1, X2}), Target(Target) {}
 std::string_view PhiInstruction::mnemonic() const { return "phi"; }
+
+namespace {
+std::vector<Value *>
+prepareCallArguments(Function *Target, const std::vector<Value *> &Arguments) {
+  std::vector<Value *> CallArguments;
+  CallArguments.reserve(Arguments.size() + 1);
+  CallArguments.push_back(Target);
+  std::copy(Arguments.begin(), Arguments.end(),
+            std::back_inserter(CallArguments));
+  return CallArguments;
+}
+} // namespace
 
 CallInstruction::CallInstruction(int Id, Function *Target,
                                  std::vector<Value *> Arguments)
-    : Instruction(Id), Target(Target), Arguments(move(Arguments)) {}
+    : Instruction(Id, prepareCallArguments(Target, Arguments)) {}
 
 std::string_view CallInstruction::mnemonic() const { return "call"; }
-
-std::vector<Value *> CallInstruction::arguments() const {
-  std::vector<Value *> Result;
-  Result.push_back(Target);
-  std::copy(Arguments.begin(), Arguments.end(), std::back_inserter(Result));
-  return Result;
-}
-
-void CallInstruction::updateArg(unsigned long Index, Value *NewVal) {
-  Arguments.at(Index) = NewVal;
-}
 
 RetInstruction::RetInstruction(int Id) : BasicBlockTerminator(Id, {}) {}
 RetInstruction::RetInstruction(int Id, Value *X)
@@ -202,7 +182,7 @@ BraInstruction::BraInstruction(int Id, BasicBlock *Y)
 std::string_view BraInstruction::mnemonic() const { return "bra"; }
 
 std::vector<BasicBlock *> BraInstruction::followingBlocks() {
-  BasicBlock *Target = dynamic_cast<BasicBlock *>(arguments()[0]);
+  auto *Target = dynamic_cast<BasicBlock *>(arguments()[0]);
   assert(Target);
   return {Target};
 }
@@ -243,12 +223,11 @@ BgtInstruction::BgtInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
 
 std::string_view BgtInstruction::mnemonic() const { return "bgt"; }
 
-ReadInstruction::ReadInstruction(int Id) : BasicInstruction(Id, {}) {}
+ReadInstruction::ReadInstruction(int Id) : Instruction(Id, {}) {}
 std::string_view ReadInstruction::mnemonic() const { return "read"; }
 
-WriteInstruction::WriteInstruction(int Id, Value *X)
-    : BasicInstruction(Id, {X}) {}
+WriteInstruction::WriteInstruction(int Id, Value *X) : Instruction(Id, {X}) {}
 std::string_view WriteInstruction::mnemonic() const { return "write"; }
 
-WriteNLInstruction::WriteNLInstruction(int Id) : BasicInstruction(Id, {}) {}
+WriteNLInstruction::WriteNLInstruction(int Id) : Instruction(Id, {}) {}
 std::string_view WriteNLInstruction::mnemonic() const { return "writeNL"; }

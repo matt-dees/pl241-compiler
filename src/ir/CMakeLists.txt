@@ -5,10 +5,10 @@ add_library(cs241c-ir
   DominatorTree.h
   Function.cpp
   Function.h
-  Global2LocalPass.cpp
-  Global2LocalPass.h
   Instruction.cpp
   Instruction.h
+  Mem2VarPass.cpp
+  Mem2VarPass.h
   Module.cpp
   Module.h
   SSAContext.cpp

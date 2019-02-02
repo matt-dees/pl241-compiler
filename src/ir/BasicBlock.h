@@ -2,16 +2,19 @@
 #define CS241C_IR_BASICBLOCK_H
 
 #include "Instruction.h"
-#include "SSAContext.h"
 #include "Value.h"
 #include <cstdint>
 #include <deque>
 #include <memory>
+#include <unordered_map>
+#include <vector>
 
 namespace cs241c {
 class BasicBlockTerminator;
 class Instruction;
 class PhiInstruction;
+class SSAContext;
+class Variable;
 
 class BasicBlock : public Value {
 public:

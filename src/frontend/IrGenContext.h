@@ -1,6 +1,7 @@
 #ifndef CS241C_FRONTEND_IRGENCONTEXT_H
 #define CS241C_FRONTEND_IRGENCONTEXT_H
 
+#include "BasicBlock.h"
 #include "Instruction.h"
 #include "Value.h"
 #include "Variable.h"

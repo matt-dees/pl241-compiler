@@ -6,17 +6,6 @@
 #include <vector>
 
 namespace cs241c {
-class GlobalVariable;
-class LocalVariable;
-
-class VariableVisitor {
-public:
-  virtual ~VariableVisitor() = default;
-
-  virtual void visit(GlobalVariable *) = 0;
-  virtual void visit(LocalVariable *) = 0;
-};
-
 class Variable : public Value {
 protected:
   std::string Ident;
@@ -26,10 +15,9 @@ protected:
 
 public:
   virtual bool isMoveable() const = 0;
-  std::string name();
+  bool isSingleWord() const;
+  std::string ident();
   std::string toString() const override;
-
-  virtual void visit(VariableVisitor *) = 0;
 };
 
 class GlobalVariable : public Variable {
@@ -38,7 +26,6 @@ public:
   GlobalVariable(std::string Ident, const std::vector<int> &ArrayDimensions);
 
   bool isMoveable() const override;
-  virtual void visit(VariableVisitor *) override;
 };
 
 class LocalVariable : public Variable {
@@ -49,7 +36,6 @@ public:
   LocalVariable(std::string Name, const std::vector<int> &ArrayDimensions);
 
   bool isMoveable() const override;
-  virtual void visit(VariableVisitor *) override;
 };
 } // namespace cs241c
 

@@ -1,4 +1,6 @@
 #include "BasicBlock.h"
+#include "SSAContext.h"
+#include "Variable.h"
 #include <algorithm>
 #include <cassert>
 #include <utility>

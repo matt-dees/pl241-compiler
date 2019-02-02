@@ -1,11 +1,12 @@
 #ifndef CS241C_IR_SSACONTEXT_H
 #define CS241C_IR_SSACONTEXT_H
 
-#include "Value.h"
-#include "Variable.h"
 #include <unordered_map>
 
 namespace cs241c {
+class Value;
+class Variable;
+
 class SSAContext {
 private:
   std::unordered_map<Variable *, Value *> SSAVariableMap;

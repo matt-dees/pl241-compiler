@@ -1,9 +1,6 @@
 #ifndef CS241C_IR_INSTRUCTION_H
 #define CS241C_IR_INSTRUCTION_H
 
-#include "BasicBlock.h"
-#include "Function.h"
-#include "SSAContext.h"
 #include "Value.h"
 #include <cstdint>
 #include <string>
@@ -13,6 +10,8 @@
 namespace cs241c {
 class BasicBlock;
 class Function;
+class SSAContext;
+class Variable;
 
 class AddaInstruction;
 class CmpInstruction;
@@ -21,17 +20,19 @@ class Instruction : public Value {
 private:
   int Id;
   BasicBlock *Owner{};
+  std::vector<Value *> Arguments;
 
 protected:
-  Instruction(int Id);
+  Instruction(int Id, std::vector<Value *> &&Arguments);
   virtual std::string_view mnemonic() const = 0;
 
 public:
   BasicBlock *getOwner() const;
-  virtual std::vector<Value *> arguments() const = 0;
-  virtual void updateArg(unsigned long Index, Value *NewVal) = 0;
+  std::vector<Value *> &arguments();
+  const std::vector<Value *> &arguments() const;
+  virtual void updateArg(unsigned long Index, Value *NewVal);
 
-  virtual void argsToSSA(SSAContext &) {}
+  virtual void argsToSSA(SSAContext &);
   void setId(int Id);
   std::string name() const override;
   std::string toString() const override;
@@ -39,34 +40,22 @@ public:
   friend class BasicBlock;
 };
 
-class BasicInstruction : public Instruction {
-protected:
-  BasicInstruction(int Id, std::vector<Value *> &&Params);
-  std::vector<Value *> Arguments;
-
-public:
-  void updateArg(unsigned long Index, Value *NewVal) override;
-  void argsToSSA(SSAContext &SSACtx) override;
-  std::vector<Value *> arguments() const override;
-};
-
 class MemoryInstruction : public Instruction {
 protected:
   Variable *Object;
-  AddaInstruction *Address;
 
-  MemoryInstruction(int Id, Variable *Object, AddaInstruction *Address);
+  MemoryInstruction(int Id, Variable *Object, std::vector<Value *> &&Arguments);
+
+public:
+  Variable *object() const;
 };
 
 class BasicBlockTerminator : public Instruction {
 protected:
-  std::vector<Value *> Arguments;
-  BasicBlockTerminator(int Id, std::vector<Value *> &&Params);
+  BasicBlockTerminator(int Id, std::vector<Value *> &&Arguments);
 
 public:
-  void updateArg(unsigned long Index, Value *NewVal) override;
   void argsToSSA(SSAContext &SSACtx) override;
-  std::vector<Value *> arguments() const override;
   virtual std::vector<BasicBlock *> followingBlocks();
 };
 
@@ -79,43 +68,43 @@ public:
   std::vector<BasicBlock *> followingBlocks() override;
 };
 
-class NegInstruction : public BasicInstruction {
+class NegInstruction : public Instruction {
 public:
   NegInstruction(int Id, Value *X);
   std::string_view mnemonic() const override;
 };
 
-class AddInstruction : public BasicInstruction {
+class AddInstruction : public Instruction {
 public:
   AddInstruction(int Id, Value *X, Value *Y);
   std::string_view mnemonic() const override;
 };
 
-class SubInstruction : public BasicInstruction {
+class SubInstruction : public Instruction {
 public:
   SubInstruction(int Id, Value *X, Value *Y);
   std::string_view mnemonic() const override;
 };
 
-class MulInstruction : public BasicInstruction {
+class MulInstruction : public Instruction {
 public:
   MulInstruction(int Id, Value *X, Value *Y);
   std::string_view mnemonic() const override;
 };
 
-class DivInstruction : public BasicInstruction {
+class DivInstruction : public Instruction {
 public:
   DivInstruction(int Id, Value *X, Value *Y);
   std::string_view mnemonic() const override;
 };
 
-class CmpInstruction : public BasicInstruction {
+class CmpInstruction : public Instruction {
 public:
   CmpInstruction(int Id, Value *X, Value *Y);
   std::string_view mnemonic() const override;
 };
 
-class AddaInstruction : public BasicInstruction {
+class AddaInstruction : public Instruction {
 public:
   AddaInstruction(int Id, Value *X, Value *Y);
   std::string_view mnemonic() const override;
@@ -124,23 +113,19 @@ public:
 class LoadInstruction : public MemoryInstruction {
 public:
   LoadInstruction(int Id, Variable *Object, AddaInstruction *Address);
-  std::vector<Value *> arguments() const override;
   void updateArg(unsigned long Index, Value *NewVal) override;
   std::string_view mnemonic() const override;
 };
 
 class StoreInstruction : public MemoryInstruction {
-  Value *Y;
-
 public:
   StoreInstruction(int Id, Variable *Object, Value *Y,
                    AddaInstruction *Address);
-  std::vector<Value *> arguments() const override;
   void updateArg(unsigned long Index, Value *NewVal) override;
   std::string_view mnemonic() const override;
 };
 
-class MoveInstruction : public BasicInstruction {
+class MoveInstruction : public Instruction {
 public:
   MoveInstruction(int Id, Value *Y, Value *X);
   std::string_view mnemonic() const override;
@@ -149,7 +134,7 @@ public:
   Value *Source;
 };
 
-class PhiInstruction : public BasicInstruction {
+class PhiInstruction : public Instruction {
 public:
   PhiInstruction(int Id, Variable *Target, Value *X1, Value *X2);
   std::string_view mnemonic() const override;
@@ -157,15 +142,9 @@ public:
 };
 
 class CallInstruction : public Instruction {
-  Function *Target;
-  std::vector<Value *> Arguments;
-
 public:
   CallInstruction(int Id, Function *Target, std::vector<Value *> Arguments);
-
   std::string_view mnemonic() const override;
-  std::vector<Value *> arguments() const override;
-  void updateArg(unsigned long Index, Value *NewVal) override;
 };
 
 class RetInstruction : public BasicBlockTerminator {
@@ -231,19 +210,19 @@ public:
   std::string_view mnemonic() const override;
 };
 
-class ReadInstruction : public BasicInstruction {
+class ReadInstruction : public Instruction {
 public:
   ReadInstruction(int Id);
   std::string_view mnemonic() const override;
 };
 
-class WriteInstruction : public BasicInstruction {
+class WriteInstruction : public Instruction {
 public:
   WriteInstruction(int Id, Value *X);
   std::string_view mnemonic() const override;
 };
 
-class WriteNLInstruction : public BasicInstruction {
+class WriteNLInstruction : public Instruction {
 public:
   WriteNLInstruction(int Id);
   std::string_view mnemonic() const override;
