@@ -18,8 +18,8 @@ class Mem2VarPass {
   std::unordered_map<Function *, std::unordered_set<Variable *>> StoresByFunction;
 
   Function *CurrentFunction;
-  std::unordered_set<Variable *> FunctionLoads;
-  std::unordered_set<Variable *> FunctionStores;
+  std::unordered_set<Variable *> CurrentFunctionLoads;
+  std::unordered_set<Variable *> CurrentFunctionStores;
   std::unordered_map<Variable *, LocalVariable *> KnownVars;
 
 public:

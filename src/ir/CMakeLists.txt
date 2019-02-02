@@ -19,3 +19,4 @@ add_library(cs241c-ir
   Variable.h)
 
 target_include_directories(cs241c-ir PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(cs241c-ir PRIVATE cs241c-util)

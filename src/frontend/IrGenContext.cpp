@@ -1,5 +1,6 @@
 #include "IrGenContext.h"
 #include "Module.h"
+#include "NameGen.h"
 #include <algorithm>
 #include <stdexcept>
 #include <string_view>
@@ -17,9 +18,9 @@ vector<unique_ptr<ConstantValue>> &&IrGenContext::constants() { return move(Cons
 
 vector<unique_ptr<BasicBlock>> &&IrGenContext::blocks() { return move(Blocks); }
 
-string IrGenContext::genBasicBlockName() { return string("BB_") + to_string(BasicBlockCounter++); }
+string IrGenContext::genBasicBlockName() { return NameGen::genBasicBlockName(); }
 
-int IrGenContext::genInstructionId() { return InstructionCounter++; }
+int IrGenContext::genInstructionId() { return NameGen::genInstructionId(); }
 
 void IrGenContext::beginScope() {
   Constants.clear();
@@ -36,15 +37,15 @@ void IrGenContext::declare(unique_ptr<Function> Func) {
 }
 
 void IrGenContext::declare(Symbol Sym, unique_ptr<GlobalVariable> Var) {
-  if (GlobalsTable.find(Var->name()) != GlobalsTable.end()) {
-    throw runtime_error(string("Redeclaring global variable ") + Var->name());
+  if (GlobalsTable.find(Var->ident()) != GlobalsTable.end()) {
+    throw runtime_error(string("Redeclaring global variable ") + Var->ident());
   }
-  GlobalsTable[Var->name()] = Sym;
+  GlobalsTable[Var->ident()] = Sym;
   CompilationUnit->globals().push_back(move(Var));
 }
 
 void IrGenContext::declare(Symbol Sym) {
-  const string &VarName = Sym.Var->name();
+  const string &VarName = Sym.Var->ident();
   if (LocalsTable.find(VarName) != LocalsTable.end()) {
     throw runtime_error(string("Redeclaring local variable ") + VarName);
   }

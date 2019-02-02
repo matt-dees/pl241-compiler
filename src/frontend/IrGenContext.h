@@ -19,9 +19,6 @@ struct Symbol {
 };
 
 class IrGenContext {
-  int BasicBlockCounter = 0;
-  int InstructionCounter = 0;
-
   Module *CompilationUnit;
 
   std::unordered_map<std::string, Function *> FunctionTable;

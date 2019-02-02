@@ -10,6 +10,8 @@ Function::Function(string Name, vector<unique_ptr<ConstantValue>> &&Constants,
 
 vector<unique_ptr<ConstantValue>> &Function::constants() { return Constants; }
 
+vector<unique_ptr<LocalVariable>> &Function::locals() { return Locals; }
+
 BasicBlock *Function::entryBlock() const { return BasicBlocks.front().get(); }
 
 const vector<unique_ptr<BasicBlock>> &Function::basicBlocks() const { return BasicBlocks; }

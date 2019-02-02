@@ -25,6 +25,7 @@ public:
            std::vector<std::unique_ptr<BasicBlock>> &&BasicBlocks);
 
   std::vector<std::unique_ptr<ConstantValue>> &constants();
+  std::vector<std::unique_ptr<LocalVariable>> &locals();
   BasicBlock *entryBlock() const;
   const std::vector<std::unique_ptr<BasicBlock>> &basicBlocks() const;
   std::string toString() const override;
