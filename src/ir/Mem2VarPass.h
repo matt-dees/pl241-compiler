@@ -14,7 +14,7 @@ class Module;
 class Variable;
 
 class Mem2VarPass {
-  std::unordered_map<Function*, std::unordered_set<Variable *>> LoadsByFunction;
+  std::unordered_map<Function *, std::unordered_set<Variable *>> LoadsByFunction;
   std::unordered_map<Function *, std::unordered_set<Variable *>> StoresByFunction;
 
   Function *CurrentFunction;

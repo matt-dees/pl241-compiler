@@ -3,6 +3,7 @@
 #include <algorithm>
 
 using namespace cs241c;
+using namespace std;
 
 void Mem2VarPass::run(Module *M) {
   for (auto &F : M->functions()) {
@@ -30,13 +31,10 @@ BasicBlock *Mem2VarPass::run(BasicBlock *BB) {
       auto KnownVar = KnownVars.find(Object);
       if (KnownVar != KnownVars.end()) {
         LocalVariable *KnownVarPtr = KnownVar->second;
-        std::for_each(Instr + 1, BBEnd,
-                      [InstrPtr, KnownVarPtr](std::unique_ptr<Instruction> &I) {
-                        std::replace(I->arguments().begin(),
-                                     I->arguments().end(),
-                                     static_cast<Value *>(InstrPtr),
-                                     static_cast<Value *>(KnownVarPtr));
-                      });
+        for_each(Instr + 1, BBEnd, [InstrPtr, KnownVarPtr](unique_ptr<Instruction> &I) {
+          replace(I->arguments().begin(), I->arguments().end(), static_cast<Value *>(InstrPtr),
+                  static_cast<Value *>(KnownVarPtr));
+        });
       }
     } else if (auto Store = dynamic_cast<StoreInstruction *>(InstrPtr)) {
     } else if (auto Call = dynamic_cast<CallInstruction *>(InstrPtr)) {

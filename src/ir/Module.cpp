@@ -2,27 +2,20 @@
 #include "SSAContext.h"
 
 using namespace cs241c;
+using namespace std;
 
-Module::Module(std::string ModuleName) : Name(move(ModuleName)) {}
+Module::Module(string ModuleName) : Name(move(ModuleName)) {}
 
 Value *Module::globalBase() { return &GlobalBase; }
-std::string Module::getIdentifier() const { return Name; }
+string Module::getIdentifier() const { return Name; }
 
-std::vector<std::unique_ptr<GlobalVariable>> &Module::globals() {
-  return Globals;
-}
+vector<unique_ptr<GlobalVariable>> &Module::globals() { return Globals; }
 
-const std::vector<std::unique_ptr<GlobalVariable>> &Module::globals() const {
-  return Globals;
-}
+const vector<unique_ptr<GlobalVariable>> &Module::globals() const { return Globals; }
 
-std::vector<std::unique_ptr<Function>> &Module::functions() {
-  return Functions;
-}
+vector<unique_ptr<Function>> &Module::functions() { return Functions; }
 
-const std::vector<std::unique_ptr<Function>> &Module::functions() const {
-  return Functions;
-}
+const vector<unique_ptr<Function>> &Module::functions() const { return Functions; }
 
 void Module::buildDominatorTree() {
   if (Functions.empty()) {

@@ -7,24 +7,22 @@
 #include <string_view>
 
 using namespace cs241c;
+using namespace std;
 
 namespace {
 using TT = Token::Type;
 
-const std::array<std::string_view, 39> TokenNames = {
-    "Eof",   "Main",   "Function", "Procedure", "Call",   "Return", "Var",
-    "Array", "Let",    "If",       "Then",      "Else",   "Fi",     "While",
-    "Do",    "Od",     "Eq",       "Ne",        "Lt",     "Le",     "Gt",
-    "Ge",    "Add",    "Sub",      "Mul",       "Div",    "POpen",  "PClose",
-    "BOpen", "BClose", "COpen",    "CClose",    "LArrow", "Period", "Comma",
-    "Semi",  "Ident",  "Number",   "Unknown"};
+const array<string_view, 39> TokenNames = {
+    "Eof",   "Main",   "Function", "Procedure", "Call",  "Return", "Var",   "Array",  "Let",    "If",
+    "Then",  "Else",   "Fi",       "While",     "Do",    "Od",     "Eq",    "Ne",     "Lt",     "Le",
+    "Gt",    "Ge",     "Add",      "Sub",       "Mul",   "Div",    "POpen", "PClose", "BOpen",  "BClose",
+    "COpen", "CClose", "LArrow",   "Period",    "Comma", "Semi",   "Ident", "Number", "Unknown"};
 
 class Parser {
-  std::vector<Token>::const_iterator Lookahead;
+  vector<Token>::const_iterator Lookahead;
 
 public:
-  explicit Parser(const std::vector<Token> *Tokens)
-      : Lookahead(Tokens->begin()) {}
+  explicit Parser(const vector<Token> *Tokens) : Lookahead(Tokens->begin()) {}
 
   Computation get() { return pComputation(); }
 
@@ -32,18 +30,17 @@ private:
   Computation pComputation() {
     consume(TT::Main);
 
-    std::vector<std::unique_ptr<Decl>> Globals;
-    std::vector<Func> Funcs;
+    vector<unique_ptr<Decl>> Globals;
+    vector<Func> Funcs;
 
     while (match({TT::Var, TT::Array})) {
       auto Decl = pDecl();
-      Globals.insert(Globals.end(), make_move_iterator(Decl.begin()),
-                     make_move_iterator(Decl.end()));
+      Globals.insert(Globals.end(), make_move_iterator(Decl.begin()), make_move_iterator(Decl.end()));
     }
 
     while (match({TT::Function, TT::Procedure})) {
       auto Func = pFunc();
-      Funcs.push_back(std::move(Func));
+      Funcs.push_back(move(Func));
     }
 
     consume(TT::COpen);
@@ -56,12 +53,12 @@ private:
     return {move(Globals), move(Funcs)};
   }
 
-  std::vector<std::unique_ptr<Decl>> pDecl() {
+  vector<unique_ptr<Decl>> pDecl() {
     auto DeclGen = pDeclType();
 
-    std::vector<std::unique_ptr<Decl>> Decls;
+    vector<unique_ptr<Decl>> Decls;
 
-    std::string Ident = consumeIdent();
+    string Ident = consumeIdent();
     auto Decl = DeclGen(Ident);
     Decls.push_back(move(Decl));
 
@@ -78,13 +75,12 @@ private:
   }
 
   Func pFunc() {
-    Func::Type FT = Lookahead->T == TT::Function ? Func::Type::Function
-                                                 : Func::Type::Procedure;
+    Func::Type FT = Lookahead->T == TT::Function ? Func::Type::Function : Func::Type::Procedure;
 
     consume({TT::Function, TT::Procedure});
     auto Ident = consumeIdent();
 
-    std::vector<std::string> Params;
+    vector<string> Params;
     if (match(TT::POpen)) {
       Params = pParams();
     }
@@ -96,8 +92,8 @@ private:
     return {FT, Ident, Params, move(Vars), move(StmtSeq)};
   }
 
-  std::vector<std::unique_ptr<Stmt>> pStmtSeq() {
-    std::vector<std::unique_ptr<Stmt>> StmtSeq;
+  vector<unique_ptr<Stmt>> pStmtSeq() {
+    vector<unique_ptr<Stmt>> StmtSeq;
 
     StmtSeq.push_back(pStmt());
     while (match(TT::Semi)) {
@@ -108,16 +104,14 @@ private:
     return StmtSeq;
   }
 
-  std::function<std::unique_ptr<Decl>(const std::string &)> pDeclType() {
+  function<unique_ptr<Decl>(const string &)> pDeclType() {
     if (match(TT::Var)) {
       consume(TT::Var);
-      return [](const std::string &Ident) {
-        return std::make_unique<IntDecl>(Ident);
-      };
+      return [](const string &Ident) { return make_unique<IntDecl>(Ident); };
     } else {
       consume(TT::Array);
 
-      std::vector<int32_t> Dim;
+      vector<int32_t> Dim;
 
       consume(TT::BOpen);
       Dim.push_back(consumeNumber());
@@ -129,16 +123,14 @@ private:
         consume(TT::BClose);
       }
 
-      return [Dim](const std::string &Ident) {
-        return std::make_unique<ArrayDecl>(Ident, Dim);
-      };
+      return [Dim](const string &Ident) { return make_unique<ArrayDecl>(Ident, Dim); };
     }
   }
 
-  std::vector<std::string> pParams() {
+  vector<string> pParams() {
     consume(TT::POpen);
 
-    std::vector<std::string> Params;
+    vector<string> Params;
 
     if (match(TT::Ident)) {
       Params.push_back(consumeIdent());
@@ -154,19 +146,16 @@ private:
     return Params;
   }
 
-  std::tuple<std::vector<std::unique_ptr<Decl>>,
-             std::vector<std::unique_ptr<Stmt>>>
-  pBody() {
-    std::vector<std::unique_ptr<Decl>> Locals;
+  tuple<vector<unique_ptr<Decl>>, vector<unique_ptr<Stmt>>> pBody() {
+    vector<unique_ptr<Decl>> Locals;
     while (match({TT::Var, TT::Array})) {
       auto Decl = pDecl();
-      Locals.insert(Locals.end(), make_move_iterator(Decl.begin()),
-                    make_move_iterator(Decl.end()));
+      Locals.insert(Locals.end(), make_move_iterator(Decl.begin()), make_move_iterator(Decl.end()));
     }
 
     consume(TT::COpen);
     if (!match({TT::Let, TT::Call, TT::If, TT::While, TT::Return})) {
-      throw std::runtime_error("Parser: Expected statement.");
+      throw runtime_error("Parser: Expected statement.");
     }
     auto StmtSeq = pStmtSeq();
     consume(TT::CClose);
@@ -174,12 +163,12 @@ private:
     return {move(Locals), move(StmtSeq)};
   }
 
-  std::unique_ptr<Stmt> pStmt() {
+  unique_ptr<Stmt> pStmt() {
     switch (Lookahead->T) {
     case TT::Let:
       return pAssignment();
     case TT::Call:
-      return std::make_unique<FunctionCallStmt>(std::move(*pFuncCall()));
+      return make_unique<FunctionCallStmt>(move(*pFuncCall()));
     case TT::If:
       return pIfStmt();
     case TT::While:
@@ -187,25 +176,25 @@ private:
     case TT::Return:
       return pReturnStmt();
     default:
-      throw std::runtime_error("Parser: Expected statement.");
+      throw runtime_error("Parser: Expected statement.");
     }
   }
 
-  std::unique_ptr<Assignment> pAssignment() {
+  unique_ptr<Assignment> pAssignment() {
     consume(TT::Let);
     auto Lhs = pDesignator();
     consume(TT::LArrow);
     auto Rhs = pExpr();
-    return std::make_unique<Assignment>(move(Lhs), move(Rhs));
+    return make_unique<Assignment>(move(Lhs), move(Rhs));
   }
 
-  std::unique_ptr<IfStmt> pIfStmt() {
+  unique_ptr<IfStmt> pIfStmt() {
     consume(TT::If);
     auto Cond = pRelation();
     consume(TT::Then);
     auto ThenSeq = pStmtSeq();
 
-    std::vector<std::unique_ptr<Stmt>> ElseSeq;
+    vector<unique_ptr<Stmt>> ElseSeq;
     if (match(TT::Else)) {
       consume(TT::Else);
       ElseSeq = pStmtSeq();
@@ -213,46 +202,45 @@ private:
 
     consume(TT::Fi);
 
-    return std::make_unique<IfStmt>(std::move(Cond), move(ThenSeq),
-                                    move(ElseSeq));
+    return make_unique<IfStmt>(move(Cond), move(ThenSeq), move(ElseSeq));
   }
 
-  std::unique_ptr<WhileStmt> pWhileStmt() {
+  unique_ptr<WhileStmt> pWhileStmt() {
     consume(TT::While);
     auto Cond = pRelation();
     consume(TT::Do);
     auto Body = pStmtSeq();
     consume(TT::Od);
-    return std::make_unique<WhileStmt>(std::move(Cond), move(Body));
+    return make_unique<WhileStmt>(move(Cond), move(Body));
   }
 
-  std::unique_ptr<ReturnStmt> pReturnStmt() {
+  unique_ptr<ReturnStmt> pReturnStmt() {
     consume(TT::Return);
     if (match({TT::Ident, TT::Number, TT::COpen, TT::Call})) {
-      return std::make_unique<ReturnStmt>(pExpr());
+      return make_unique<ReturnStmt>(pExpr());
     } else {
-      return std::make_unique<ReturnStmt>(nullptr);
+      return make_unique<ReturnStmt>(nullptr);
     }
   }
 
-  std::unique_ptr<Designator> pDesignator() {
-    std::string Ident = consumeIdent();
+  unique_ptr<Designator> pDesignator() {
+    string Ident = consumeIdent();
 
     if (!match(TT::BOpen)) {
-      return std::make_unique<VarDesignator>(Ident);
+      return make_unique<VarDesignator>(Ident);
     }
 
-    std::vector<std::unique_ptr<Expr>> Indices;
+    vector<unique_ptr<Expr>> Indices;
     do {
       consume(TT::BOpen);
       Indices.push_back(pExpr());
       consume(TT::BClose);
     } while (match(TT::BOpen));
 
-    return std::make_unique<ArrayDesignator>(Ident, move(Indices));
+    return make_unique<ArrayDesignator>(Ident, move(Indices));
   }
 
-  std::unique_ptr<Expr> pExpr() {
+  unique_ptr<Expr> pExpr() {
     auto Expr = pTerm();
 
     while (match({TT::Add, TT::Sub})) {
@@ -271,13 +259,13 @@ private:
 
       auto Right = pTerm();
 
-      Expr = std::make_unique<MathExpr>(Op, move(Expr), move(Right));
+      Expr = make_unique<MathExpr>(Op, move(Expr), move(Right));
     }
 
     return Expr;
   }
 
-  std::unique_ptr<Expr> pTerm() {
+  unique_ptr<Expr> pTerm() {
     auto Expr = pFactor();
 
     while (match({TT::Mul, TT::Div})) {
@@ -296,18 +284,18 @@ private:
 
       auto Right = pFactor();
 
-      Expr = std::make_unique<MathExpr>(Op, move(Expr), move(Right));
+      Expr = make_unique<MathExpr>(Op, move(Expr), move(Right));
     }
 
     return Expr;
   }
 
-  std::unique_ptr<Expr> pFactor() {
+  unique_ptr<Expr> pFactor() {
     switch (Lookahead->T) {
     case TT::Ident:
       return pDesignator();
     case TT::Number:
-      return std::make_unique<ConstantExpr>(consumeNumber());
+      return make_unique<ConstantExpr>(consumeNumber());
     case TT::POpen: {
       consume(TT::POpen);
       auto Expr = pExpr();
@@ -317,15 +305,15 @@ private:
     case TT::Call:
       return pFuncCall();
     default:
-      throw std::logic_error("Invalid value for Op.");
+      throw logic_error("Invalid value for Op.");
     }
   }
 
-  std::unique_ptr<FunctionCall> pFuncCall() {
+  unique_ptr<FunctionCall> pFuncCall() {
     consume(TT::Call);
-    std::string Ident = consumeIdent();
+    string Ident = consumeIdent();
 
-    std::vector<std::unique_ptr<Expr>> Args;
+    vector<unique_ptr<Expr>> Args;
     if (match(TT::POpen)) {
       consume(TT::POpen);
       if (match({TT::Ident, TT::Number, TT::COpen, TT::Call})) {
@@ -338,7 +326,7 @@ private:
       consume(TT::PClose);
     }
 
-    return std::make_unique<FunctionCall>(Ident, move(Args));
+    return make_unique<FunctionCall>(Ident, move(Args));
   }
 
   Relation pRelation() {
@@ -374,7 +362,7 @@ private:
     return {T, move(Left), move(Right)};
   }
 
-  std::string consumeIdent() {
+  string consumeIdent() {
     Token T = *Lookahead;
     consume(TT::Ident);
     return *T.S;
@@ -386,9 +374,9 @@ private:
     return *T.I;
   }
 
-  void consume(TT T) { consume(std::vector<TT>{T}); }
+  void consume(TT T) { consume(vector<TT>{T}); }
 
-  void consume(const std::vector<TT> &Ts) {
+  void consume(const vector<TT> &Ts) {
     if (!match(Ts)) {
       throw error(Ts.front());
     }
@@ -400,23 +388,21 @@ private:
       ++Lookahead;
   }
 
-  bool match(TT T) { return match(std::vector<TT>{T}); }
+  bool match(TT T) { return match(vector<TT>{T}); }
 
-  bool match(const std::vector<TT> &Ts) {
-    return std::find(Ts.begin(), Ts.end(), Lookahead->T) != Ts.end();
-  }
+  bool match(const vector<TT> &Ts) { return find(Ts.begin(), Ts.end(), Lookahead->T) != Ts.end(); }
 
-  std::runtime_error error(TT TExpect) {
-    std::string Msg{"Parser: Expected token: "};
+  runtime_error error(TT TExpect) {
+    string Msg{"Parser: Expected token: "};
     Msg.append(TokenNames[static_cast<size_t>(TExpect)]);
     Msg.append(", actual token: ");
     Msg.append(TokenNames[static_cast<size_t>(Lookahead->T)]);
-    return std::runtime_error(Msg);
+    return runtime_error(Msg);
   }
 };
 } // namespace
 
-Computation cs241c::parse(const std::vector<Token> &Tokens) {
+Computation cs241c::parse(const vector<Token> &Tokens) {
   Parser P(&Tokens);
   return P.get();
 }

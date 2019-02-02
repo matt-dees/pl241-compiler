@@ -4,34 +4,34 @@
 #include <unordered_map>
 
 using namespace cs241c;
+using namespace std;
+
 using TT = Token::Type;
 
 namespace {
 class Lexer {
-  const std::unordered_map<std::string_view, TT> Keywords{
-      {"main", TT::Main},
-      {"function", TT::Function},
-      {"procedure", TT::Procedure},
-      {"call", TT::Call},
-      {"return", TT::Return},
-      {"var", TT::Var},
-      {"array", TT::Array},
-      {"let", TT::Let},
-      {"if", TT::If},
-      {"then", TT::Then},
-      {"else", TT::Else},
-      {"fi", TT::Fi},
-      {"while", TT::While},
-      {"do", TT::Do},
-      {"od", TT::Od}};
+  const unordered_map<string_view, TT> Keywords{{"main", TT::Main},
+                                                {"function", TT::Function},
+                                                {"procedure", TT::Procedure},
+                                                {"call", TT::Call},
+                                                {"return", TT::Return},
+                                                {"var", TT::Var},
+                                                {"array", TT::Array},
+                                                {"let", TT::Let},
+                                                {"if", TT::If},
+                                                {"then", TT::Then},
+                                                {"else", TT::Else},
+                                                {"fi", TT::Fi},
+                                                {"while", TT::While},
+                                                {"do", TT::Do},
+                                                {"od", TT::Od}};
 
-  std::string Text;
-  std::string::iterator Pos;
+  string Text;
+  string::iterator Pos;
   bool Eof = false;
 
 public:
-  explicit Lexer(std::string Text)
-      : Text(move(Text)), Pos(this->Text.begin()) {}
+  explicit Lexer(string Text) : Text(move(Text)), Pos(this->Text.begin()) {}
 
   Token next() {
     while (true) {
@@ -145,7 +145,7 @@ public:
         break;
       default: {
         if (isalpha(*Pos)) {
-          std::string Ident = lexIdentifier();
+          string Ident = lexIdentifier();
           auto Kw = Keywords.find(Ident);
           if (Kw == Keywords.end()) {
             return {TT::Ident, Ident};
@@ -170,8 +170,8 @@ private:
     }
   }
 
-  std::string lexIdentifier() {
-    std::string S;
+  string lexIdentifier() {
+    string S;
     S += *Pos;
     nextChar();
     while (isalnum(*Pos)) {
@@ -182,7 +182,7 @@ private:
   }
 
   int32_t lexNumber() {
-    std::string S;
+    string S;
     S += *Pos;
     nextChar();
     while (isdigit(*Pos)) {
@@ -194,13 +194,13 @@ private:
 };
 } // namespace
 
-std::vector<Token> cs241c::lex(const std::string &text) {
+vector<Token> cs241c::lex(const string &text) {
   Lexer L(text);
-  std::vector<Token> Tokens;
+  vector<Token> Tokens;
   Token T = L.next();
   do {
     if (T.T == TT::Unknown) {
-      throw std::runtime_error("Lexer: Unkown symbol.");
+      throw runtime_error("Lexer: Unkown symbol.");
     }
     Tokens.push_back(T);
     T = L.next();

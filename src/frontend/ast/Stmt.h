@@ -41,8 +41,7 @@ class IfStmt : public Stmt {
   std::vector<std::unique_ptr<Stmt>> Else;
 
 public:
-  IfStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Then,
-         std::vector<std::unique_ptr<Stmt>> Else);
+  IfStmt(Relation Rel, std::vector<std::unique_ptr<Stmt>> Then, std::vector<std::unique_ptr<Stmt>> Else);
   void genIr(IrGenContext &Ctx) const override;
 };
 

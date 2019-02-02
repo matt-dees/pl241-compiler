@@ -1,15 +1,14 @@
 #include "DLXVM.h"
 #include <iostream>
 
-static const std::array<const char *, 64> OpCodeMnemo = {
-    "ADD",  "SUB",  "MUL",  "DIV",  "MOD",  "CMP",  "ERR",  "ERR",
-    "OR",   "AND",  "BIC",  "XOR",  "LSH",  "ASH",  "CHK",  "ERR",
-    "ADDI", "SUBI", "MULI", "DIVI", "MODI", "CMPI", "ERRI", "ERRI",
-    "ORI",  "ANDI", "BICI", "XORI", "LSHI", "ASHI", "CHKI", "ERR",
-    "LDW",  "LDX",  "POP",  "ERR",  "STW",  "STX",  "PSH",  "ERR",
-    "BEQ",  "BNE",  "BLT",  "BGE",  "BLE",  "BGT",  "BSR",  "ERR",
-    "JSR",  "RET",  "RDI",  "WRD",  "WRH",  "WRL",  "ERR",  "ERR",
-    "ERR",  "ERR",  "ERR",  "ERR",  "ERR",  "ERR",  "ERR",  "ERR"};
+using namespace std;
+
+static const array<const char *, 64> OpCodeMnemo = {
+    "ADD",  "SUB",  "MUL",  "DIV",  "MOD",  "CMP",  "ERR",  "ERR",  "OR",   "AND",  "BIC",  "XOR", "LSH",
+    "ASH",  "CHK",  "ERR",  "ADDI", "SUBI", "MULI", "DIVI", "MODI", "CMPI", "ERRI", "ERRI", "ORI", "ANDI",
+    "BICI", "XORI", "LSHI", "ASHI", "CHKI", "ERR",  "LDW",  "LDX",  "POP",  "ERR",  "STW",  "STX", "PSH",
+    "ERR",  "BEQ",  "BNE",  "BLT",  "BGE",  "BLE",  "BGT",  "BSR",  "ERR",  "JSR",  "RET",  "RDI", "WRD",
+    "WRH",  "WRL",  "ERR",  "ERR",  "ERR",  "ERR",  "ERR",  "ERR",  "ERR",  "ERR",  "ERR",  "ERR"};
 
 void bug(int N);
 
@@ -76,7 +75,7 @@ void DLXVM::execute() {
     case OpCode::LSH:
     case OpCode::LSHI:
       if ((C < -31) || (C > 31)) {
-        std::cout << "Illegal value " << C << " of operand c or register c!\n";
+        cout << "Illegal value " << C << " of operand c or register c!\n";
         bug(1);
       }
       if (C < 0)
@@ -87,8 +86,7 @@ void DLXVM::execute() {
     case OpCode::ASH:
     case OpCode::ASHI:
       if ((C < -31) || (C > 31)) {
-        std::cout << "DLX.execute: Illegal value " << C
-                  << " of operand c or register c!\n";
+        cout << "DLX.execute: Illegal value " << C << " of operand c or register c!\n";
         bug(1);
       }
       if (C < 0)
@@ -99,12 +97,10 @@ void DLXVM::execute() {
     case OpCode::CHKI:
     case OpCode::CHK:
       if (R[A] < 0) {
-        std::cout << "DLX.execute: " << PC * 4 << ": R[" << A << "] == " << R[A]
-                  << " < 0\n";
+        cout << "DLX.execute: " << PC * 4 << ": R[" << A << "] == " << R[A] << " < 0\n";
         bug(14);
       } else if (R[A] >= C) {
-        std::cout << "DLX.execute: " << PC * 4 << ": R[" << A << "] == " << R[A]
-                  << " >= " << C << "\n";
+        cout << "DLX.execute: " << PC * 4 << ": R[" << A << "] == " << R[A] << " >= " << C << "\n";
         bug(14);
       }
       break;
@@ -128,8 +124,7 @@ void DLXVM::execute() {
       if (R[A] == 0)
         nextPC = PC + C;
       if ((nextPC < 0) || (nextPC > MemSize / 4)) {
-        std::cout << 4 * nextPC << " is no address in memory (0.." << MemSize
-                  << ").\n";
+        cout << 4 * nextPC << " is no address in memory (0.." << MemSize << ").\n";
         bug(40);
       }
       break;
@@ -137,8 +132,7 @@ void DLXVM::execute() {
       if (R[A] != 0)
         nextPC = PC + C;
       if ((nextPC < 0) || (nextPC > MemSize / 4)) {
-        std::cout << 4 * nextPC << " is no address in memory (0.." << MemSize
-                  << ").\n";
+        cout << 4 * nextPC << " is no address in memory (0.." << MemSize << ").\n";
         bug(41);
       }
       break;
@@ -146,8 +140,7 @@ void DLXVM::execute() {
       if (R[A] < 0)
         nextPC = PC + C;
       if ((nextPC < 0) || (nextPC > MemSize / 4)) {
-        std::cout << 4 * nextPC << " is no address in memory (0.." << MemSize
-                  << ").\n";
+        cout << 4 * nextPC << " is no address in memory (0.." << MemSize << ").\n";
         bug(42);
       }
       break;
@@ -155,8 +148,7 @@ void DLXVM::execute() {
       if (R[A] >= 0)
         nextPC = PC + C;
       if ((nextPC < 0) || (nextPC > MemSize / 4)) {
-        std::cout << 4 * nextPC << " is no address in memory (0.." << MemSize
-                  << ").\n";
+        cout << 4 * nextPC << " is no address in memory (0.." << MemSize << ").\n";
         bug(43);
       }
       break;
@@ -164,8 +156,7 @@ void DLXVM::execute() {
       if (R[A] <= 0)
         nextPC = PC + C;
       if ((nextPC < 0) || (nextPC > MemSize / 4)) {
-        std::cout << 4 * nextPC << " is no address in memory (0.." << MemSize
-                  << ").\n";
+        cout << 4 * nextPC << " is no address in memory (0.." << MemSize << ").\n";
         bug(44);
       }
       break;
@@ -173,8 +164,7 @@ void DLXVM::execute() {
       if (R[A] > 0)
         nextPC = PC + C;
       if ((nextPC < 0) || (nextPC > MemSize / 4)) {
-        std::cout << 4 * nextPC << " is no address in memory (0.." << MemSize
-                  << ").\n";
+        cout << 4 * nextPC << " is no address in memory (0.." << MemSize << ").\n";
         bug(45);
       }
       break;
@@ -190,30 +180,30 @@ void DLXVM::execute() {
       if (RetC == 0)
         return;
       if ((C < 0) || (C > MemSize)) {
-        std::cout << C << " is no address in memory (0.." << MemSize << ").\n";
+        cout << C << " is no address in memory (0.." << MemSize << ").\n";
         bug(49);
       }
       nextPC = C / 4;
       break;
     case OpCode::RDI:
-      std::cout << "?: ";
-      std::cin >> R[A];
+      cout << "?: ";
+      cin >> R[A];
       break;
     case OpCode::WRD:
-      std::cout << R[B] << "  ";
+      cout << R[B] << "  ";
       break;
     case OpCode::WRH:
-      std::cout << "0x" << std::hex << R[B] << "  ";
+      cout << "0x" << hex << R[B] << "  ";
       break;
     case OpCode::WRL:
-      std::cout << "\n";
+      cout << "\n";
       break;
     case OpCode::ERR:
-      std::cout << "Program dropped off the end!";
+      cout << "Program dropped off the end!";
       bug(1);
       break;
     default:
-      std::cout << "DLX.execute: Unknown opcode encountered!";
+      cout << "DLX.execute: Unknown opcode encountered!";
       bug(1);
     }
     PC = nextPC;
@@ -285,13 +275,13 @@ void DLXVM::loadInstr(uint32_t Word) {
     C = Word & 0x3FFFFFF;
     break;
   default:
-    std::cout << "Illegal instruction! (" << PC << ")";
+    cout << "Illegal instruction! (" << PC << ")";
   }
 }
 
-std::string DLXVM::disassemble(uint32_t Word) {
+string DLXVM::disassemble(uint32_t Word) {
   loadInstr(Word);
-  std::string Line = std::string{OpCodeMnemo[static_cast<int32_t>(Op)]} + "  ";
+  string Line = string{OpCodeMnemo[static_cast<int32_t>(Op)]} + "  ";
 
   switch (Op) {
   case OpCode::WRL:
@@ -299,12 +289,12 @@ std::string DLXVM::disassemble(uint32_t Word) {
   case OpCode::BSR:
   case OpCode::RET:
   case OpCode::JSR:
-    return Line + std::to_string(C) + "\n";
+    return Line + to_string(C) + "\n";
   case OpCode::RDI:
-    return Line + std::to_string(A) + "\n";
+    return Line + to_string(A) + "\n";
   case OpCode::WRD:
   case OpCode::WRH:
-    return Line + std::to_string(B) + "\n";
+    return Line + to_string(B) + "\n";
   case OpCode::CHKI:
   case OpCode::BEQ:
   case OpCode::BNE:
@@ -313,7 +303,7 @@ std::string DLXVM::disassemble(uint32_t Word) {
   case OpCode::BLE:
   case OpCode::BGT:
   case OpCode::CHK:
-    return Line + std::to_string(A) + " " + std::to_string(C) + "\n";
+    return Line + to_string(A) + " " + to_string(C) + "\n";
   case OpCode::ADDI:
   case OpCode::SUBI:
   case OpCode::MULI:
@@ -344,15 +334,14 @@ std::string DLXVM::disassemble(uint32_t Word) {
   case OpCode::ASH:
   case OpCode::LDX:
   case OpCode::STX:
-    return Line + std::to_string(A) + " " + std::to_string(B) + " " +
-           std::to_string(C) + "\n";
+    return Line + to_string(A) + " " + to_string(B) + " " + to_string(C) + "\n";
   default:
     return Line + "\n";
   }
 }
 
 void bug(int N) {
-  std::cout << "bug number: " << N;
-  std::cin.get();
+  cout << "bug number: " << N;
+  cin.get();
   exit(N);
 }

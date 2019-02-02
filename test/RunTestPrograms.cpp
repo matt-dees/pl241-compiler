@@ -6,6 +6,7 @@
 #include <fstream>
 
 using namespace cs241c;
+using namespace std;
 
 TEST_CASE("Compile and run test programs") {
   auto Programs = listFiles(CS241C_TEST_PROGRAMS_DIR);
@@ -14,9 +15,9 @@ TEST_CASE("Compile and run test programs") {
       continue;
     }
     DYNAMIC_SECTION("Compile " << P) {
-      std::ifstream FS(std::string(CS241C_TEST_PROGRAMS_DIR) + "/" + P);
-      std::string Text(std::istreambuf_iterator<char>{FS}, {});
-      std::vector<Token> Tokens = lex(Text);
+      ifstream FS(string(CS241C_TEST_PROGRAMS_DIR) + "/" + P);
+      string Text(istreambuf_iterator<char>{FS}, {});
+      vector<Token> Tokens = lex(Text);
       Computation Comp = parse(Tokens);
       CHECK(true);
     }

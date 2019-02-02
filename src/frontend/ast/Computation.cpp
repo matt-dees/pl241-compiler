@@ -3,13 +3,12 @@
 #include <algorithm>
 
 using namespace cs241c;
+using namespace std;
 
-Computation::Computation(std::vector<std::unique_ptr<Decl>> Vars,
-                         std::vector<Func> Funcs)
-    : Vars(move(Vars)), Funcs(move(Funcs)) {}
+Computation::Computation(vector<unique_ptr<Decl>> Vars, vector<Func> Funcs) : Vars(move(Vars)), Funcs(move(Funcs)) {}
 
-std::unique_ptr<Module> Computation::genIr() {
-  auto CompilationUnit = std::make_unique<Module>("program");
+unique_ptr<Module> Computation::genIr() {
+  auto CompilationUnit = make_unique<Module>("program");
   IrGenContext Ctx(CompilationUnit.get());
 
   for (auto &Var : Vars) {

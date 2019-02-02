@@ -6,30 +6,24 @@
 #include <stdexcept>
 
 using namespace cs241c;
+using namespace std;
 
-template <typename T> void VisitedExpr<T>::visit(ExprVisitor *V) {
-  V->visit(static_cast<T *>(this));
-}
+template <typename T> void VisitedExpr<T>::visit(ExprVisitor *V) { V->visit(static_cast<T *>(this)); }
 
 ConstantExpr::ConstantExpr(int32_t Val) : Val(Val) {}
 
-Value *ConstantExpr::genIr(IrGenContext &Ctx) const {
-  return Ctx.makeConstant(Val);
-}
+Value *ConstantExpr::genIr(IrGenContext &Ctx) const { return Ctx.makeConstant(Val); }
 
-template <typename T> void VisitedDesignator<T>::visit(ExprVisitor *V) {
-  V->visit(static_cast<T *>(this));
-}
+template <typename T> void VisitedDesignator<T>::visit(ExprVisitor *V) { V->visit(static_cast<T *>(this)); }
 
-VarDesignator::VarDesignator(std::string Ident) : Ident(move(Ident)) {}
+VarDesignator::VarDesignator(string Ident) : Ident(move(Ident)) {}
 
 Value *VarDesignator::genIr(IrGenContext &Ctx) const {
   auto Var = Ctx.lookupVariable(Ident).Var;
   if (Var->isMoveable()) {
     return Var;
   } else {
-    auto BaseAddress =
-        Ctx.makeInstruction<AddaInstruction>(Ctx.globalBase(), Var);
+    auto BaseAddress = Ctx.makeInstruction<AddaInstruction>(Ctx.globalBase(), Var);
     return Ctx.makeInstruction<LoadInstruction>(Var, BaseAddress);
   }
 }
@@ -39,8 +33,7 @@ void VarDesignator::genStore(IrGenContext &Ctx, Value *V) {
   if (Var->isMoveable()) {
     Ctx.makeInstruction<MoveInstruction>(V, Var);
   } else {
-    auto BaseAddress =
-        Ctx.makeInstruction<AddaInstruction>(Ctx.globalBase(), Var);
+    auto BaseAddress = Ctx.makeInstruction<AddaInstruction>(Ctx.globalBase(), Var);
     Ctx.makeInstruction<StoreInstruction>(Var, V, BaseAddress);
   }
 }
@@ -50,12 +43,9 @@ Value *ArrayDesignator::calculateMemoryOffset(IrGenContext &Ctx) const {
 
   auto Sym = Ctx.lookupVariable(Ident);
   auto DimensionsEnd = Sym.Dimensions.end() - 1;
-  for (auto Dimension = Sym.Dimensions.begin(); Dimension != DimensionsEnd;
-       ++Dimension) {
-    Offset = Ctx.makeInstruction<MulInstruction>(Offset,
-                                                 Ctx.makeConstant(*Dimension));
-    Offset = Ctx.makeInstruction<AddInstruction>(
-        Offset, Dim.at(Dimension - Sym.Dimensions.begin() + 1)->genIr(Ctx));
+  for (auto Dimension = Sym.Dimensions.begin(); Dimension != DimensionsEnd; ++Dimension) {
+    Offset = Ctx.makeInstruction<MulInstruction>(Offset, Ctx.makeConstant(*Dimension));
+    Offset = Ctx.makeInstruction<AddInstruction>(Offset, Dim.at(Dimension - Sym.Dimensions.begin() + 1)->genIr(Ctx));
   }
 
   Offset = Ctx.makeInstruction<MulInstruction>(Offset, Ctx.makeConstant(4));
@@ -63,11 +53,9 @@ Value *ArrayDesignator::calculateMemoryOffset(IrGenContext &Ctx) const {
   return Offset;
 }
 
-ArrayDesignator::ArrayDesignator(std::string Ident,
-                                 std::vector<std::unique_ptr<Expr>> Dim)
-    : Ident(move(Ident)), Dim(move(Dim)) {
+ArrayDesignator::ArrayDesignator(string Ident, vector<unique_ptr<Expr>> Dim) : Ident(move(Ident)), Dim(move(Dim)) {
   if (this->Dim.empty()) {
-    throw std::logic_error("Array with no dimensions");
+    throw logic_error("Array with no dimensions");
   }
 }
 
@@ -84,8 +72,7 @@ Value *ArrayDesignator::genIr(IrGenContext &Ctx) const {
   auto Var = Ctx.lookupVariable(Ident).Var;
   Value *BaseAddress = genBaseAddress(Ctx, Var);
   Value *Offset = calculateMemoryOffset(Ctx);
-  auto TargetAddress =
-      Ctx.makeInstruction<AddaInstruction>(BaseAddress, Offset);
+  auto TargetAddress = Ctx.makeInstruction<AddaInstruction>(BaseAddress, Offset);
   return Ctx.makeInstruction<LoadInstruction>(Var, TargetAddress);
 }
 
@@ -93,14 +80,11 @@ void ArrayDesignator::genStore(IrGenContext &Ctx, Value *V) {
   auto Var = Ctx.lookupVariable(Ident).Var;
   Value *BaseAddress = genBaseAddress(Ctx, Var);
   Value *Offset = calculateMemoryOffset(Ctx);
-  auto TargetAddress =
-      Ctx.makeInstruction<AddaInstruction>(BaseAddress, Offset);
+  auto TargetAddress = Ctx.makeInstruction<AddaInstruction>(BaseAddress, Offset);
   Ctx.makeInstruction<StoreInstruction>(Var, V, TargetAddress);
 }
 
-FunctionCall::FunctionCall(std::string Ident,
-                           std::vector<std::unique_ptr<Expr>> Args)
-    : Ident(move(Ident)), Args(move(Args)) {}
+FunctionCall::FunctionCall(string Ident, vector<unique_ptr<Expr>> Args) : Ident(move(Ident)), Args(move(Args)) {}
 
 Value *FunctionCall::genIr(IrGenContext &Ctx) const {
   if (Ident == "InputNum") {
@@ -115,16 +99,14 @@ Value *FunctionCall::genIr(IrGenContext &Ctx) const {
 
   Function *Target = Ctx.lookupFuncion(Ident);
 
-  std::vector<Value *> Arguments;
-  std::transform(
-      Args.begin(), Args.end(), back_inserter(Arguments),
-      [&Ctx](const std::unique_ptr<Expr> &Arg) { return Arg->genIr(Ctx); });
+  vector<Value *> Arguments;
+  transform(Args.begin(), Args.end(), back_inserter(Arguments),
+            [&Ctx](const unique_ptr<Expr> &Arg) { return Arg->genIr(Ctx); });
 
   return Ctx.makeInstruction<CallInstruction>(Target, move(Arguments));
 }
 
-MathExpr::MathExpr(MathExpr::Operation Op, std::unique_ptr<Expr> Left,
-                   std::unique_ptr<Expr> Right)
+MathExpr::MathExpr(MathExpr::Operation Op, unique_ptr<Expr> Left, unique_ptr<Expr> Right)
     : Op(Op), Left(move(Left)), Right(move(Right)) {}
 
 Value *MathExpr::genIr(IrGenContext &Ctx) const {
@@ -140,11 +122,10 @@ Value *MathExpr::genIr(IrGenContext &Ctx) const {
   case Operation::Div:
     return Ctx.makeInstruction<DivInstruction>(X, Y);
   }
-  throw std::logic_error("Invalid value for Op.");
+  throw logic_error("Invalid value for Op.");
 }
 
-Relation::Relation(Relation::Type T, std::unique_ptr<Expr> Left,
-                   std::unique_ptr<Expr> Right)
+Relation::Relation(Relation::Type T, unique_ptr<Expr> Left, unique_ptr<Expr> Right)
     : T(T), Left(move(Left)), Right(move(Right)) {}
 
 CmpInstruction *Relation::genCmp(IrGenContext &Ctx) const {
@@ -155,37 +136,35 @@ CmpInstruction *Relation::genCmp(IrGenContext &Ctx) const {
 
 namespace {
 using RelT = Relation::Type;
-static std::unique_ptr<BasicBlockTerminator>
-makeBranch(IrGenContext &Ctx, RelT T, CmpInstruction *Cmp, BasicBlock *Then,
-           BasicBlock *Else) {
+static unique_ptr<BasicBlockTerminator> makeBranch(IrGenContext &Ctx, RelT T, CmpInstruction *Cmp, BasicBlock *Then,
+                                                   BasicBlock *Else) {
   int Id = Ctx.genInstructionId();
-  std::unique_ptr<BasicBlockTerminator> Terminator;
+  unique_ptr<BasicBlockTerminator> Terminator;
   switch (T) {
   case RelT::Eq:
-    Terminator = std::make_unique<BeqInstruction>(Id, Cmp, Then, Else);
+    Terminator = make_unique<BeqInstruction>(Id, Cmp, Then, Else);
     break;
   case RelT::Ne:
-    Terminator = std::make_unique<BneInstruction>(Id, Cmp, Then, Else);
+    Terminator = make_unique<BneInstruction>(Id, Cmp, Then, Else);
     break;
   case RelT::Lt:
-    Terminator = std::make_unique<BltInstruction>(Id, Cmp, Then, Else);
+    Terminator = make_unique<BltInstruction>(Id, Cmp, Then, Else);
     break;
   case RelT::Le:
-    Terminator = std::make_unique<BleInstruction>(Id, Cmp, Then, Else);
+    Terminator = make_unique<BleInstruction>(Id, Cmp, Then, Else);
     break;
   case RelT::Ge:
-    Terminator = std::make_unique<BgeInstruction>(Id, Cmp, Then, Else);
+    Terminator = make_unique<BgeInstruction>(Id, Cmp, Then, Else);
     break;
   case RelT::Gt:
-    Terminator = std::make_unique<BgtInstruction>(Id, Cmp, Then, Else);
+    Terminator = make_unique<BgtInstruction>(Id, Cmp, Then, Else);
     break;
   }
   return Terminator;
 }
 } // namespace
 
-std::unique_ptr<BasicBlockTerminator>
-Relation::genBranch(IrGenContext &Ctx, CmpInstruction *Cmp, BasicBlock *Then,
-                    BasicBlock *Else) const {
+unique_ptr<BasicBlockTerminator> Relation::genBranch(IrGenContext &Ctx, CmpInstruction *Cmp, BasicBlock *Then,
+                                                     BasicBlock *Else) const {
   return makeBranch(Ctx, T, Cmp, Then, Else);
 }

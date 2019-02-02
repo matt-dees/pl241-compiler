@@ -28,8 +28,7 @@ private:
   std::deque<std::unique_ptr<Instruction>> Instructions;
 
 public:
-  BasicBlock(std::string Name,
-             std::deque<std::unique_ptr<Instruction>> Instructions = {});
+  BasicBlock(std::string Name, std::deque<std::unique_ptr<Instruction>> Instructions = {});
 
   std::vector<BasicBlock *> &predecessors();
   std::deque<std::unique_ptr<Instruction>> &instructions();
@@ -45,8 +44,7 @@ public:
   void insertPhiInstruction(std::unique_ptr<PhiInstruction> Phi);
   void updatePhiInst(BasicBlock *From, Variable *VarToChange, Value *NewVal);
 
-  std::vector<BasicBlock *>::difference_type
-  getPredecessorIndex(BasicBlock *Predecessor);
+  std::vector<BasicBlock *>::difference_type getPredecessorIndex(BasicBlock *Predecessor);
 
   std::vector<std::unique_ptr<PhiInstruction>> genPhis();
 

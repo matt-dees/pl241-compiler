@@ -4,13 +4,13 @@
 #include <stdexcept>
 
 using namespace cs241c;
+using namespace std;
 
 VcgGen::VcgGen(const Module *InputModule) : InputModule(InputModule) {}
 
-void VcgGen::generate(const std::string &OutFilePath) {
+void VcgGen::generate(const string &OutFilePath) {
   if (fileExists(OutFilePath)) {
-    throw std::runtime_error("VcgGen Error: File already exists: " +
-                             OutFilePath);
+    throw runtime_error("VcgGen Error: File already exists: " + OutFilePath);
   }
 
   VcgFileStream.open(OutFilePath);
@@ -19,9 +19,9 @@ void VcgGen::generate(const std::string &OutFilePath) {
 }
 
 void VcgGen::writeGraph() {
-  VcgFileStream << "graph: {" << std::endl;
+  VcgFileStream << "graph: {" << endl;
   VcgFileStream << "title: "
-                << "\"" << InputModule->getIdentifier() << "\"" << std::endl;
+                << "\"" << InputModule->getIdentifier() << "\"" << endl;
 
   writeProperties();
 
@@ -33,28 +33,28 @@ void VcgGen::writeGraph() {
 }
 
 void VcgGen::writeFunction(Function *F) {
-  const std::string FunctionName = F->name();
+  const string FunctionName = F->name();
   for (auto &BB : F->basicBlocks()) {
     writeBasicBlock(BB.get(), FunctionName);
   }
 }
 
-void VcgGen::writeBasicBlock(BasicBlock *BB, const std::string &Title) {
-  VcgFileStream << "node: {" << std::endl;
+void VcgGen::writeBasicBlock(BasicBlock *BB, const string &Title) {
+  VcgFileStream << "node: {" << endl;
 
   VcgFileStream << "title: "
-                << "\"" << BB->toString() << "\"" << std::endl;
+                << "\"" << BB->toString() << "\"" << endl;
   VcgFileStream << "label: \""
-                << "[" << Title << "]" << BB->toString() << std::endl;
+                << "[" << Title << "]" << BB->toString() << endl;
 
   // Note: Assumes terminating instruction is in Instructions vector
 
   for (auto &Instr : *BB) {
-    VcgFileStream << Instr->toString() << std::endl;
+    VcgFileStream << Instr->toString() << endl;
   }
 
-  VcgFileStream << "\"" << std::endl;
-  VcgFileStream << "}" << std::endl;
+  VcgFileStream << "\"" << endl;
+  VcgFileStream << "}" << endl;
 
   for (auto &Next : BB->terminator()->followingBlocks()) {
     writeEdge(BB, Next);
@@ -62,18 +62,18 @@ void VcgGen::writeBasicBlock(BasicBlock *BB, const std::string &Title) {
 }
 
 void VcgGen::writeEdge(BasicBlock *Source, BasicBlock *Destination) {
-  VcgFileStream << "edge: {" << std::endl;
+  VcgFileStream << "edge: {" << endl;
 
   VcgFileStream << "sourcename: "
-                << "\"" << Source->toString() << "\"" << std::endl;
+                << "\"" << Source->toString() << "\"" << endl;
   VcgFileStream << "targetname: "
-                << "\"" << Destination->toString() << "\"" << std::endl;
+                << "\"" << Destination->toString() << "\"" << endl;
   VcgFileStream << "color: "
-                << "blue" << std::endl;
-  VcgFileStream << "}" << std::endl;
+                << "blue" << endl;
+  VcgFileStream << "}" << endl;
 }
 
 void VcgGen::writeProperties() {
-  VcgFileStream << "layoutalgorithm: dfs" << std::endl;
-  VcgFileStream << "manhattan_edges: yes" << std::endl;
+  VcgFileStream << "layoutalgorithm: dfs" << endl;
+  VcgFileStream << "manhattan_edges: yes" << endl;
 }

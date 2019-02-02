@@ -34,9 +34,7 @@ public:
   virtual void visit(ExprVisitor *) = 0;
 };
 
-template <typename T> class VisitedExpr : public Expr {
-  void visit(ExprVisitor *) override;
-};
+template <typename T> class VisitedExpr : public Expr { void visit(ExprVisitor *) override; };
 
 class ConstantExpr : public VisitedExpr<ConstantExpr> {
   int32_t Val;
@@ -52,9 +50,7 @@ public:
   virtual void genStore(IrGenContext &Ctx, Value *V) = 0;
 };
 
-template <typename T> class VisitedDesignator : public Designator {
-  void visit(ExprVisitor *) override;
-};
+template <typename T> class VisitedDesignator : public Designator { void visit(ExprVisitor *) override; };
 
 class VarDesignator : public VisitedDesignator<VarDesignator> {
   std::string Ident;
@@ -70,7 +66,7 @@ class ArrayDesignator : public VisitedDesignator<ArrayDesignator> {
   std::string Ident;
   std::vector<std::unique_ptr<Expr>> Dim;
 
-  Value* calculateMemoryOffset(IrGenContext &) const;
+  Value *calculateMemoryOffset(IrGenContext &) const;
 
 public:
   ArrayDesignator(std::string Ident, std::vector<std::unique_ptr<Expr>> Dim);
@@ -99,8 +95,7 @@ private:
   std::unique_ptr<Expr> Right;
 
 public:
-  MathExpr(Operation Op, std::unique_ptr<Expr> Left,
-           std::unique_ptr<Expr> Right);
+  MathExpr(Operation Op, std::unique_ptr<Expr> Left, std::unique_ptr<Expr> Right);
 
   Value *genIr(IrGenContext &Ctx) const override;
 };
@@ -118,9 +113,7 @@ public:
   Relation(Type T, std::unique_ptr<Expr> Left, std::unique_ptr<Expr> Right);
 
   CmpInstruction *genCmp(IrGenContext &Ctx) const;
-  std::unique_ptr<BasicBlockTerminator> genBranch(IrGenContext &Ctx,
-                                                  CmpInstruction *Cmp,
-                                                  BasicBlock *Then,
+  std::unique_ptr<BasicBlockTerminator> genBranch(IrGenContext &Ctx, CmpInstruction *Cmp, BasicBlock *Then,
                                                   BasicBlock *Else) const;
 };
 } // namespace cs241c

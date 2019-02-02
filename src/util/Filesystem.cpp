@@ -1,25 +1,23 @@
 #include "Filesystem.h"
 #include <stdexcept>
 
+using namespace std;
+
 #if WIN32
 
 #include <Windows.h>
 #include <string>
 
-bool cs241c::fileExists(std::string_view File) {
-  return GetFileAttributes(File.data()) != INVALID_FILE_ATTRIBUTES;
-}
+bool cs241c::fileExists(string_view File) { return GetFileAttributes(File.data()) != INVALID_FILE_ATTRIBUTES; }
 
-std::vector<std::string> cs241c::listFiles(std::string_view Directory) {
-  std::vector<std::string> Entries;
+vector<string> cs241c::listFiles(string_view Directory) {
+  vector<string> Entries;
 
   HANDLE Dir;
   WIN32_FIND_DATA Buf;
 
-  if ((Dir = FindFirstFile((std::string(Directory) + "/*").c_str(), &Buf)) ==
-      INVALID_HANDLE_VALUE) {
-    throw std::runtime_error(std::string("Directory ") + Directory.data() +
-                             " does not exist.");
+  if ((Dir = FindFirstFile((string(Directory) + "/*").c_str(), &Buf)) == INVALID_HANDLE_VALUE) {
+    throw runtime_error(string("Directory ") + Directory.data() + " does not exist.");
   }
 
   do {
@@ -35,7 +33,7 @@ std::vector<std::string> cs241c::listFiles(std::string_view Directory) {
   return Entries;
 }
 
-void cs241c::removeFile(std::string_view File) { DeleteFile(File.data()); }
+void cs241c::removeFile(string_view File) { DeleteFile(File.data()); }
 
 #else
 
@@ -43,20 +41,19 @@ void cs241c::removeFile(std::string_view File) { DeleteFile(File.data()); }
 #include <sys/stat.h>
 #include <unistd.h>
 
-bool cs241c::fileExists(std::string_view File) {
+bool cs241c::fileExists(string_view File) {
   struct stat Buf;
   int Result = stat(File.data(), &Buf);
   return Result == 0;
 }
 
-std::vector<std::string> cs241c::listFiles(std::string_view Directory) {
+vector<string> cs241c::listFiles(string_view Directory) {
   DIR *Dir = opendir(Directory.data());
   if (!Dir) {
-    throw std::runtime_error(std::string("Directory ") + Directory.data() +
-                             " does not exist.");
+    throw runtime_error(string("Directory ") + Directory.data() + " does not exist.");
   }
 
-  std::vector<std::string> Entries;
+  vector<string> Entries;
   struct dirent *Entry;
   while ((Entry = readdir(Dir))) {
     Entries.push_back(Entry->d_name);
@@ -65,6 +62,6 @@ std::vector<std::string> cs241c::listFiles(std::string_view Directory) {
   return Entries;
 }
 
-void cs241c::removeFile(std::string_view File) { unlink(File.data()); }
+void cs241c::removeFile(string_view File) { unlink(File.data()); }
 
 #endif

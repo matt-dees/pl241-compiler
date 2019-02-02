@@ -20,8 +20,7 @@ class Function : public Value {
 
 public:
   Function() = default;
-  Function(std::string Name,
-           std::vector<std::unique_ptr<ConstantValue>> &&Constants,
+  Function(std::string Name, std::vector<std::unique_ptr<ConstantValue>> &&Constants,
            std::vector<std::unique_ptr<LocalVariable>> &&Locals,
            std::vector<std::unique_ptr<BasicBlock>> &&BasicBlocks);
 

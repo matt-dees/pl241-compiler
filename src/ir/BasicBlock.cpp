@@ -6,36 +6,30 @@
 #include <utility>
 
 using namespace cs241c;
+using namespace std;
 
-BasicBlock::BasicBlock(std::string Name,
-                       std::deque<std::unique_ptr<Instruction>> Instructions)
-    : Name(move(Name)), Predecessors({}),
-      Instructions(std::move(Instructions)) {}
+BasicBlock::BasicBlock(string Name, deque<unique_ptr<Instruction>> Instructions)
+    : Name(move(Name)), Predecessors({}), Instructions(move(Instructions)) {}
 
-std::vector<BasicBlock *> &BasicBlock::predecessors() { return Predecessors; }
+vector<BasicBlock *> &BasicBlock::predecessors() { return Predecessors; }
 
-std::deque<std::unique_ptr<Instruction>> &BasicBlock::instructions() {
-  return Instructions;
-}
+deque<unique_ptr<Instruction>> &BasicBlock::instructions() { return Instructions; }
 
 BasicBlockTerminator *BasicBlock::terminator() {
   return dynamic_cast<BasicBlockTerminator *>(Instructions.back().get());
 }
 
-void BasicBlock::appendInstruction(std::unique_ptr<Instruction> I) {
+void BasicBlock::appendInstruction(unique_ptr<Instruction> I) {
   I->Owner = this;
   Instructions.push_back(move(I));
 }
 
-void BasicBlock::appendPredecessor(BasicBlock *BB) {
-  Predecessors.push_back(BB);
-}
+void BasicBlock::appendPredecessor(BasicBlock *BB) { Predecessors.push_back(BB); }
 bool BasicBlock::isTerminated() {
-  return !Instructions.empty() &&
-         dynamic_cast<BasicBlockTerminator *>(Instructions.back().get());
+  return !Instructions.empty() && dynamic_cast<BasicBlockTerminator *>(Instructions.back().get());
 }
 
-void BasicBlock::terminate(std::unique_ptr<BasicBlockTerminator> T) {
+void BasicBlock::terminate(unique_ptr<BasicBlockTerminator> T) {
   T->Owner = this;
   for (auto BB : T->followingBlocks()) {
     BB->appendPredecessor(this);
@@ -61,61 +55,55 @@ void BasicBlock::toSSA(SSAContext &SSACtx) {
   }
 }
 
-void BasicBlock::insertPhiInstruction(std::unique_ptr<PhiInstruction> Phi) {
+void BasicBlock::insertPhiInstruction(unique_ptr<PhiInstruction> Phi) {
   auto PhiMapEntry = PhiInstrMap.find(Phi->Target);
   if (PhiMapEntry == PhiInstrMap.end()) {
     // Basic Block does not contain a Phi node for this variable.
     // Create one and add it to the front of the instruction double ended queue.
     PhiInstrMap[Phi->Target] = Phi.get();
-    Instructions.push_front(std::move(Phi));
+    Instructions.push_front(move(Phi));
     return;
   }
 }
 
-std::vector<std::unique_ptr<PhiInstruction>> BasicBlock::genPhis() {
-  std::vector<std::unique_ptr<PhiInstruction>> PhisToPropagate;
+vector<unique_ptr<PhiInstruction>> BasicBlock::genPhis() {
+  vector<unique_ptr<PhiInstruction>> PhisToPropagate;
 
   for (auto &I : Instructions) {
     if (auto MovInst = dynamic_cast<MoveInstruction *>(I.get())) {
       if (auto Target = dynamic_cast<Variable *>(MovInst->Target)) {
-        PhisToPropagate.push_back(
-            std::make_unique<PhiInstruction>(0, Target, Target, Target));
+        PhisToPropagate.push_back(make_unique<PhiInstruction>(0, Target, Target, Target));
       }
     } else if (auto PhiInst = dynamic_cast<PhiInstruction *>(I.get())) {
-      PhisToPropagate.push_back(std::make_unique<PhiInstruction>(
-          0, PhiInst->Target, PhiInst->Target, PhiInst->Target));
+      PhisToPropagate.push_back(make_unique<PhiInstruction>(0, PhiInst->Target, PhiInst->Target, PhiInst->Target));
     }
   }
 
   return PhisToPropagate;
 }
 
-void BasicBlock::updatePhiInst(cs241c::BasicBlock *From,
-                               cs241c::Variable *VarToChange,
-                               cs241c::Value *NewVal) {
+void BasicBlock::updatePhiInst(cs241c::BasicBlock *From, cs241c::Variable *VarToChange, cs241c::Value *NewVal) {
   if (PhiInstrMap.find(VarToChange) == PhiInstrMap.end()) {
     return;
   }
   PhiInstruction *Phi = PhiInstrMap.at(VarToChange);
   auto Index = getPredecessorIndex(From);
   if (Index == -1) {
-    throw std::runtime_error("Invalid PHI update from block: " +
-                             std::string(From->toString()));
+    throw runtime_error("Invalid PHI update from block: " + string(From->toString()));
   }
   Phi->updateArg(static_cast<unsigned long>(Index), NewVal);
 }
 
-std::vector<BasicBlock *>::difference_type
-BasicBlock::getPredecessorIndex(cs241c::BasicBlock *Predecessor) {
-  auto It = std::find(Predecessors.begin(), Predecessors.end(), Predecessor);
+vector<BasicBlock *>::difference_type BasicBlock::getPredecessorIndex(cs241c::BasicBlock *Predecessor) {
+  auto It = find(Predecessors.begin(), Predecessors.end(), Predecessor);
   if (It == Predecessors.end()) {
     return -1;
   }
-  return std::distance(Predecessors.begin(), It);
+  return distance(Predecessors.begin(), It);
 }
 
 BasicBlock::iterator BasicBlock::begin() { return Instructions.begin(); }
 
 BasicBlock::iterator BasicBlock::end() { return Instructions.end(); }
 
-std::string BasicBlock::toString() const { return Name; }
+string BasicBlock::toString() const { return Name; }
