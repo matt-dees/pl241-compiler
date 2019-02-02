@@ -131,6 +131,8 @@ void IrGenContext::genAllPhiInstructions(BasicBlock *CurrentBB) {
     for (auto &Phi : Phis) {
       Phi->setId(genInstructionId());
       DFEntry->insertPhiInstruction(std::move(Phi));
+      Visited.erase(DFEntry);
+      genAllPhiInstructions(DFEntry);
     }
   }
   for (auto BB : CurrentBB->terminator()->followingBlocks()) {
