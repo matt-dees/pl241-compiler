@@ -1,12 +1,12 @@
 #include "Filesystem.h"
 #include <stdexcept>
 
-using namespace std;
-
 #if WIN32
 
 #include <Windows.h>
 #include <string>
+
+using namespace std;
 
 bool cs241c::fileExists(string_view File) { return GetFileAttributes(File.data()) != INVALID_FILE_ATTRIBUTES; }
 
@@ -40,6 +40,8 @@ void cs241c::removeFile(string_view File) { DeleteFile(File.data()); }
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+using namespace std;
 
 bool cs241c::fileExists(string_view File) {
   struct stat Buf;
