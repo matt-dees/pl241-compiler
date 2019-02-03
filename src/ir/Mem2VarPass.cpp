@@ -26,8 +26,8 @@ void Mem2VarPass::run(Function *F) {
 
 BasicBlock *Mem2VarPass::run(BasicBlock *BB) {
   const auto BBEnd = BB->end();
-  for (auto Instr = BB->begin(); Instr != BBEnd; ++Instr) {
-    Instruction *InstrPtr = Instr->get();
+  for (size_t InstrI = 0; InstrI < BB->instructions().size(); ++InstrI) {
+    Instruction *InstrPtr = BB->instructions()[InstrI].get();
     if (auto Load = dynamic_cast<LoadInstruction *>(InstrPtr)) {
       auto Object = Load->object();
       CurrentFunctionLoads.insert(Object);
@@ -36,7 +36,7 @@ BasicBlock *Mem2VarPass::run(BasicBlock *BB) {
       auto KnownVar = KnownVars.find(Object);
       if (KnownVar != KnownVars.end()) {
         LocalVariable *KnownVarPtr = KnownVar->second;
-        for_each(Instr + 1, BBEnd, [InstrPtr, KnownVarPtr](unique_ptr<Instruction> &I) {
+        for_each(BB->begin() + InstrI + 1, BBEnd, [InstrPtr, KnownVarPtr](unique_ptr<Instruction> &I) {
           replace(I->arguments().begin(), I->arguments().end(), static_cast<Value *>(InstrPtr),
                   static_cast<Value *>(KnownVarPtr));
         });
@@ -45,7 +45,7 @@ BasicBlock *Mem2VarPass::run(BasicBlock *BB) {
         auto LocalPtr = Local.get();
         auto Move = make_unique<MoveInstruction>(NameGen::genInstructionId(), Load, Local.get());
         CurrentFunction->locals().push_back(move(Local));
-        BB->instructions().insert(Instr + 1, move(Move));
+        BB->instructions().insert(BB->begin() + InstrI + 1, move(Move));
         KnownVars[Object] = LocalPtr;
       }
     } else if (auto Store = dynamic_cast<StoreInstruction *>(InstrPtr)) {
