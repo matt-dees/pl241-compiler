@@ -6,8 +6,8 @@
 using namespace cs241c;
 using namespace std;
 
-void Mem2VarPass::run(Module *M) {
-  for (auto &F : M->functions()) {
+void Mem2VarPass::run(Module &M) {
+  for (auto &F : M.functions()) {
     run(F.get());
   }
 }

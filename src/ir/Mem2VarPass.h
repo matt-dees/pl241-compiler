@@ -23,7 +23,7 @@ class Mem2VarPass {
   std::unordered_map<Variable *, LocalVariable *> KnownVars;
 
 public:
-  void run(Module *);
+  void run(Module &);
 
 private:
   void run(Function *F);
