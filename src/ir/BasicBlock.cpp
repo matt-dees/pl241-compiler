@@ -41,8 +41,8 @@ void BasicBlock::toSSA(SSAContext &SSACtx) {
   // Remove MOVE instructions and update SSA context accordingly.
   for (auto InstIter = Instructions.begin(); InstIter != Instructions.end();) {
     if (auto MovInst = dynamic_cast<MoveInstruction *>(InstIter->get())) {
-      if (auto Target = dynamic_cast<Variable *>(MovInst->Target)) {
-        SSACtx.updateVariable(Target, MovInst->Source);
+      if (auto Target = dynamic_cast<Variable *>(MovInst->target())) {
+        SSACtx.updateVariable(Target, MovInst->source());
       }
       InstIter = Instructions.erase(InstIter);
       continue;
@@ -71,7 +71,7 @@ vector<unique_ptr<PhiInstruction>> BasicBlock::genPhis() {
 
   for (auto &I : Instructions) {
     if (auto MovInst = dynamic_cast<MoveInstruction *>(I.get())) {
-      if (auto Target = dynamic_cast<Variable *>(MovInst->Target)) {
+      if (auto Target = dynamic_cast<Variable *>(MovInst->target())) {
         PhisToPropagate.push_back(make_unique<PhiInstruction>(0, Target, Target, Target));
       }
     } else if (auto PhiInst = dynamic_cast<PhiInstruction *>(I.get())) {

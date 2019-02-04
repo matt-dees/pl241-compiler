@@ -17,6 +17,8 @@ BasicBlock *Instruction::getOwner() const { return Owner; }
 
 string Instruction::name() const { return string("(") + to_string(Id) + ")"; }
 
+bool Instruction::isPreLive() const { return false; }
+
 string Instruction::toString() const {
   stringstream Result;
   Result << name() << ": " << mnemonic();
@@ -116,14 +118,18 @@ void StoreInstruction::updateArg(unsigned long Index, Value *NewVal) {
 
 string_view StoreInstruction::mnemonic() const { return "store"; }
 
-MoveInstruction::MoveInstruction(int Id, Value *Y, Value *X) : Instruction(Id, {Y, X}), Target(X), Source(Y) {}
+bool StoreInstruction::isPreLive() const { return true; }
+
+MoveInstruction::MoveInstruction(int Id, Value *Y, Value *X) : Instruction(Id, {Y, X}) {}
 string_view MoveInstruction::mnemonic() const { return "move"; }
 
-void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) {
-  Target = NewTarget;
-  Source = NewSource;
-  arguments() = {NewSource, NewTarget};
-}
+void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) { arguments() = {NewSource, NewTarget}; }
+
+bool MoveInstruction::isPreLive() const { return true; }
+
+Value *MoveInstruction::source() const { return arguments()[0]; }
+
+Value *MoveInstruction::target() const { return arguments()[1]; }
 
 PhiInstruction::PhiInstruction(int Id, Variable *Target, Value *X1, Value *X2)
     : Instruction(Id, {X1, X2}), Target(Target) {}
@@ -144,12 +150,18 @@ CallInstruction::CallInstruction(int Id, Function *Target, vector<Value *> Argum
 
 string_view CallInstruction::mnemonic() const { return "call"; }
 
+bool CallInstruction::isPreLive() const { return true; }
+
 RetInstruction::RetInstruction(int Id) : BasicBlockTerminator(Id, {}) {}
 RetInstruction::RetInstruction(int Id, Value *X) : BasicBlockTerminator(Id, {X}) {}
 string_view RetInstruction::mnemonic() const { return "ret"; }
 
+bool RetInstruction::isPreLive() const { return true; }
+
 EndInstruction::EndInstruction(int Id) : BasicBlockTerminator(Id, {}) {}
 string_view EndInstruction::mnemonic() const { return "end"; }
+
+bool EndInstruction::isPreLive() const { return true; }
 
 BraInstruction::BraInstruction(int Id, BasicBlock *Y) : BasicBlockTerminator(Id, {Y}) {}
 string_view BraInstruction::mnemonic() const { return "bra"; }
@@ -193,8 +205,14 @@ string_view BgtInstruction::mnemonic() const { return "bgt"; }
 ReadInstruction::ReadInstruction(int Id) : Instruction(Id, {}) {}
 string_view ReadInstruction::mnemonic() const { return "read"; }
 
+bool ReadInstruction::isPreLive() const { return true; }
+
 WriteInstruction::WriteInstruction(int Id, Value *X) : Instruction(Id, {X}) {}
 string_view WriteInstruction::mnemonic() const { return "write"; }
 
+bool WriteInstruction::isPreLive() const { return true; }
+
 WriteNLInstruction::WriteNLInstruction(int Id) : Instruction(Id, {}) {}
 string_view WriteNLInstruction::mnemonic() const { return "writeNL"; }
+
+bool WriteNLInstruction::isPreLive() const { return true; }

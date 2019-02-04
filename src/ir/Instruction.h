@@ -35,6 +35,7 @@ public:
   virtual void argsToSSA(SSAContext &);
   void setId(int Id);
   std::string name() const override;
+  virtual bool isPreLive() const;
   std::string toString() const override;
 
   friend class BasicBlock;
@@ -121,6 +122,7 @@ public:
   StoreInstruction(int Id, Variable *Object, Value *Y, AddaInstruction *Address);
   void updateArg(unsigned long Index, Value *NewVal) override;
   std::string_view mnemonic() const override;
+  bool isPreLive() const override;
 };
 
 class MoveInstruction : public Instruction {
@@ -128,8 +130,9 @@ public:
   MoveInstruction(int Id, Value *Y, Value *X);
   std::string_view mnemonic() const override;
   void updateArgs(Value *NewTarget, Value *NewSource);
-  Value *Target;
-  Value *Source;
+  bool isPreLive() const override;
+  Value *source() const;
+  Value *target() const;
 };
 
 class PhiInstruction : public Instruction {
@@ -143,6 +146,7 @@ class CallInstruction : public Instruction {
 public:
   CallInstruction(int Id, Function *Target, std::vector<Value *> Arguments);
   std::string_view mnemonic() const override;
+  bool isPreLive() const override;
 };
 
 class RetInstruction : public BasicBlockTerminator {
@@ -151,12 +155,14 @@ public:
   RetInstruction(int Id, Value *X);
 
   std::string_view mnemonic() const override;
+  bool isPreLive() const override;
 };
 
 class EndInstruction : public BasicBlockTerminator {
 public:
   EndInstruction(int Id);
   std::string_view mnemonic() const override;
+  bool isPreLive() const override;
 };
 
 class BraInstruction : public BasicBlockTerminator {
@@ -206,18 +212,21 @@ class ReadInstruction : public Instruction {
 public:
   ReadInstruction(int Id);
   std::string_view mnemonic() const override;
+  bool isPreLive() const override;
 };
 
 class WriteInstruction : public Instruction {
 public:
   WriteInstruction(int Id, Value *X);
   std::string_view mnemonic() const override;
+  bool isPreLive() const override;
 };
 
 class WriteNLInstruction : public Instruction {
 public:
   WriteNLInstruction(int Id);
   std::string_view mnemonic() const override;
+  bool isPreLive() const override;
 };
 } // namespace cs241c
 
