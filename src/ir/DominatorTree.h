@@ -16,6 +16,8 @@ public:
 
 private:
   static std::vector<BasicBlock *> postOrder(BasicBlock *Entry);
+  static std::vector<BasicBlock *> postOrder(BasicBlock *Entry, std::vector<BasicBlock *> &PostOrderNodes,
+                                             std::unordered_set<BasicBlock *> &Visited);
   static std::vector<BasicBlock *> reversePostOrder(BasicBlock *Entry);
 
   static std::unordered_map<BasicBlock *, BasicBlock *>

@@ -35,16 +35,20 @@ vector<BasicBlock *> DominatorTree::reversePostOrder(BasicBlock *Entry) {
 }
 
 vector<BasicBlock *> DominatorTree::postOrder(BasicBlock *Entry) {
-  static vector<BasicBlock *> PostOrderNodes;
-  static unordered_set<BasicBlock *> Visited;
+  vector<BasicBlock *> PostOrderNodes;
+  unordered_set<BasicBlock *> Visited;
+  return postOrder(Entry, PostOrderNodes, Visited);
+}
 
+std::vector<BasicBlock *> DominatorTree::postOrder(BasicBlock *Entry, vector<BasicBlock *> &PostOrderNodes,
+                                                   unordered_set<BasicBlock *> &Visited) {
   if (Visited.find(Entry) != Visited.end()) {
     return PostOrderNodes;
   }
   Visited.insert(Entry);
 
   for (auto NextBlock : Entry->terminator()->followingBlocks()) {
-    postOrder(NextBlock);
+    postOrder(NextBlock, PostOrderNodes, Visited);
   }
   PostOrderNodes.push_back(Entry);
   return PostOrderNodes;
