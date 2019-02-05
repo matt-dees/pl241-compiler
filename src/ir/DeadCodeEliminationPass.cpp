@@ -1,5 +1,6 @@
 #include "DeadCodeEliminationPass.h"
 #include "Module.h"
+#include <algorithm>
 #include <stack>
 #include <unordered_set>
 
@@ -12,6 +13,20 @@ void DeadCodeEliminationPass::run(Module &M) {
   }
 }
 
+namespace {
+void findLiveValues(unordered_set<Value *> &LiveValues, BasicBlock *B) {
+  for (int I = static_cast<int>(B->instructions().size()) - 1; I >= 0; --I) {
+    Instruction *Instr = B->instructions()[I].get();
+    auto LiveValueIt = LiveValues.find(Instr);
+    if (LiveValueIt != LiveValues.end()) {
+      LiveValues.insert(Instr->arguments().begin(), Instr->arguments().end());
+    } else if (Instr->isPreLive()) {
+      LiveValues.insert(Instr->arguments().begin(), Instr->arguments().end());
+    }
+  }
+}
+} // namespace
+
 void DeadCodeEliminationPass::run(Function &F) {
   stack<BasicBlock *> Blocks;
   unordered_set<BasicBlock *> VisitedBlocks;
@@ -21,33 +36,43 @@ void DeadCodeEliminationPass::run(Function &F) {
 
   while (!Blocks.empty()) {
     BasicBlock *B = Blocks.top();
-    VisitedBlocks.insert(B);
 
     bool HasUnvisitedFollowers = false;
     for (auto Follower : B->terminator()->followingBlocks()) {
       if (VisitedBlocks.find(Follower) == VisitedBlocks.end()) {
-        HasUnvisitedFollowers = true;
-        Blocks.push(Follower);
+        // If only some followers of my follower were already processed, the block was seen before, but not processed,
+        // because it had children. This means that Follower is a loop header and only the follow was processed.
+        auto FollowerFollowers = Follower->terminator()->followingBlocks();
+        if (FollowerFollowers.size() == 2 &&
+            FollowerFollowers.size() - count_if(FollowerFollowers.begin(), FollowerFollowers.end(),
+                                                [&VisitedBlocks](BasicBlock *FollowerFollower) {
+                                                  return VisitedBlocks.find(FollowerFollower) != VisitedBlocks.end();
+                                                }) ==
+                1) {
+          findLiveValues(LiveValues, Follower);
+        } else {
+          HasUnvisitedFollowers = true;
+          Blocks.push(Follower);
+        }
       }
     }
 
     if (HasUnvisitedFollowers)
       continue;
 
-    auto BlockREnd = B->instructions().rend();
-    for (auto It = B->instructions().rbegin(); It != BlockREnd; ++It) {
-      Instruction *I = It->get();
-      auto LiveValueIt = LiveValues.find(I);
+    for (int I = static_cast<int>(B->instructions().size()) - 1; I >= 0; --I) {
+      Instruction *Instr = B->instructions()[I].get();
+      auto LiveValueIt = LiveValues.find(Instr);
       if (LiveValueIt != LiveValues.end()) {
-        LiveValues.insert(I->arguments().begin(), I->arguments().end());
-        LiveValues.erase(LiveValueIt);
-      } else if (I->isPreLive()) {
-        LiveValues.insert(I->arguments().begin(), I->arguments().end());
+        LiveValues.insert(Instr->arguments().begin(), Instr->arguments().end());
+      } else if (Instr->isPreLive()) {
+        LiveValues.insert(Instr->arguments().begin(), Instr->arguments().end());
       } else {
-        B->instructions().erase(It.base());
+        B->instructions().erase(B->instructions().begin() + I);
       }
     }
 
+    VisitedBlocks.insert(B);
     Blocks.pop();
   }
 }

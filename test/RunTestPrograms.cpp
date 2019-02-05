@@ -1,3 +1,4 @@
+#include "DeadCodeEliminationPass.h"
 #include "Filesystem.h"
 #include "Lexer.h"
 #include "Parser.h"
@@ -18,7 +19,10 @@ TEST_CASE("Compile and run test programs") {
       ifstream FS(string(CS241C_TEST_PROGRAMS_DIR) + "/" + P);
       string Text(istreambuf_iterator<char>{FS}, {});
       vector<Token> Tokens = lex(Text);
-      Computation Comp = parse(Tokens);
+      Computation AST = parse(Tokens);
+      auto IR = AST.genIr();
+      DeadCodeEliminationPass DCEP;
+      DCEP.run(*IR);
       CHECK(true);
     }
   }

@@ -1,3 +1,4 @@
+#include "DeadCodeEliminationPass.h"
 #include "Filesystem.h"
 #include "Lexer.h"
 #include "Parser.h"
@@ -31,6 +32,9 @@ int main(int ArgC, char **ArgV) {
   auto Tokens = lex(Text);
   auto AST = parse(Tokens);
   auto IR = AST.genIr();
+
+  DeadCodeEliminationPass DCEP;
+  DCEP.run(*IR);
 
   if (GenerateVcg) {
     VcgGen VcgGenerator = VcgGen(IR.get());
