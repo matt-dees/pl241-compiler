@@ -40,8 +40,8 @@ vector<BasicBlock *> DominatorTree::postOrder(BasicBlock *Entry) {
   return postOrder(Entry, PostOrderNodes, Visited);
 }
 
-std::vector<BasicBlock *> DominatorTree::postOrder(BasicBlock *Entry, vector<BasicBlock *> &PostOrderNodes,
-                                                   unordered_set<BasicBlock *> &Visited) {
+vector<BasicBlock *> DominatorTree::postOrder(BasicBlock *Entry, vector<BasicBlock *> &PostOrderNodes,
+                                              unordered_set<BasicBlock *> &Visited) {
   if (Visited.find(Entry) != Visited.end()) {
     return PostOrderNodes;
   }

@@ -41,7 +41,7 @@ BasicBlock *Mem2VarPass::run(BasicBlock *BB) {
                   static_cast<Value *>(KnownVarPtr));
         });
       } else {
-        auto Local = make_unique<LocalVariable>(std::string("$") + Object->ident());
+        auto Local = make_unique<LocalVariable>(string("$") + Object->ident());
         auto LocalPtr = Local.get();
         auto Move = make_unique<MoveInstruction>(NameGen::genInstructionId(), Load, Local.get());
         CurrentFunction->locals().push_back(move(Local));

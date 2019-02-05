@@ -22,10 +22,10 @@ class IrGenContext {
   Module *CompilationUnit;
 
   std::unordered_map<std::string, Function *> FunctionTable;
+  Function *CurrentFunction;
+
   std::unordered_map<std::string, Symbol> GlobalsTable;
-  std::vector<std::unique_ptr<ConstantValue>> Constants;
   std::unordered_map<std::string, Symbol> LocalsTable;
-  std::vector<std::unique_ptr<BasicBlock>> Blocks;
 
   BasicBlock *CurrentBlock;
 
@@ -40,8 +40,7 @@ public:
   Value *globalBase();
 
   BasicBlock *&currentBlock();
-  std::vector<std::unique_ptr<ConstantValue>> &&constants();
-  std::vector<std::unique_ptr<BasicBlock>> &&blocks();
+  const std::unordered_map<std::string, Symbol> &localsTable() const;
 
   std::string genBasicBlockName();
   int genInstructionId();

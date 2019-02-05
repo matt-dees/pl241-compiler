@@ -3,8 +3,7 @@ add_executable(cs241c-test
   DLXVM.cpp
   DLXVM.h
   RunTestPrograms.cpp
-  TestDomTreeGen.cpp
-  TestVcgGen.cpp)
+  TestDomTreeGen.cpp)
 
-target_compile_definitions(cs241c-test PRIVATE CS241C_VCG_TEST_DIR=\"${CMAKE_SOURCE_DIR}/test/vcg_test_files\" CS241C_TEST_PROGRAMS_DIR=\"${CMAKE_SOURCE_DIR}/programs\")
+target_compile_definitions(cs241c-test PRIVATE CS241C_TEST_PROGRAMS_DIR=\"${CMAKE_SOURCE_DIR}/programs\")
 target_link_libraries(cs241c-test Catch2 cs241c-frontend cs241c-util cs241c-vcg)

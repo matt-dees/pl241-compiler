@@ -20,13 +20,12 @@ class Function : public Value {
 
 public:
   Function() = default;
-  Function(std::string Name, std::vector<std::unique_ptr<ConstantValue>> &&Constants,
-           std::vector<std::unique_ptr<LocalVariable>> &&Locals,
-           std::vector<std::unique_ptr<BasicBlock>> &&BasicBlocks);
+  Function(std::string Name, std::vector<std::unique_ptr<LocalVariable>> &&Locals);
 
   std::vector<std::unique_ptr<ConstantValue>> &constants();
   std::vector<std::unique_ptr<LocalVariable>> &locals();
   BasicBlock *entryBlock() const;
+  std::vector<std::unique_ptr<BasicBlock>> &basicBlocks();
   const std::vector<std::unique_ptr<BasicBlock>> &basicBlocks() const;
   std::string toString() const override;
 };

@@ -19,7 +19,6 @@ unique_ptr<LocalVariable> IntDecl::declareLocal(IrGenContext &Ctx) {
   auto Var = make_unique<LocalVariable>(Ident);
   Symbol Sym{Var.get(), {}};
   Ctx.declare(Sym);
-  Ctx.makeInstruction<MoveInstruction>(Ctx.makeConstant(0), Var.get());
   return Var;
 }
 
@@ -40,17 +39,30 @@ unique_ptr<LocalVariable> ArrayDecl::declareLocal(IrGenContext &Ctx) {
 
 Func::Func(Func::Type T, string Ident, vector<string> Params, vector<unique_ptr<Decl>> Vars,
            vector<unique_ptr<Stmt>> Stmts)
-    : T(T), Ident(move(Ident)), Params(move(Params)), Vars(move(Vars)), Stmts(move(Stmts)) {}
+    : T(T), Ident(move(Ident)), Vars(move(Vars)), Stmts(move(Stmts)) {
+  transform(Params.begin(), Params.end(), back_inserter(this->Params),
+            [](string &Ident) { return make_unique<IntDecl>(Ident); });
+}
 
 void Func::genIr(IrGenContext &Ctx) {
   Ctx.beginScope();
 
+  vector<unique_ptr<LocalVariable>> Locals;
+  Locals.reserve(Params.size() + Vars.size());
+  transform(Params.begin(), Params.end(), back_inserter(Locals),
+            [&Ctx](const unique_ptr<IntDecl> &Param) { return Param->declareLocal(Ctx); });
+  transform(Vars.begin(), Vars.end(), back_inserter(Locals),
+            [&Ctx](const unique_ptr<Decl> &Var) { return Var->declareLocal(Ctx); });
+
+  auto Func = make_unique<Function>(Ident, move(Locals));
+  Ctx.declare(move(Func));
+
   BasicBlock *EntryBlock = Ctx.makeBasicBlock();
   Ctx.currentBlock() = EntryBlock;
 
-  vector<unique_ptr<LocalVariable>> Locals;
-  transform(Vars.begin(), Vars.end(), back_inserter(Locals),
-            [&Ctx](const unique_ptr<Decl> &Var) { return Var->declareLocal(Ctx); });
+  for (const pair<string, Symbol> &Symbol : Ctx.localsTable()) {
+    Ctx.makeInstruction<MoveInstruction>(Ctx.makeConstant(0), Symbol.second.Var);
+  }
 
   for (const unique_ptr<Stmt> &S : Stmts) {
     S->genIr(Ctx);
@@ -59,7 +71,4 @@ void Func::genIr(IrGenContext &Ctx) {
   if (!Ctx.currentBlock()->isTerminated()) {
     Ctx.currentBlock()->terminate(make_unique<RetInstruction>(Ctx.genInstructionId()));
   }
-
-  auto Func = make_unique<Function>(Ident, move(Ctx.constants()), move(Locals), Ctx.blocks());
-  Ctx.declare(move(Func));
 }

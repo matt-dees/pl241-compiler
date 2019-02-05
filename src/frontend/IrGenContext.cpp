@@ -14,25 +14,20 @@ Value *IrGenContext::globalBase() { return CompilationUnit->globalBase(); }
 
 BasicBlock *&IrGenContext::currentBlock() { return CurrentBlock; }
 
-vector<unique_ptr<ConstantValue>> &&IrGenContext::constants() { return move(Constants); }
-
-vector<unique_ptr<BasicBlock>> &&IrGenContext::blocks() { return move(Blocks); }
+const unordered_map<string, Symbol> &IrGenContext::localsTable() const { return LocalsTable; }
 
 string IrGenContext::genBasicBlockName() { return NameGen::genBasicBlockName(); }
 
 int IrGenContext::genInstructionId() { return NameGen::genInstructionId(); }
 
-void IrGenContext::beginScope() {
-  Constants.clear();
-  LocalsTable.clear();
-  Blocks.clear();
-}
+void IrGenContext::beginScope() { LocalsTable.clear(); }
 
 void IrGenContext::declare(unique_ptr<Function> Func) {
   if (FunctionTable.find(Func->name()) != FunctionTable.end()) {
     throw runtime_error(string("Redeclaring function ") + Func->name());
   }
   FunctionTable[Func->name()] = Func.get();
+  CurrentFunction = Func.get();
   CompilationUnit->functions().push_back(move(Func));
 }
 
@@ -73,11 +68,11 @@ Function *IrGenContext::lookupFuncion(const string &Ident) {
 }
 
 ConstantValue *IrGenContext::makeConstant(int Val) {
-  return Constants.emplace_back(make_unique<ConstantValue>(Val)).get();
+  return CurrentFunction->constants().emplace_back(make_unique<ConstantValue>(Val)).get();
 }
 
 BasicBlock *IrGenContext::makeBasicBlock() {
-  return Blocks.emplace_back(make_unique<BasicBlock>(genBasicBlockName())).get();
+  return CurrentFunction->basicBlocks().emplace_back(make_unique<BasicBlock>(genBasicBlockName())).get();
 }
 
 void IrGenContext::compUnitToSSA() {
