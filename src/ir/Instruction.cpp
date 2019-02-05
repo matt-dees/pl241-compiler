@@ -66,6 +66,8 @@ void BasicBlockTerminator::argsToSSA(SSAContext &SSACtx) {
 
 vector<BasicBlock *> BasicBlockTerminator::followingBlocks() { return {}; }
 
+bool BasicBlockTerminator::isPreLive() const { return true; }
+
 ConditionalBlockTerminator::ConditionalBlockTerminator(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else)
     : BasicBlockTerminator(Id, {Cmp, Then, Else}) {}
 
@@ -156,12 +158,8 @@ RetInstruction::RetInstruction(int Id) : BasicBlockTerminator(Id, {}) {}
 RetInstruction::RetInstruction(int Id, Value *X) : BasicBlockTerminator(Id, {X}) {}
 string_view RetInstruction::mnemonic() const { return "ret"; }
 
-bool RetInstruction::isPreLive() const { return true; }
-
 EndInstruction::EndInstruction(int Id) : BasicBlockTerminator(Id, {}) {}
 string_view EndInstruction::mnemonic() const { return "end"; }
-
-bool EndInstruction::isPreLive() const { return true; }
 
 BraInstruction::BraInstruction(int Id, BasicBlock *Y) : BasicBlockTerminator(Id, {Y}) {}
 string_view BraInstruction::mnemonic() const { return "bra"; }

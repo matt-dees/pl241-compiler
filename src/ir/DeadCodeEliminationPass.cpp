@@ -13,28 +13,41 @@ void DeadCodeEliminationPass::run(Module &M) {
 }
 
 void DeadCodeEliminationPass::run(Function &F) {
-  stack<Instruction *> WorkStack;
-  unordered_set<Instruction *> LiveSet;
+  stack<BasicBlock *> Blocks;
+  unordered_set<BasicBlock *> VisitedBlocks;
+  unordered_set<Value *> LiveValues;
 
-  for (auto &BB : F.basicBlocks()) {
-    for (auto &I : BB->instructions()) {
-      if (I->isPreLive()) {
-        LiveSet.emplace(I.get());
-        WorkStack.push(I.get());
+  Blocks.push(F.entryBlock());
+
+  while (!Blocks.empty()) {
+    BasicBlock *B = Blocks.top();
+    VisitedBlocks.insert(B);
+
+    bool HasUnvisitedFollowers = false;
+    for (auto Follower : B->terminator()->followingBlocks()) {
+      if (VisitedBlocks.find(Follower) == VisitedBlocks.end()) {
+        HasUnvisitedFollowers = true;
+        Blocks.push(Follower);
       }
     }
-  }
 
-  while (!WorkStack.empty()) {
-    auto I = WorkStack.top();
-    WorkStack.pop();
-    for (auto Value : I->arguments()) {
-      if (auto Definer = dynamic_cast<Instruction *>(Value)) {
-        if (LiveSet.find(Definer) == LiveSet.end()) {
-          LiveSet.insert(Definer);
-          WorkStack.push(Definer);
-		}
-	  }
-	}
+    if (HasUnvisitedFollowers)
+      continue;
+
+    auto BlockREnd = B->instructions().rend();
+    for (auto It = B->instructions().rbegin(); It != BlockREnd; ++It) {
+      Instruction *I = It->get();
+      auto LiveValueIt = LiveValues.find(I);
+      if (LiveValueIt != LiveValues.end()) {
+        LiveValues.insert(I->arguments().begin(), I->arguments().end());
+        LiveValues.erase(LiveValueIt);
+      } else if (I->isPreLive()) {
+        LiveValues.insert(I->arguments().begin(), I->arguments().end());
+      } else {
+        B->instructions().erase(It.base());
+      }
+    }
+
+    Blocks.pop();
   }
 }

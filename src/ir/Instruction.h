@@ -58,6 +58,7 @@ protected:
 public:
   void argsToSSA(SSAContext &SSACtx) override;
   virtual std::vector<BasicBlock *> followingBlocks();
+  bool isPreLive() const override;
 };
 
 class ConditionalBlockTerminator : public BasicBlockTerminator {
@@ -155,14 +156,12 @@ public:
   RetInstruction(int Id, Value *X);
 
   std::string_view mnemonic() const override;
-  bool isPreLive() const override;
 };
 
 class EndInstruction : public BasicBlockTerminator {
 public:
   EndInstruction(int Id);
   std::string_view mnemonic() const override;
-  bool isPreLive() const override;
 };
 
 class BraInstruction : public BasicBlockTerminator {
