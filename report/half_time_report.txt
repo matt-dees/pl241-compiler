@@ -13,6 +13,6 @@ We are visualizing the intermediate representation using the VCG file format as 
 documentation. We spent some time getting xvcg to work on Ubuntu to visualize the VCG file, but
 upon learning about more modern tools (such as yComb) we decided to use those instead.  Most of our testing has
 consisted of glancing over the CFG, as we plan on constructing an automated unittest suite using the DLX emulator.
-Since we wantedto write our code in C++, we ported the emulator over to C++ for easier integration. We plan to finish
+Since we wanted to write our code in C++, we ported the emulator over to C++ for easier integration. We plan to finish
 the Common Subexpression Elimination optimization this week, leaving five weeks for register allocation, code generation,
 instruction scheduling, and testing.
