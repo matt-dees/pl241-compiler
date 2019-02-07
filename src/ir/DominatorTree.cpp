@@ -16,8 +16,8 @@ void DominatorTree::buildDominatorTree(BasicBlock *Entry) {
   DominanceFrontier = createDominanceFrontier(Entry, IDomMap);
 }
 
-unordered_multimap<BasicBlock *, BasicBlock *>
-DominatorTree::iDomMapToTree(const unordered_map<BasicBlock *, BasicBlock *> &IDomMap) {
+unordered_multimap<BasicBlock *, BasicBlock *> DominatorTree::iDomMapToTree(
+    const unordered_map<BasicBlock *, BasicBlock *> &IDomMap) {
   unordered_multimap<BasicBlock *, BasicBlock *> LocalDomTree = {};
   for (auto IDomEntry : IDomMap) {
     if (IDomEntry.second != IDomEntry.first) {
@@ -40,8 +40,10 @@ vector<BasicBlock *> DominatorTree::postOrder(BasicBlock *Entry) {
   return postOrder(Entry, PostOrderNodes, Visited);
 }
 
-vector<BasicBlock *> DominatorTree::postOrder(BasicBlock *Entry, vector<BasicBlock *> &PostOrderNodes,
-                                              unordered_set<BasicBlock *> &Visited) {
+vector<BasicBlock *>
+DominatorTree::postOrder(BasicBlock *Entry,
+                         vector<BasicBlock *> &PostOrderNodes,
+                         unordered_set<BasicBlock *> &Visited) {
   if (Visited.find(Entry) != Visited.end()) {
     return PostOrderNodes;
   }
@@ -54,10 +56,11 @@ vector<BasicBlock *> DominatorTree::postOrder(BasicBlock *Entry, vector<BasicBlo
   return PostOrderNodes;
 }
 
-unordered_map<BasicBlock *, BasicBlock *>
-DominatorTree::createImmediateDomMap(const vector<BasicBlock *> &ReversePostOrderNodes) {
+unordered_map<BasicBlock *, BasicBlock *> DominatorTree::createImmediateDomMap(
+    const vector<BasicBlock *> &ReversePostOrderNodes) {
   unordered_map<BasicBlock *, BasicBlock *> IDoms;
-  unordered_map<BasicBlock *, uint32_t> NodePositionMap = createNodePositionMap(ReversePostOrderNodes);
+  unordered_map<BasicBlock *, uint32_t> NodePositionMap =
+      createNodePositionMap(ReversePostOrderNodes);
 
   bool Changed = true;
   BasicBlock *Entry = ReversePostOrderNodes.front();
@@ -71,10 +74,11 @@ DominatorTree::createImmediateDomMap(const vector<BasicBlock *> &ReversePostOrde
         continue;
       }
       BasicBlock *CandidateIDom = Node->predecessors().at(0);
-      for (auto PredecessorIt = Node->predecessors().begin() + 1; PredecessorIt != Node->predecessors().end();
-           PredecessorIt++) {
+      for (auto PredecessorIt = Node->predecessors().begin() + 1;
+           PredecessorIt != Node->predecessors().end(); PredecessorIt++) {
         if (IDoms.find(*PredecessorIt) != IDoms.end()) {
-          CandidateIDom = intersect(*PredecessorIt, CandidateIDom, IDoms, NodePositionMap);
+          CandidateIDom =
+              intersect(*PredecessorIt, CandidateIDom, IDoms, NodePositionMap);
         }
       }
       if (IDoms[Node] != CandidateIDom) {
@@ -86,26 +90,29 @@ DominatorTree::createImmediateDomMap(const vector<BasicBlock *> &ReversePostOrde
   return IDoms;
 }
 
-BasicBlock *DominatorTree::intersect(BasicBlock *Predecessor, BasicBlock *CandidateIDom,
-                                     const unordered_map<BasicBlock *, BasicBlock *> &IDoms,
-                                     const unordered_map<BasicBlock *, uint32_t> &NodePositionMap) {
+BasicBlock *DominatorTree::intersect(
+    BasicBlock *Predecessor, BasicBlock *CandidateIDom,
+    const unordered_map<BasicBlock *, BasicBlock *> &IDoms,
+    const unordered_map<BasicBlock *, uint32_t> &NodePositionMap) {
   // Read page 7 of reference paper for description of intersect algorithm
   BasicBlock *Finger1 = Predecessor;
   BasicBlock *Finger2 = CandidateIDom;
 
   while (Finger1 != Finger2) {
-    while (NodePositionMap.at(Finger1) > NodePositionMap.at(Finger2) && NodePositionMap.at(Finger1) != 0) {
+    while (NodePositionMap.at(Finger1) > NodePositionMap.at(Finger2) &&
+           NodePositionMap.at(Finger1) != 0) {
       Finger1 = IDoms.at(Finger1);
     }
-    while (NodePositionMap.at(Finger2) > NodePositionMap.at(Finger1) && NodePositionMap.at(Finger2) != 0) {
+    while (NodePositionMap.at(Finger2) > NodePositionMap.at(Finger1) &&
+           NodePositionMap.at(Finger2) != 0) {
       Finger2 = IDoms.at(Finger2);
     }
   }
   return Finger1;
 }
 
-unordered_map<BasicBlock *, uint32_t>
-DominatorTree::createNodePositionMap(const vector<BasicBlock *> &ReversePostOrderNodes) {
+unordered_map<BasicBlock *, uint32_t> DominatorTree::createNodePositionMap(
+    const vector<BasicBlock *> &ReversePostOrderNodes) {
   unordered_map<BasicBlock *, uint32_t> NodePositionMap;
   for (uint32_t i = 0; i < ReversePostOrderNodes.size(); ++i) {
     NodePositionMap[ReversePostOrderNodes.at(i)] = i;
@@ -114,8 +121,9 @@ DominatorTree::createNodePositionMap(const vector<BasicBlock *> &ReversePostOrde
 }
 
 unordered_map<BasicBlock *, unordered_set<BasicBlock *>>
-DominatorTree::createDominanceFrontier(BasicBlock *CurrentBlock,
-                                       const unordered_map<BasicBlock *, BasicBlock *> &IDomMap) {
+DominatorTree::createDominanceFrontier(
+    BasicBlock *CurrentBlock,
+    const unordered_map<BasicBlock *, BasicBlock *> &IDomMap) {
   static unordered_set<BasicBlock *> Visited;
   static unordered_map<BasicBlock *, unordered_set<BasicBlock *>> DF;
   Visited.insert(CurrentBlock);
@@ -138,7 +146,8 @@ DominatorTree::createDominanceFrontier(BasicBlock *CurrentBlock,
   return DF;
 }
 
-unordered_set<BasicBlock *> DominatorTree::dominanceFrontier(cs241c::BasicBlock *BB) {
+unordered_set<BasicBlock *>
+DominatorTree::dominanceFrontier(cs241c::BasicBlock *BB) {
   if (DominanceFrontier.find(BB) == DominanceFrontier.end()) {
     return {};
   }

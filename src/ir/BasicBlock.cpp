@@ -13,7 +13,9 @@ BasicBlock::BasicBlock(string Name, deque<unique_ptr<Instruction>> Instructions)
 
 vector<BasicBlock *> &BasicBlock::predecessors() { return Predecessors; }
 
-deque<unique_ptr<Instruction>> &BasicBlock::instructions() { return Instructions; }
+deque<unique_ptr<Instruction>> &BasicBlock::instructions() {
+  return Instructions;
+}
 
 BasicBlockTerminator *BasicBlock::terminator() {
   return dynamic_cast<BasicBlockTerminator *>(Instructions.back().get());
@@ -24,9 +26,12 @@ void BasicBlock::appendInstruction(unique_ptr<Instruction> I) {
   Instructions.push_back(move(I));
 }
 
-void BasicBlock::appendPredecessor(BasicBlock *BB) { Predecessors.push_back(BB); }
+void BasicBlock::appendPredecessor(BasicBlock *BB) {
+  Predecessors.push_back(BB);
+}
 bool BasicBlock::isTerminated() {
-  return !Instructions.empty() && dynamic_cast<BasicBlockTerminator *>(Instructions.back().get());
+  return !Instructions.empty() &&
+         dynamic_cast<BasicBlockTerminator *>(Instructions.back().get());
 }
 
 void BasicBlock::terminate(unique_ptr<BasicBlockTerminator> T) {
@@ -38,12 +43,14 @@ void BasicBlock::terminate(unique_ptr<BasicBlockTerminator> T) {
 }
 
 unique_ptr<BasicBlockTerminator> BasicBlock::releaseTerminator() {
-  unique_ptr<BasicBlockTerminator> Terminator{dynamic_cast<BasicBlockTerminator *>(Instructions.back().release())};
+  unique_ptr<BasicBlockTerminator> Terminator{
+      dynamic_cast<BasicBlockTerminator *>(Instructions.back().release())};
   Instructions.pop_back();
   for (auto Follower : Terminator->followingBlocks()) {
     auto &FollowerPredecessors = Follower->predecessors();
-    FollowerPredecessors.erase(remove(FollowerPredecessors.begin(), FollowerPredecessors.end(), this),
-                               FollowerPredecessors.end());
+    FollowerPredecessors.erase(
+        remove(FollowerPredecessors.begin(), FollowerPredecessors.end(), this),
+        FollowerPredecessors.end());
   }
   return Terminator;
 }
@@ -83,29 +90,35 @@ vector<unique_ptr<PhiInstruction>> BasicBlock::genPhis() {
   for (auto &I : Instructions) {
     if (auto MovInst = dynamic_cast<MoveInstruction *>(I.get())) {
       if (auto Target = dynamic_cast<Variable *>(MovInst->target())) {
-        PhisToPropagate.push_back(make_unique<PhiInstruction>(0, Target, Target, Target));
+        PhisToPropagate.push_back(
+            make_unique<PhiInstruction>(0, Target, Target, Target));
       }
     } else if (auto PhiInst = dynamic_cast<PhiInstruction *>(I.get())) {
-      PhisToPropagate.push_back(make_unique<PhiInstruction>(0, PhiInst->Target, PhiInst->Target, PhiInst->Target));
+      PhisToPropagate.push_back(make_unique<PhiInstruction>(
+          0, PhiInst->Target, PhiInst->Target, PhiInst->Target));
     }
   }
 
   return PhisToPropagate;
 }
 
-void BasicBlock::updatePhiInst(cs241c::BasicBlock *From, cs241c::Variable *VarToChange, cs241c::Value *NewVal) {
+void BasicBlock::updatePhiInst(cs241c::BasicBlock *From,
+                               cs241c::Variable *VarToChange,
+                               cs241c::Value *NewVal) {
   if (PhiInstrMap.find(VarToChange) == PhiInstrMap.end()) {
     return;
   }
   PhiInstruction *Phi = PhiInstrMap.at(VarToChange);
   auto Index = getPredecessorIndex(From);
   if (Index == -1) {
-    throw runtime_error("Invalid PHI update from block: " + string(From->toString()));
+    throw runtime_error("Invalid PHI update from block: " +
+                        string(From->toString()));
   }
   Phi->updateArg(static_cast<unsigned long>(Index), NewVal);
 }
 
-vector<BasicBlock *>::difference_type BasicBlock::getPredecessorIndex(cs241c::BasicBlock *Predecessor) {
+vector<BasicBlock *>::difference_type
+BasicBlock::getPredecessorIndex(cs241c::BasicBlock *Predecessor) {
   auto It = find(Predecessors.begin(), Predecessors.end(), Predecessor);
   if (It == Predecessors.end()) {
     return -1;

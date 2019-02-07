@@ -1,6 +1,8 @@
 add_library(cs241c-ir
   BasicBlock.cpp
   BasicBlock.h
+  CommonSubexElimPass.cpp
+  CommonSubexElimPass.h
   DeadCodeEliminationPass.cpp
   DeadCodeEliminationPass.h
   DominatorTree.cpp
@@ -13,6 +15,7 @@ add_library(cs241c-ir
   Mem2VarPass.h
   Module.cpp
   Module.h
+  Pass.h
   SSAContext.cpp
   SSAContext.h
   Value.cpp
