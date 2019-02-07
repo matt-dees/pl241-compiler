@@ -17,7 +17,13 @@ void DeadCodeEliminationPass::run(Module &M) {
 
 namespace {
 void findLiveValues(unordered_set<Value *> &LiveValues, BasicBlock *B, bool RemoveDead) {
-  for (int I = static_cast<int>(B->instructions().size()) - 1; I >= 0; --I) {
+  int I = static_cast<int>(B->instructions().size()) - 1;
+  if (!RemoveDead) {
+    // Skip the terminator if we are just scanning a block (which is always a loop header).
+    --I;
+  }
+
+  for (; I >= 0; --I) {
     Instruction *Instr = B->instructions()[I].get();
     auto LiveValueIt = LiveValues.find(Instr);
     if (LiveValueIt != LiveValues.end()) {
@@ -70,24 +76,38 @@ void removeEmptyBlocks(unordered_set<BasicBlock *> &VisitedBlocks, unordered_set
       auto FollowerTerminator = Follower->terminator();
       auto FollowerFollowers = FollowerTerminator->followingBlocks();
       if (blockIsEmpty(Follower) && Follower->predecessors().size() == 1 && FollowerFollowers.size() == 1) {
+        if (FollowerFollowers[0] == B) {
+          // We can do this because there won't be any side effects in loop headers in our language.
+          auto Terminator = make_unique<BraInstruction>(NameGen::genInstructionId(), FollowingBlocks[1]);
+          B->releaseTerminator();
+          B->terminate(move(Terminator));
+          Follower->releaseTerminator();
+          BlocksToRemove.insert(Follower);
+          break;
+        }
         ConditionalTermiantor->updateTarget(Follower, FollowerFollowers[0]);
+        Follower->releaseTerminator();
         BlocksToRemove.insert(Follower);
       }
     }
 
-    FollowingBlocks = ConditionalTermiantor->followingBlocks();
-    if (FollowingBlocks[0] == FollowingBlocks[1]) {
+    FollowingBlocks = B->terminator()->followingBlocks();
+    if (FollowingBlocks.size() == 2 && FollowingBlocks[0] == FollowingBlocks[1]) {
       auto &FollowPred = FollowingBlocks[0]->predecessors();
       FollowPred.erase(remove(FollowPred.begin(), FollowPred.end(), B), FollowPred.end());
+      B->releaseTerminator();
       B->terminate(make_unique<BraInstruction>(NameGen::genInstructionId(), FollowingBlocks[0]));
     }
-  } else if (auto BranchTerminator = dynamic_cast<BraInstruction *>(B->terminator())) {
+  }
+
+  if (auto BranchTerminator = dynamic_cast<BraInstruction *>(B->terminator())) {
     auto Follower = BranchTerminator->followingBlocks()[0];
 
     if (VisitedBlocks.find(Follower) != VisitedBlocks.end() && blockIsEmpty(Follower)) {
       // Currently we only merge if the follower has no additional predecessors.
       if (Follower->predecessors().size() == 1) {
         unique_ptr<BasicBlockTerminator> Terminator = Follower->releaseTerminator();
+        B->releaseTerminator();
         B->terminate(move(Terminator));
         BlocksToRemove.insert(Follower);
       }
