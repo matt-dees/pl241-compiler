@@ -7,7 +7,7 @@ namespace cs241c {
 class Function;
 class Module;
 
-class DeadCodeEliminationPass : Pass {
+class DeadCodeEliminationPass : public Pass {
 public:
   void run(Module &) override;
 

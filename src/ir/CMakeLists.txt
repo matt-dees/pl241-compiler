@@ -11,6 +11,8 @@ add_library(cs241c-ir
   Function.h
   Instruction.cpp
   Instruction.h
+  IntegrityCheckPass.cpp
+  IntegrityCheckPass.h
   Mem2VarPass.cpp
   Mem2VarPass.h
   Module.cpp
