@@ -67,6 +67,7 @@ protected:
 
 public:
   std::vector<BasicBlock *> followingBlocks() override;
+  void updateTarget(BasicBlock *OldTarget, BasicBlock *NewTarget);
 };
 
 class NegInstruction : public Instruction {

@@ -75,6 +75,15 @@ vector<BasicBlock *> ConditionalBlockTerminator::followingBlocks() {
   return {dynamic_cast<BasicBlock *>(arguments()[1]), dynamic_cast<BasicBlock *>(arguments()[2])};
 }
 
+void ConditionalBlockTerminator::updateTarget(BasicBlock *OldTarget, BasicBlock *NewTarget) {
+  auto &Arguments = arguments();
+  auto OldTargetIt = find(Arguments.begin(), Arguments.end(), OldTarget);
+  *OldTargetIt = NewTarget;
+  auto &OldPred = OldTarget->predecessors();
+  OldPred.erase(remove(OldPred.begin(), OldPred.end(), getOwner()), OldPred.end());
+  NewTarget->predecessors().push_back(getOwner());
+}
+
 NegInstruction::NegInstruction(int Id, Value *X) : Instruction(Id, {X}) {}
 string_view NegInstruction::mnemonic() const { return "neg"; }
 

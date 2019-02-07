@@ -37,6 +37,17 @@ void BasicBlock::terminate(unique_ptr<BasicBlockTerminator> T) {
   Instructions.push_back(move(T));
 }
 
+unique_ptr<BasicBlockTerminator> BasicBlock::releaseTerminator() {
+  unique_ptr<BasicBlockTerminator> Terminator{dynamic_cast<BasicBlockTerminator *>(Instructions.back().release())};
+  Instructions.pop_back();
+  for (auto Follower : Terminator->followingBlocks()) {
+    auto &FollowerPredecessors = Follower->predecessors();
+    FollowerPredecessors.erase(remove(FollowerPredecessors.begin(), FollowerPredecessors.end(), this),
+                               FollowerPredecessors.end());
+  }
+  return Terminator;
+}
+
 void BasicBlock::toSSA(SSAContext &SSACtx) {
   // Remove MOVE instructions and update SSA context accordingly.
   for (auto InstIter = Instructions.begin(); InstIter != Instructions.end();) {

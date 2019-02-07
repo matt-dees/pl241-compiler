@@ -39,6 +39,7 @@ public:
 
   bool isTerminated();
   void terminate(std::unique_ptr<BasicBlockTerminator> T);
+  std::unique_ptr<BasicBlockTerminator> releaseTerminator();
   void toSSA(SSAContext &SSACtx);
 
   void insertPhiInstruction(std::unique_ptr<PhiInstruction> Phi);
