@@ -22,7 +22,8 @@ unique_ptr<LocalVariable> IntDecl::declareLocal(IrGenContext &Ctx) {
   return Var;
 }
 
-ArrayDecl::ArrayDecl(string Ident, vector<int32_t> Dim) : Ident(move(Ident)), Dim(move(Dim)) {}
+ArrayDecl::ArrayDecl(string Ident, vector<int32_t> Dim)
+    : Ident(move(Ident)), Dim(move(Dim)) {}
 
 void ArrayDecl::declareGlobal(IrGenContext &Ctx) {
   auto Var = make_unique<GlobalVariable>(Ident, Dim);
@@ -37,7 +38,8 @@ unique_ptr<LocalVariable> ArrayDecl::declareLocal(IrGenContext &Ctx) {
   return Var;
 }
 
-Func::Func(string Ident, vector<string> Params, vector<unique_ptr<Decl>> Vars, vector<unique_ptr<Stmt>> Stmts)
+Func::Func(string Ident, vector<string> Params, vector<unique_ptr<Decl>> Vars,
+           vector<unique_ptr<Stmt>> Stmts)
     : Ident(move(Ident)), Vars(move(Vars)), Stmts(move(Stmts)) {
   transform(Params.begin(), Params.end(), back_inserter(this->Params),
             [](string &Ident) { return make_unique<IntDecl>(Ident); });
@@ -49,9 +51,12 @@ void Func::genIr(IrGenContext &Ctx) {
   vector<unique_ptr<LocalVariable>> Locals;
   Locals.reserve(Params.size() + Vars.size());
   transform(Params.begin(), Params.end(), back_inserter(Locals),
-            [&Ctx](const unique_ptr<IntDecl> &Param) { return Param->declareLocal(Ctx); });
-  transform(Vars.begin(), Vars.end(), back_inserter(Locals),
-            [&Ctx](const unique_ptr<Decl> &Var) { return Var->declareLocal(Ctx); });
+            [&Ctx](const unique_ptr<IntDecl> &Param) {
+              return Param->declareLocal(Ctx);
+            });
+  transform(
+      Vars.begin(), Vars.end(), back_inserter(Locals),
+      [&Ctx](const unique_ptr<Decl> &Var) { return Var->declareLocal(Ctx); });
 
   auto Func = make_unique<Function>(Ident, move(Locals));
   Ctx.declare(move(Func));
@@ -60,7 +65,8 @@ void Func::genIr(IrGenContext &Ctx) {
   Ctx.currentBlock() = EntryBlock;
 
   for (const pair<string, Symbol> &Symbol : Ctx.localsTable()) {
-    Ctx.makeInstruction<MoveInstruction>(Ctx.makeConstant(0), Symbol.second.Var);
+    Ctx.makeInstruction<MoveInstruction>(Ctx.makeConstant(0),
+                                         Symbol.second.Var);
   }
 
   for (const unique_ptr<Stmt> &S : Stmts) {
@@ -68,6 +74,7 @@ void Func::genIr(IrGenContext &Ctx) {
   }
 
   if (!Ctx.currentBlock()->isTerminated()) {
-    Ctx.currentBlock()->terminate(make_unique<RetInstruction>(Ctx.genInstructionId()));
+    Ctx.currentBlock()->terminate(
+        make_unique<RetInstruction>(Ctx.genInstructionId()));
   }
 }

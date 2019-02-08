@@ -21,7 +21,7 @@ int main(int ArgC, char **ArgV) {
   string_view Executable = ArgV[0];
   vector<string_view> Args(ArgV + 1, ArgV + ArgC);
 
-  if (Args.size().empty()) {
+  if (Args.size() == 0) {
     printUsage(Executable);
     return 0;
   }
