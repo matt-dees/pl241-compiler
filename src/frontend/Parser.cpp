@@ -48,7 +48,7 @@ private:
     consume(TT::CClose);
     consume(TT::Period);
 
-    Funcs.push_back({Func::Type::Procedure, "main", {}, {}, move(StmtSeq)});
+    Funcs.push_back({"main", {}, {}, move(StmtSeq)});
 
     return {move(Globals), move(Funcs)};
   }
@@ -75,8 +75,6 @@ private:
   }
 
   Func pFunc() {
-    Func::Type FT = Lookahead->T == TT::Function ? Func::Type::Function : Func::Type::Procedure;
-
     consume({TT::Function, TT::Procedure});
     auto Ident = consumeIdent();
 
@@ -89,7 +87,7 @@ private:
     auto [Vars, StmtSeq] = pBody();
     consume(TT::Semi);
 
-    return {FT, Ident, Params, move(Vars), move(StmtSeq)};
+    return {Ident, Params, move(Vars), move(StmtSeq)};
   }
 
   vector<unique_ptr<Stmt>> pStmtSeq() {

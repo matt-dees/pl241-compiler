@@ -37,9 +37,8 @@ unique_ptr<LocalVariable> ArrayDecl::declareLocal(IrGenContext &Ctx) {
   return Var;
 }
 
-Func::Func(Func::Type T, string Ident, vector<string> Params, vector<unique_ptr<Decl>> Vars,
-           vector<unique_ptr<Stmt>> Stmts)
-    : T(T), Ident(move(Ident)), Vars(move(Vars)), Stmts(move(Stmts)) {
+Func::Func(string Ident, vector<string> Params, vector<unique_ptr<Decl>> Vars, vector<unique_ptr<Stmt>> Stmts)
+    : Ident(move(Ident)), Vars(move(Vars)), Stmts(move(Stmts)) {
   transform(Params.begin(), Params.end(), back_inserter(this->Params),
             [](string &Ident) { return make_unique<IntDecl>(Ident); });
 }
