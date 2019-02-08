@@ -65,7 +65,7 @@ void BasicBlock::toSSA(SSAContext &SSACtx) {
       InstIter = Instructions.erase(InstIter);
       continue;
     }
-    (*InstIter)->argsToSSA(SSACtx);
+    (*InstIter)->updateArgs(SSACtx);
     if (auto PhiInst = dynamic_cast<PhiInstruction *>(InstIter->get())) {
       SSACtx.updateVariable(PhiInst->Target, PhiInst);
     }

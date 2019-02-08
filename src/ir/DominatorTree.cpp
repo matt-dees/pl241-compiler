@@ -153,3 +153,19 @@ DominatorTree::dominanceFrontier(cs241c::BasicBlock *BB) {
   }
   return DominanceFrontier.at(BB);
 }
+
+bool DominatorTree::doesBlockDominate(cs241c::BasicBlock *Dominator,
+                                      cs241c::BasicBlock *Candidate) const {
+  if (Dominator == Candidate) {
+    return true;
+  }
+  BasicBlock *Runner = Candidate;
+  while (IDomMap.find(Runner) != IDomMap.end() &&
+         IDomMap.at(Runner) != Runner) {
+    if (IDomMap.at(Runner) == Dominator) {
+      return true;
+    }
+    Runner = IDomMap.at(Runner);
+  }
+  return false;
+}

@@ -8,15 +8,20 @@
 using namespace cs241c;
 using namespace std;
 
-IrGenContext::IrGenContext(Module *CompilationUnit) : CompilationUnit(CompilationUnit) {}
+IrGenContext::IrGenContext(Module *CompilationUnit)
+    : CompilationUnit(CompilationUnit) {}
 
 Value *IrGenContext::globalBase() { return CompilationUnit->globalBase(); }
 
 BasicBlock *&IrGenContext::currentBlock() { return CurrentBlock; }
 
-const unordered_map<string, Symbol> &IrGenContext::localsTable() const { return LocalsTable; }
+const unordered_map<string, Symbol> &IrGenContext::localsTable() const {
+  return LocalsTable;
+}
 
-string IrGenContext::genBasicBlockName() { return NameGen::genBasicBlockName(); }
+string IrGenContext::genBasicBlockName() {
+  return NameGen::genBasicBlockName();
+}
 
 int IrGenContext::genInstructionId() { return NameGen::genInstructionId(); }
 
@@ -68,11 +73,20 @@ Function *IrGenContext::lookupFuncion(const string &Ident) {
 }
 
 ConstantValue *IrGenContext::makeConstant(int Val) {
-  return CurrentFunction->constants().emplace_back(make_unique<ConstantValue>(Val)).get();
+  for (auto &CV : CurrentFunction->constants()) {
+    if (CV->Val == Val) {
+      return CV.get();
+    }
+  }
+  return CurrentFunction->constants()
+      .emplace_back(make_unique<ConstantValue>(Val))
+      .get();
 }
 
 BasicBlock *IrGenContext::makeBasicBlock() {
-  return CurrentFunction->basicBlocks().emplace_back(make_unique<BasicBlock>(genBasicBlockName())).get();
+  return CurrentFunction->basicBlocks()
+      .emplace_back(make_unique<BasicBlock>(genBasicBlockName()))
+      .get();
 }
 
 void IrGenContext::compUnitToSSA() {
@@ -125,10 +139,12 @@ void IrGenContext::genAllPhiInstructions(BasicBlock *CurrentBB) {
   }
 }
 
-void IrGenContext::propagateChangeToPhis(cs241c::BasicBlock *SourceBB, cs241c::Variable *ChangedVar,
+void IrGenContext::propagateChangeToPhis(cs241c::BasicBlock *SourceBB,
+                                         cs241c::Variable *ChangedVar,
                                          cs241c::Value *NewVal) {
   for (auto BB : CompilationUnit->DT.dominanceFrontier(SourceBB)) {
-    if (find(BB->predecessors().begin(), BB->predecessors().end(), SourceBB) != BB->predecessors().end()) {
+    if (find(BB->predecessors().begin(), BB->predecessors().end(), SourceBB) !=
+        BB->predecessors().end()) {
       BB->updatePhiInst(SourceBB, ChangedVar, NewVal);
     }
   }

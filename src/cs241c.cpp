@@ -1,3 +1,4 @@
+#include "CommonSubexElimPass.h"
 #include "DeadCodeEliminationPass.h"
 #include "Filesystem.h"
 #include "Lexer.h"
@@ -12,13 +13,15 @@
 using namespace cs241c;
 using namespace std;
 
-static void printUsage(const string_view &Executable) { cout << "Usage: " << Executable << " [--vcg] <source>\n"; }
+static void printUsage(const string_view &Executable) {
+  cout << "Usage: " << Executable << " [--vcg] <source>\n";
+}
 
 int main(int ArgC, char **ArgV) {
   string_view Executable = ArgV[0];
   vector<string_view> Args(ArgV + 1, ArgV + ArgC);
 
-  if (Args.size() == 0) {
+  if (Args.size().empty()) {
     printUsage(Executable);
     return 0;
   }
@@ -35,6 +38,9 @@ int main(int ArgC, char **ArgV) {
 
   DeadCodeEliminationPass DCEP;
   DCEP.run(*IR);
+
+  //  CommonSubexElimPass CSE;
+  //  CSE.run(*IR);
 
   if (GenerateVcg) {
     VcgGen VcgGenerator = VcgGen(IR.get());

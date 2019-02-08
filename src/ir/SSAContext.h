@@ -10,17 +10,14 @@ class Variable;
 class SSAContext {
 private:
   std::unordered_map<Variable *, Value *> SSAVariableMap;
-  std::unordered_map<Variable *, Value *> Changes;
 
 public:
-  const std::unordered_map<Variable *, Value *> &changes();
   const std::unordered_map<Variable *, Value *> &ssaVariableMap() const;
 
   void merge(const SSAContext &Source);
   void updateVariable(Variable *Arg, Value *NewVal);
-  Value *lookupVariable(Variable *Arg);
-  bool contains(Variable *Arg);
-  void clearChanges();
+  Value *lookupVariable(Variable *Arg) const;
+  bool contains(Variable *Arg) const;
 };
 } // namespace cs241c
 

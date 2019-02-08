@@ -8,6 +8,9 @@ namespace cs241c {
 class CommonSubexElimPass : Pass {
 public:
   void run(Module &) override;
+
+private:
+  void run(Function &F, const DominatorTree &DT);
 };
 } // namespace cs241c
 

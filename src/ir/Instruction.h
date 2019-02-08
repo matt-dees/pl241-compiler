@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace cs241c {
@@ -25,18 +26,20 @@ private:
 protected:
   Instruction(int Id, std::vector<Value *> &&Arguments);
   virtual std::string_view mnemonic() const = 0;
+  virtual void updateArg(unsigned long Index, Value *NewVal);
 
 public:
   BasicBlock *getOwner() const;
   std::vector<Value *> &arguments();
   const std::vector<Value *> &arguments() const;
-  virtual void updateArg(unsigned long Index, Value *NewVal);
+  void updateArgs(const std::unordered_map<Value *, Value *> &UpdateCtx);
+  void updateArgs(const SSAContext &SSAVarCtx);
 
-  virtual void argsToSSA(SSAContext &);
   void setId(int Id);
   std::string name() const override;
   virtual bool isPreLive() const;
   std::string toString() const override;
+  bool operator==(const Instruction &other) const;
 
   friend class BasicBlock;
 };
@@ -56,14 +59,14 @@ protected:
   BasicBlockTerminator(int Id, std::vector<Value *> &&Arguments);
 
 public:
-  void argsToSSA(SSAContext &SSACtx) override;
   virtual std::vector<BasicBlock *> followingBlocks();
   bool isPreLive() const override;
 };
 
 class ConditionalBlockTerminator : public BasicBlockTerminator {
 protected:
-  ConditionalBlockTerminator(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
+  ConditionalBlockTerminator(int Id, CmpInstruction *Cmp, BasicBlock *Then,
+                             BasicBlock *Else);
 
 public:
   std::vector<BasicBlock *> followingBlocks() override;
@@ -121,7 +124,8 @@ public:
 
 class StoreInstruction : public MemoryInstruction {
 public:
-  StoreInstruction(int Id, Variable *Object, Value *Y, AddaInstruction *Address);
+  StoreInstruction(int Id, Variable *Object, Value *Y,
+                   AddaInstruction *Address);
   void updateArg(unsigned long Index, Value *NewVal) override;
   std::string_view mnemonic() const override;
   bool isPreLive() const override;
@@ -153,7 +157,7 @@ public:
 
 class RetInstruction : public BasicBlockTerminator {
 public:
-  RetInstruction(int Id);
+  explicit RetInstruction(int Id);
   RetInstruction(int Id, Value *X);
 
   std::string_view mnemonic() const override;
@@ -161,7 +165,7 @@ public:
 
 class EndInstruction : public BasicBlockTerminator {
 public:
-  EndInstruction(int Id);
+  explicit EndInstruction(int Id);
   std::string_view mnemonic() const override;
 };
 
@@ -174,43 +178,49 @@ public:
 
 class BneInstruction : public ConditionalBlockTerminator {
 public:
-  BneInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
+  BneInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
+                 BasicBlock *Else);
   std::string_view mnemonic() const override;
 };
 
 class BeqInstruction : public ConditionalBlockTerminator {
 public:
-  BeqInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
+  BeqInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
+                 BasicBlock *Else);
   std::string_view mnemonic() const override;
 };
 
 class BltInstruction : public ConditionalBlockTerminator {
 public:
-  BltInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
+  BltInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
+                 BasicBlock *Else);
   std::string_view mnemonic() const override;
 };
 
 class BleInstruction : public ConditionalBlockTerminator {
 public:
-  BleInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
+  BleInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
+                 BasicBlock *Else);
   std::string_view mnemonic() const override;
 };
 
 class BgeInstruction : public ConditionalBlockTerminator {
 public:
-  BgeInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
+  BgeInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
+                 BasicBlock *Else);
   std::string_view mnemonic() const override;
 };
 
 class BgtInstruction : public ConditionalBlockTerminator {
 public:
-  BgtInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
+  BgtInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then,
+                 BasicBlock *Else);
   std::string_view mnemonic() const override;
 };
 
 class ReadInstruction : public Instruction {
 public:
-  ReadInstruction(int Id);
+  explicit ReadInstruction(int Id);
   std::string_view mnemonic() const override;
   bool isPreLive() const override;
 };
@@ -224,7 +234,7 @@ public:
 
 class WriteNLInstruction : public Instruction {
 public:
-  WriteNLInstruction(int Id);
+  explicit WriteNLInstruction(int Id);
   std::string_view mnemonic() const override;
   bool isPreLive() const override;
 };
