@@ -5,6 +5,7 @@
 
 namespace cs241c {
 class IntegrityCheckPass : public Pass {
+public:
   void run(Module &) override;
 };
 } // namespace cs241c

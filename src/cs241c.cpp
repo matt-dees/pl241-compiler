@@ -1,6 +1,7 @@
 #include "CommonSubexElimPass.h"
 #include "DeadCodeEliminationPass.h"
 #include "Filesystem.h"
+#include "IntegrityCheckPass.h"
 #include "Lexer.h"
 #include "Parser.h"
 #include "VcgGen.h"
@@ -13,9 +14,7 @@
 using namespace cs241c;
 using namespace std;
 
-static void printUsage(const string_view &Executable) {
-  cout << "Usage: " << Executable << " [--vcg] <source>\n";
-}
+static void printUsage(const string_view &Executable) { cout << "Usage: " << Executable << " [--vcg] <source>\n"; }
 
 int main(int ArgC, char **ArgV) {
   string_view Executable = ArgV[0];
@@ -36,8 +35,13 @@ int main(int ArgC, char **ArgV) {
   auto AST = parse(Tokens);
   auto IR = AST.genIr();
 
+  IntegrityCheckPass ICP;
+  ICP.run(*IR);
+
   DeadCodeEliminationPass DCEP;
   DCEP.run(*IR);
+
+  ICP.run(*IR);
 
   //  CommonSubexElimPass CSE;
   //  CSE.run(*IR);
