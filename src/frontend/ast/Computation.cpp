@@ -5,7 +5,8 @@
 using namespace cs241c;
 using namespace std;
 
-Computation::Computation(vector<unique_ptr<Decl>> Vars, vector<Func> Funcs) : Vars(move(Vars)), Funcs(move(Funcs)) {}
+Computation::Computation(vector<unique_ptr<Decl>> Vars, vector<Func> Funcs)
+    : Vars(move(Vars)), Funcs(move(Funcs)) {}
 
 unique_ptr<Module> Computation::genIr() {
   auto CompilationUnit = make_unique<Module>("program");
@@ -20,6 +21,6 @@ unique_ptr<Module> Computation::genIr() {
   }
 
   CompilationUnit->buildDominatorTree();
-  Ctx.compUnitToSSA();
+  CompilationUnit->toSSA(Ctx);
   return CompilationUnit;
 }

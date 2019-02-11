@@ -1,9 +1,10 @@
 #include "CommonSubexElimPass.h"
+#include <iostream>
 #include <stack>
 using namespace cs241c;
 void CommonSubexElimPass::run(Module &M) {
   for (auto &F : M.functions()) {
-    run(*F, M.DT);
+    run(*F);
   }
 }
 
@@ -27,7 +28,7 @@ struct InstructionEquality {
 };
 } // namespace
 
-void CommonSubexElimPass::run(Function &F, const DominatorTree &DT) {
+void CommonSubexElimPass::run(Function &F) {
   // For each basic block:
   //    For each instruction:
   //      Hash instruction
@@ -63,13 +64,20 @@ void CommonSubexElimPass::run(Function &F, const DominatorTree &DT) {
 
     for (auto InstIter = Runner->instructions().begin();
          InstIter != Runner->instructions().end();) {
+      if (shouldIgnore(InstIter->get())) {
+        InstIter++;
+        continue;
+      }
       if (CandidateInstructions.find(InstIter->get()) !=
               CandidateInstructions.end() &&
-          DT.doesBlockDominate(
+          F.dominatorTree().doesBlockDominate(
               CandidateInstructions.at(InstIter->get())->getOwner(), Runner)) {
         Replacements[InstIter->get()] =
             CandidateInstructions.at(InstIter->get());
+        std::cout << "[CSE] Erasing instruction: " << (*InstIter)->toString()
+                  << std::endl;
         InstIter = Runner->instructions().erase(InstIter);
+
       } else {
         CandidateInstructions.erase(InstIter->get());
         CandidateInstructions[InstIter->get()] = InstIter->get();
@@ -78,8 +86,16 @@ void CommonSubexElimPass::run(Function &F, const DominatorTree &DT) {
       }
     }
     VisitedBlocks.insert(Runner);
-    for (auto &BB : Runner->terminator()->followingBlocks()) {
-      BlocksToExplore.push(BB);
+    BasicBlockTerminator *Terminator = Runner->terminator();
+    if (Terminator) {
+      for (auto &BB : Terminator->followingBlocks()) {
+        BlocksToExplore.push(BB);
+      }
     }
   }
+}
+
+bool CommonSubexElimPass::shouldIgnore(Instruction *I) {
+  return dynamic_cast<BasicBlockTerminator *>(I) ||
+         dynamic_cast<CallInstruction *>(I);
 }

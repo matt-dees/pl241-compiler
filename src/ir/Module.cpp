@@ -11,19 +11,24 @@ string Module::getIdentifier() const { return Name; }
 
 vector<unique_ptr<GlobalVariable>> &Module::globals() { return Globals; }
 
-const vector<unique_ptr<GlobalVariable>> &Module::globals() const { return Globals; }
+const vector<unique_ptr<GlobalVariable>> &Module::globals() const {
+  return Globals;
+}
 
 vector<unique_ptr<Function>> &Module::functions() { return Functions; }
 
-const vector<unique_ptr<Function>> &Module::functions() const { return Functions; }
+const vector<unique_ptr<Function>> &Module::functions() const {
+  return Functions;
+}
 
 void Module::buildDominatorTree() {
-  if (Functions.empty()) {
-    return;
+  for (auto &F : functions()) {
+    F->buildDominatorTree();
   }
-  Function *FuncStart = Functions.at(0).get();
-  if (FuncStart->basicBlocks().empty()) {
-    return;
+}
+
+void Module::toSSA(IrGenContext &Ctx) {
+  for (auto &F : functions()) {
+    F->toSSA(Ctx);
   }
-  DT.buildDominatorTree(FuncStart->basicBlocks().at(0).get());
 }

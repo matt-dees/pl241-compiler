@@ -10,7 +10,9 @@ public:
   void run(Module &) override;
 
 private:
-  void run(Function &F, const DominatorTree &DT);
+  void run(Function &F);
+
+  bool shouldIgnore(Instruction *I);
 };
 } // namespace cs241c
 

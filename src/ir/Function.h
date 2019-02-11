@@ -2,6 +2,8 @@
 #define CS241C_IR_FUNCTION_H
 
 #include "BasicBlock.h"
+#include "DominatorTree.h"
+#include "IrGenContext.h"
 #include "SSAContext.h"
 #include "Value.h"
 #include "Variable.h"
@@ -17,11 +19,23 @@ class Function : public Value {
   std::vector<std::unique_ptr<ConstantValue>> Constants;
   std::vector<std::unique_ptr<LocalVariable>> Locals;
   std::vector<std::unique_ptr<BasicBlock>> BasicBlocks;
+  DominatorTree DT;
+
+private:
+  SSAContext recursiveNodeToSSA(BasicBlock *CurrentBB, SSAContext Ctx);
+  void recursiveGenAllPhis(BasicBlock *CurrentBB, IrGenContext &GenCtx);
+  void propagateChangeToPhis(BasicBlock *SourceBB, Variable *ChangedVar,
+                             Value *NewVal);
 
 public:
   Function() = default;
-  Function(std::string Name, std::vector<std::unique_ptr<LocalVariable>> &&Locals);
+  Function(std::string Name,
+           std::vector<std::unique_ptr<LocalVariable>> &&Locals);
 
+  void buildDominatorTree();
+  void toSSA(IrGenContext &GenCtx);
+
+  DominatorTree &dominatorTree();
   std::vector<std::unique_ptr<ConstantValue>> &constants();
   std::vector<std::unique_ptr<LocalVariable>> &locals();
   BasicBlock *entryBlock() const;

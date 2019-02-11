@@ -29,11 +29,6 @@ class IrGenContext {
 
   BasicBlock *CurrentBlock;
 
-private:
-  SSAContext nodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx);
-  void propagateChangeToPhis(BasicBlock *SourceBB, Variable *ChangedVar, Value *NewVal);
-  void genAllPhiInstructions(BasicBlock *CurrentBB);
-
 public:
   IrGenContext(Module *CompilationUnit);
 
