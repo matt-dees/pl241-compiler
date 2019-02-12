@@ -74,12 +74,12 @@ void Function::recursiveGenAllPhis(BasicBlock *CurrentBB,
   if (Visited.find(CurrentBB) != Visited.end()) {
     return;
   }
-  auto Phis = CurrentBB->genPhis();
+  auto MoveTargets = CurrentBB->getMoveTargets();
   Visited.insert(CurrentBB);
   for (auto DFEntry : dominatorTree().dominanceFrontier(CurrentBB)) {
-    for (auto &Phi : Phis) {
-      Phi->setId(PhiGenCtx.genInstructionId());
-      DFEntry->insertPhiInstruction(move(Phi));
+    for (auto &Target : MoveTargets) {
+      PhiGenCtx.currentBlock() = DFEntry;
+      PhiGenCtx.makePhiInstruction(Target, Target, Target);
       Visited.erase(DFEntry);
       recursiveGenAllPhis(DFEntry, PhiGenCtx);
     }

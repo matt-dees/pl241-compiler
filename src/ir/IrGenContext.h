@@ -58,6 +58,13 @@ public:
     return InstrP;
   }
 
+  template <typename... Params>
+  PhiInstruction *makePhiInstruction(Params... Args) {
+    auto Instr = std::make_unique<PhiInstruction>(genInstructionId(), Args...);
+    PhiInstruction *InstrP = Instr.get();
+    CurrentBlock->insertPhiInstruction(move(Instr));
+    return InstrP;
+  }
   BasicBlock *makeBasicBlock();
 
   void compUnitToSSA();

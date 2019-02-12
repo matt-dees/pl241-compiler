@@ -13,8 +13,10 @@ struct InstructionHasher {
   std::size_t operator()(Instruction *Instr) const {
     std::size_t hash = 0;
     hash ^= typeid(*Instr).hash_code();
+    size_t Seed = 0xFEFEFEFE;
     for (auto &Arg : Instr->arguments()) {
-      hash ^= std::hash<size_t>()(reinterpret_cast<size_t>(Arg));
+      hash ^= std::hash<size_t>()(reinterpret_cast<size_t>(Arg)) ^ Seed;
+      Seed = ~(Seed << 1);
     }
     return hash;
   }
@@ -43,7 +45,7 @@ void CommonSubexElimPass::run(Function &F) {
       CandidateInstructions;
   std::unordered_map<Value *, Value *> Replacements;
   std::stack<BasicBlock *> BlocksToExplore;
-  std::unordered_set<BasicBlock *> VisitedBlocks;
+  std::unordered_set<BasicBlock *> VisitedBlocks = {};
 
   BlocksToExplore.push(F.entryBlock());
 
@@ -65,24 +67,35 @@ void CommonSubexElimPass::run(Function &F) {
     for (auto InstIter = Runner->instructions().begin();
          InstIter != Runner->instructions().end();) {
       if (shouldIgnore(InstIter->get())) {
+        InstIter->get()->updateArgs(Replacements);
         InstIter++;
         continue;
       }
-      if (CandidateInstructions.find(InstIter->get()) !=
-              CandidateInstructions.end() &&
+      bool HasMatch = CandidateInstructions.find(InstIter->get()) !=
+                      CandidateInstructions.end();
+      bool DominatedByMatch =
+          HasMatch &&
           F.dominatorTree().doesBlockDominate(
-              CandidateInstructions.at(InstIter->get())->getOwner(), Runner)) {
+              CandidateInstructions.at(InstIter->get())->getOwner(), Runner);
+      bool MatchIsNotMe = HasMatch && CandidateInstructions.at(
+                                          InstIter->get()) != InstIter->get();
+      if (DominatedByMatch && MatchIsNotMe) {
         Replacements[InstIter->get()] =
             CandidateInstructions.at(InstIter->get());
-        std::cout << "[CSE] Erasing instruction: " << (*InstIter)->toString()
+        std::cout << "[CSE] " << (*InstIter)->toString() << " --> "
+                  << CandidateInstructions.at(InstIter->get())->toString()
                   << std::endl;
+        for (auto &DFEntry : F.dominatorTree().dominanceFrontier(Runner)) {
+          VisitedBlocks.erase(DFEntry);
+          BlocksToExplore.push(DFEntry);
+        }
         InstIter = Runner->instructions().erase(InstIter);
-
       } else {
         CandidateInstructions.erase(InstIter->get());
         CandidateInstructions[InstIter->get()] = InstIter->get();
-        InstIter->get()->updateArgs(Replacements);
-        InstIter++;
+        bool DidChange = InstIter->get()->updateArgs(Replacements);
+        if (!DidChange)
+          InstIter++;
       }
     }
     VisitedBlocks.insert(Runner);
@@ -96,6 +109,13 @@ void CommonSubexElimPass::run(Function &F) {
 }
 
 bool CommonSubexElimPass::shouldIgnore(Instruction *I) {
-  return dynamic_cast<BasicBlockTerminator *>(I) ||
-         dynamic_cast<CallInstruction *>(I);
+  return dynamic_cast<BasicBlockTerminator *>(I) != nullptr ||
+         dynamic_cast<CallInstruction *>(I) != nullptr ||
+         dynamic_cast<ReadInstruction *>(I) != nullptr ||
+         dynamic_cast<WriteInstruction *>(I) != nullptr ||
+         dynamic_cast<WriteNLInstruction *>(I) != nullptr;
 }
+
+bool CommonSubexElimPass::isPatchInst(Instruction *I) {
+  return dynamic_cast<PhiInstruction *>(I) != nullptr;
+};

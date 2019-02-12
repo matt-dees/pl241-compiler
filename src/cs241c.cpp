@@ -40,15 +40,15 @@ int main(int ArgC, char **ArgV) {
   IntegrityCheckPass ICP;
   ICP.run(*IR);
 
-  DeadCodeEliminationPass DCEP;
-  DCEP.run(*IR);
-
-  ICP.run(*IR);
-
-  //  CommonSubexElimPass CSE;
-  //  CSE.run(*IR);
+  //  DeadCodeEliminationPass DCEP;
+  //  DCEP.run(*IR);
   //
   //  ICP.run(*IR);
+
+  CommonSubexElimPass CSE;
+  CSE.run(*IR);
+
+  ICP.run(*IR);
 
   if (GenerateVcg) {
     VcgGen VcgGenerator = VcgGen(IR.get());

@@ -74,6 +74,7 @@ void BasicBlock::toSSA(SSAContext &SSACtx) {
 }
 
 void BasicBlock::insertPhiInstruction(unique_ptr<PhiInstruction> Phi) {
+  Phi->Owner = this;
   auto PhiMapEntry = PhiInstrMap.find(Phi->Target);
   if (PhiMapEntry == PhiInstrMap.end()) {
     // Basic Block does not contain a Phi node for this variable.
@@ -84,22 +85,20 @@ void BasicBlock::insertPhiInstruction(unique_ptr<PhiInstruction> Phi) {
   }
 }
 
-vector<unique_ptr<PhiInstruction>> BasicBlock::genPhis() {
-  vector<unique_ptr<PhiInstruction>> PhisToPropagate;
+vector<Variable *> BasicBlock::getMoveTargets() {
+  vector<Variable *> TargetsForPhis;
 
   for (auto &I : Instructions) {
     if (auto MovInst = dynamic_cast<MoveInstruction *>(I.get())) {
       if (auto Target = dynamic_cast<Variable *>(MovInst->target())) {
-        PhisToPropagate.push_back(
-            make_unique<PhiInstruction>(0, Target, Target, Target));
+        TargetsForPhis.push_back(Target);
       }
     } else if (auto PhiInst = dynamic_cast<PhiInstruction *>(I.get())) {
-      PhisToPropagate.push_back(make_unique<PhiInstruction>(
-          0, PhiInst->Target, PhiInst->Target, PhiInst->Target));
+      TargetsForPhis.push_back(PhiInst->Target);
     }
   }
 
-  return PhisToPropagate;
+  return TargetsForPhis;
 }
 
 void BasicBlock::updatePhiInst(cs241c::BasicBlock *From,
