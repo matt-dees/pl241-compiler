@@ -1,10 +1,12 @@
 #include "DeadCodeEliminationPass.h"
+#include "DominatorTree.h"
 #include "Module.h"
 #include "NameGen.h"
 #include <algorithm>
 #include <cassert>
 #include <stack>
 #include <unordered_set>
+#include <vector>
 
 using namespace cs241c;
 using namespace std;
@@ -16,132 +18,41 @@ void DeadCodeEliminationPass::run(Module &M) {
 }
 
 namespace {
-void findLiveValues(unordered_set<Value *> &LiveValues, BasicBlock *B, bool RemoveDead) {
-  int I = static_cast<int>(B->instructions().size()) - 1;
-  if (!RemoveDead) {
-    // Skip the terminator if we are just scanning a block (which is always a loop header).
-    --I;
-  }
+unordered_set<Value *> mark(Function &F) {
+  DominatorTree ControlDependence(true);
+  ControlDependence.buildDominatorTree(F);
 
-  for (; I >= 0; --I) {
-    Instruction *Instr = B->instructions()[I].get();
-    auto LiveValueIt = LiveValues.find(Instr);
-    if (LiveValueIt != LiveValues.end()) {
-      LiveValues.insert(Instr->arguments().begin(), Instr->arguments().end());
-    } else if (Instr->isPreLive()) {
-      LiveValues.insert(Instr->arguments().begin(), Instr->arguments().end());
-    } else if (RemoveDead) {
-      B->instructions().erase(B->instructions().begin() + I);
-    }
-  }
-}
+  vector<Instruction *> WorkList;
+  unordered_set<Value *> LiveSet;
 
-bool pushFollowers(stack<BasicBlock *> &Blocks, unordered_set<BasicBlock *> &VisitedBlocks,
-                   unordered_set<Value *> &LiveValues, BasicBlock *B) {
-  bool HasUnvisitedFollowers = false;
-  for (auto Follower : B->terminator()->followingBlocks()) {
-    if (VisitedBlocks.find(Follower) == VisitedBlocks.end()) {
-      // If only some followers of my follower were already processed, the block was seen before, but not processed,
-      // because it had children. This means that Follower is a loop header and only the follow was processed.
-      auto FollowerFollowers = Follower->terminator()->followingBlocks();
-      if (FollowerFollowers.size() == 2 &&
-          count_if(FollowerFollowers.begin(), FollowerFollowers.end(), [&VisitedBlocks](BasicBlock *FollowerFollower) {
-            return VisitedBlocks.find(FollowerFollower) != VisitedBlocks.end();
-          }) == 1) {
-        findLiveValues(LiveValues, Follower, false);
-      } else {
-        HasUnvisitedFollowers = true;
-        Blocks.push(Follower);
+  for (auto &BB : F.basicBlocks()) {
+    for (auto &I : BB->instructions()) {
+      if (I->isPreLive()) {
+        LiveSet.insert(I.get());
+        WorkList.push_back(I.get());
       }
     }
   }
-  return HasUnvisitedFollowers;
-}
 
-bool blockIsEmpty(BasicBlock *B) {
-  assert(!B->instructions().empty() && "BasicBlock must have at least a terminator.");
-  return B->instructions().size() == 1;
-}
+  while (!WorkList.empty()) {
+    Instruction *I = WorkList.back();
+    WorkList.pop_back();
 
-void removeEmptyBlocks(unordered_set<BasicBlock *> &VisitedBlocks, unordered_set<BasicBlock *> &BlocksToRemove,
-                       BasicBlock *B) {
-  if (auto ConditionalTermiantor = dynamic_cast<ConditionalBlockTerminator *>(B->terminator())) {
-    auto FollowingBlocks = ConditionalTermiantor->followingBlocks();
-
-    for (auto Follower : FollowingBlocks) {
-      if (VisitedBlocks.find(Follower) == VisitedBlocks.end()) {
-        continue;
-      }
-
-      auto FollowerTerminator = Follower->terminator();
-      auto FollowerFollowers = FollowerTerminator->followingBlocks();
-      if (blockIsEmpty(Follower) && Follower->predecessors().size() == 1 && FollowerFollowers.size() == 1) {
-        if (FollowerFollowers[0] == B) {
-          // We can do this because there won't be any side effects in loop headers in our language.
-          auto Terminator = make_unique<BraInstruction>(NameGen::genInstructionId(), FollowingBlocks[1]);
-          B->releaseTerminator();
-          B->terminate(move(Terminator));
-          Follower->releaseTerminator();
-          BlocksToRemove.insert(Follower);
-          break;
+    for (Value *Arg : I->arguments()) {
+      if (LiveSet.find(Arg) == LiveSet.end()) {
+        LiveSet.insert(Arg);
+        if (auto ArgI = dynamic_cast<Instruction *>(Arg)) {
+          WorkList.push_back(ArgI);
         }
-        ConditionalTermiantor->updateTarget(Follower, FollowerFollowers[0]);
-        Follower->releaseTerminator();
-        BlocksToRemove.insert(Follower);
       }
     }
 
-    FollowingBlocks = B->terminator()->followingBlocks();
-    if (FollowingBlocks.size() == 2 && FollowingBlocks[0] == FollowingBlocks[1]) {
-      auto &FollowPred = FollowingBlocks[0]->predecessors();
-      FollowPred.erase(remove(FollowPred.begin(), FollowPred.end(), B), FollowPred.end());
-      B->releaseTerminator();
-      B->terminate(make_unique<BraInstruction>(NameGen::genInstructionId(), FollowingBlocks[0]));
-    }
+    auto &ControleDependencies = ControlDependence.DominanceFrontier[I->getOwner()];
+    copy(ControleDependencies.begin(), ControleDependencies.end(), inserter(LiveSet, LiveSet.end()));
   }
 
-  if (auto BranchTerminator = dynamic_cast<BraInstruction *>(B->terminator())) {
-    auto Follower = BranchTerminator->followingBlocks()[0];
-
-    if (VisitedBlocks.find(Follower) != VisitedBlocks.end() && blockIsEmpty(Follower)) {
-      // Currently we only merge if the follower has no additional predecessors.
-      if (Follower->predecessors().size() == 1) {
-        unique_ptr<BasicBlockTerminator> Terminator = Follower->releaseTerminator();
-        B->releaseTerminator();
-        B->terminate(move(Terminator));
-        BlocksToRemove.insert(Follower);
-      }
-    }
-  }
+  return LiveSet;
 }
 } // namespace
 
-void DeadCodeEliminationPass::run(Function &F) {
-  stack<BasicBlock *> Blocks;
-  unordered_set<BasicBlock *> VisitedBlocks;
-  unordered_set<Value *> LiveValues;
-  unordered_set<BasicBlock *> BlocksToRemove;
-
-  Blocks.push(F.entryBlock());
-
-  while (!Blocks.empty()) {
-    BasicBlock *B = Blocks.top();
-
-    bool HasUnvisitedFollowers = pushFollowers(Blocks, VisitedBlocks, LiveValues, B);
-
-    if (HasUnvisitedFollowers)
-      continue;
-
-    removeEmptyBlocks(VisitedBlocks, BlocksToRemove, B);
-
-    findLiveValues(LiveValues, B, true);
-
-    VisitedBlocks.insert(B);
-    Blocks.pop();
-  }
-
-  F.basicBlocks().erase(
-      remove_if(F.basicBlocks().begin(), F.basicBlocks().end(),
-                [&BlocksToRemove](auto &B) { return BlocksToRemove.find(B.get()) != BlocksToRemove.end(); }),
-      F.basicBlocks().end());
-}
+void DeadCodeEliminationPass::run(Function &F) { auto LiveValues = mark(F); }
