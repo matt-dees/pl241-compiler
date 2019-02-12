@@ -11,6 +11,7 @@ TEST_CASE("Test Dominator Tree Generation 1") {
   IrGenContext Context(CompilationUnit.get());
 
   auto F = make_unique<Function>("main", vector<unique_ptr<LocalVariable>>{});
+  Function *FPtr = F.get();
   Context.declare(move(F));
 
   // Test with 4 BasicBlocks
@@ -32,7 +33,7 @@ TEST_CASE("Test Dominator Tree Generation 1") {
   BB4->terminate(make_unique<EndInstruction>(Context.genInstructionId()));
 
   DominatorTree D;
-  D.buildDominatorTree(BB1);
+  D.buildDominatorTree(*FPtr);
   CHECK(true);
 }
 
@@ -41,6 +42,7 @@ TEST_CASE("Test Dominator Tree Generation 2") {
   IrGenContext Context(CompilationUnit.get());
 
   auto F = make_unique<Function>("main", vector<unique_ptr<LocalVariable>>{});
+  Function *FPtr = F.get();
   Context.declare(move(F));
 
   // Test with 4 BasicBlocks
@@ -71,6 +73,6 @@ TEST_CASE("Test Dominator Tree Generation 2") {
   Context.currentBlock() = BB5;
   BB5->terminate(make_unique<EndInstruction>(Context.genInstructionId()));
   DominatorTree D;
-  D.buildDominatorTree(BB1);
+  D.buildDominatorTree(*FPtr);
   CHECK(true);
 }

@@ -5,8 +5,7 @@
 using namespace cs241c;
 using namespace std;
 
-Function::Function(string Name, vector<unique_ptr<LocalVariable>> &&Locals)
-    : Name(move(Name)), Locals(move(Locals)) {}
+Function::Function(string Name, vector<unique_ptr<LocalVariable>> &&Locals) : Name(move(Name)), Locals(move(Locals)) {}
 
 vector<unique_ptr<ConstantValue>> &Function::constants() { return Constants; }
 
@@ -15,9 +14,7 @@ vector<unique_ptr<LocalVariable>> &Function::locals() { return Locals; }
 BasicBlock *Function::entryBlock() const { return BasicBlocks.front().get(); }
 
 vector<unique_ptr<BasicBlock>> &Function::basicBlocks() { return BasicBlocks; }
-const vector<unique_ptr<BasicBlock>> &Function::basicBlocks() const {
-  return BasicBlocks;
-}
+const vector<unique_ptr<BasicBlock>> &Function::basicBlocks() const { return BasicBlocks; }
 
 string Function::toString() const { return Name; }
 
@@ -25,7 +22,7 @@ void Function::buildDominatorTree() {
   if (basicBlocks().empty()) {
     return;
   }
-  DT.buildDominatorTree(entryBlock());
+  DT.buildDominatorTree(*this);
 }
 
 DominatorTree &Function::dominatorTree() { return DT; }
@@ -36,8 +33,7 @@ void Function::toSSA(IrGenContext &GenCtx) {
   recursiveNodeToSSA(entryBlock(), SSACtx);
 }
 
-SSAContext Function::recursiveNodeToSSA(BasicBlock *CurrentBB,
-                                        SSAContext SSACtx) {
+SSAContext Function::recursiveNodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx) {
   static unordered_set<BasicBlock *> Visited = {};
   if (Visited.find(CurrentBB) != Visited.end()) {
     // Already visited this node. Skip.
@@ -57,19 +53,16 @@ SSAContext Function::recursiveNodeToSSA(BasicBlock *CurrentBB,
   return SSACtx;
 }
 
-void Function::propagateChangeToPhis(cs241c::BasicBlock *SourceBB,
-                                     cs241c::Variable *ChangedVar,
+void Function::propagateChangeToPhis(cs241c::BasicBlock *SourceBB, cs241c::Variable *ChangedVar,
                                      cs241c::Value *NewVal) {
   for (auto BB : DT.dominanceFrontier(SourceBB)) {
-    if (find(BB->predecessors().begin(), BB->predecessors().end(), SourceBB) !=
-        BB->predecessors().end()) {
+    if (find(BB->predecessors().begin(), BB->predecessors().end(), SourceBB) != BB->predecessors().end()) {
       BB->updatePhiInst(SourceBB, ChangedVar, NewVal);
     }
   }
 }
 
-void Function::recursiveGenAllPhis(BasicBlock *CurrentBB,
-                                   IrGenContext &PhiGenCtx) {
+void Function::recursiveGenAllPhis(BasicBlock *CurrentBB, IrGenContext &PhiGenCtx) {
   static unordered_set<BasicBlock *> Visited;
   if (Visited.find(CurrentBB) != Visited.end()) {
     return;

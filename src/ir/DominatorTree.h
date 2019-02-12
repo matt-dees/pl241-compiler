@@ -7,14 +7,18 @@
 
 namespace cs241c {
 class BasicBlock;
+class Function;
 
 class DominatorTree {
+  bool Reverse;
   std::unordered_multimap<BasicBlock *, BasicBlock *> DomTree;
   std::unordered_map<BasicBlock *, BasicBlock *> IDomMap;
 
 public:
+  DominatorTree(bool Reverse = false);
+
   std::unordered_set<BasicBlock *> dominanceFrontier(BasicBlock *BB);
-  void buildDominatorTree(BasicBlock *Entry);
+  void buildDominatorTree(Function &F);
   bool doesBlockDominate(BasicBlock *Dominator, BasicBlock *Candidate) const;
   std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>> DominanceFrontier;
 };

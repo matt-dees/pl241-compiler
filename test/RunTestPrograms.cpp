@@ -25,7 +25,7 @@ TEST_CASE("Compile and run test programs") {
       auto IR = AST.genIr();
 
       DeadCodeEliminationPass DCEP;
-      DCEP.run(*IR);
+      // DCEP.run(*IR);
 
       IntegrityCheckPass ICP;
       ICP.run(*IR);
