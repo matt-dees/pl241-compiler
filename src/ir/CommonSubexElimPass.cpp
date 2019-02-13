@@ -14,8 +14,8 @@ struct InstructionHasher {
     std::size_t hash = 0;
     hash ^= typeid(*Instr).hash_code();
     size_t Seed = 0xFEFEFEFE;
-    for (auto &Arg : Instr->arguments()) {
-      hash ^= std::hash<size_t>()(reinterpret_cast<size_t>(Arg)) ^ Seed;
+    for (Value *Arg : Instr->arguments()) {
+      hash ^= std::hash<Value *>{}(Arg) ^ Seed;
       Seed = ~(Seed << 1);
     }
     return hash;
