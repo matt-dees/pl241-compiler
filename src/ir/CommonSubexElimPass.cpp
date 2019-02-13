@@ -67,7 +67,9 @@ void CommonSubexElimPass::run(Function &F) {
     for (auto InstIter = Runner->instructions().begin();
          InstIter != Runner->instructions().end();) {
       if (shouldIgnore(InstIter->get())) {
+        CandidateInstructions.erase(InstIter->get());
         InstIter->get()->updateArgs(Replacements);
+        CandidateInstructions[InstIter->get()] = InstIter->get();
         InstIter++;
         continue;
       }
@@ -89,11 +91,12 @@ void CommonSubexElimPass::run(Function &F) {
           VisitedBlocks.erase(DFEntry);
           BlocksToExplore.push(DFEntry);
         }
+        CandidateInstructions.erase(InstIter->get());
         InstIter = Runner->instructions().erase(InstIter);
       } else {
         CandidateInstructions.erase(InstIter->get());
-        CandidateInstructions[InstIter->get()] = InstIter->get();
         bool DidChange = InstIter->get()->updateArgs(Replacements);
+        CandidateInstructions[InstIter->get()] = InstIter->get();
         if (!DidChange)
           InstIter++;
       }
