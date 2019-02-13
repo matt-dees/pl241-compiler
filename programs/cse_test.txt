@@ -15,8 +15,8 @@ var a, b, c, d, e, f, g;
 		let b <- 5;
 		let e <- c + b + d
 	else
-		let f <- a / d;
-		let g <- d / a
+		let f <- a * d;
+		let g <- d * a
 	fi;
 
 	let f <- a * d;

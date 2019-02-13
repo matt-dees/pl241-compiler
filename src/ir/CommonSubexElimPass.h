@@ -13,6 +13,9 @@ private:
   void run(Function &F);
 
   bool shouldIgnore(Instruction *I);
+  bool shouldExplore(BasicBlock *From, BasicBlock *To,
+                     const std::unordered_set<BasicBlock *> &Visited,
+                     const DominatorTree &DT);
 };
 } // namespace cs241c
 

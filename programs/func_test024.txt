@@ -26,9 +26,11 @@ var a, b, c, d, e, f, g, h;
 			let g <- g + h
 		else
 			if c >= d then
+			    let a <- 0 + 1;
 				let e <- f * f * 7 - 2;
 				while (d - 7) != e do
 					let d <- d - 1;
+					let a <- 0 + 1;
 					let e <- e + 1
 				od;
 				let f <- f * e
@@ -36,11 +38,13 @@ var a, b, c, d, e, f, g, h;
 				let g <- 725;
 				while (d - 8) != e do
 					let d <- d - 1;
+					let a <- 0 + 1;
 					let e <- e + 1
 				od;
 				let f <- (g * f) / 4
 			fi;
-			let g <- g + h
+			let g <- g + h;
+			let a <- 0 + 1
 		fi
 
 	od;

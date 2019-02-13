@@ -42,9 +42,9 @@ void CommonSubexElimPass::run(Function &F) {
   //
   std::unordered_map<Instruction *, Instruction *, InstructionHasher,
                      InstructionEquality>
-      CandidateInstructions;
-  std::unordered_map<Value *, Value *> Replacements;
-  std::stack<BasicBlock *> BlocksToExplore;
+      CandidateInstructions = {};
+  std::unordered_map<Value *, Value *> Replacements = {};
+  std::stack<BasicBlock *> BlocksToExplore = {};
   std::unordered_set<BasicBlock *> VisitedBlocks = {};
 
   BlocksToExplore.push(F.entryBlock());
@@ -114,7 +114,9 @@ void CommonSubexElimPass::run(Function &F) {
     BasicBlockTerminator *Terminator = Runner->terminator();
     if (Terminator) {
       for (auto &BB : Terminator->followingBlocks()) {
-        BlocksToExplore.push(BB);
+        if (shouldExplore(Runner, BB, VisitedBlocks, F.dominatorTree())) {
+          BlocksToExplore.push(BB);
+        }
       }
     }
   }
@@ -126,4 +128,17 @@ bool CommonSubexElimPass::shouldIgnore(Instruction *I) {
          dynamic_cast<ReadInstruction *>(I) != nullptr ||
          dynamic_cast<WriteInstruction *>(I) != nullptr ||
          dynamic_cast<WriteNLInstruction *>(I) != nullptr;
+}
+
+bool CommonSubexElimPass::shouldExplore(
+    BasicBlock *From, BasicBlock *To,
+    const std::unordered_set<BasicBlock *> &Visited, const DominatorTree &DT) {
+  for (auto &P : To->predecessors()) {
+    // If the basic block we want to explore has a predecessor that is
+    // unexplored and is NOT dominated by us, don't explore it yet.
+    if (Visited.find(P) == Visited.end() && !DT.doesBlockDominate(From, To)) {
+      return false;
+    }
+  }
+  return true;
 }
