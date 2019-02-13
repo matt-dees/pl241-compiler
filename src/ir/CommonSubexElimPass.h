@@ -13,7 +13,6 @@ private:
   void run(Function &F);
 
   bool shouldIgnore(Instruction *I);
-  bool isPatchInst(Instruction *I);
 };
 } // namespace cs241c
 

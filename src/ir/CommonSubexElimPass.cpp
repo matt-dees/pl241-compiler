@@ -52,12 +52,6 @@ void CommonSubexElimPass::run(Function &F) {
   while (!BlocksToExplore.empty()) {
     BasicBlock *Runner = BlocksToExplore.top();
     BlocksToExplore.pop();
-    for (auto P : Runner->predecessors()) {
-      if (VisitedBlocks.find(P) == VisitedBlocks.end()) {
-        // Not all Predecessors have been explored
-        continue;
-      }
-    }
 
     if (VisitedBlocks.find(Runner) != VisitedBlocks.end()) {
       // Already visited
@@ -67,38 +61,53 @@ void CommonSubexElimPass::run(Function &F) {
     for (auto InstIter = Runner->instructions().begin();
          InstIter != Runner->instructions().end();) {
       if (shouldIgnore(InstIter->get())) {
-        CandidateInstructions.erase(InstIter->get());
+        // If instruction should not be considered for CSE,
+        // simply update arguments according to Replacements map and continue.
         InstIter->get()->updateArgs(Replacements);
-        CandidateInstructions[InstIter->get()] = InstIter->get();
         InstIter++;
         continue;
       }
       bool HasMatch = CandidateInstructions.find(InstIter->get()) !=
                       CandidateInstructions.end();
+      bool MatchIsMe = HasMatch && CandidateInstructions.at(InstIter->get()) ==
+                                       InstIter->get();
+      if (MatchIsMe) {
+        // If this existing entry in the map is this instruction, delete it
+        // because our arguments may get updated. The instruction will
+        // get re-added to the map later.
+        CandidateInstructions.erase(InstIter->get());
+      }
+      // Update arguments according to Replacements map
+      InstIter->get()->updateArgs(Replacements);
+
+      // Rehash instruction because arguments may have changed
+      HasMatch = CandidateInstructions.find(InstIter->get()) !=
+                 CandidateInstructions.end();
       bool DominatedByMatch =
           HasMatch &&
           F.dominatorTree().doesBlockDominate(
               CandidateInstructions.at(InstIter->get())->getOwner(), Runner);
-      bool MatchIsNotMe = HasMatch && CandidateInstructions.at(
-                                          InstIter->get()) != InstIter->get();
-      if (DominatedByMatch && MatchIsNotMe) {
+
+      if (DominatedByMatch) {
+        // If this instruction is dominated by its match, update the
+        // Replacements map which will dictate which instructions
+        // should be replaced by what values.
         Replacements[InstIter->get()] =
             CandidateInstructions.at(InstIter->get());
         std::cout << "[CSE] " << (*InstIter)->toString() << " --> "
                   << CandidateInstructions.at(InstIter->get())->toString()
                   << std::endl;
         for (auto &DFEntry : F.dominatorTree().dominanceFrontier(Runner)) {
+          // Need to revisit all blocks in the dominance frontier.
           VisitedBlocks.erase(DFEntry);
           BlocksToExplore.push(DFEntry);
         }
-        CandidateInstructions.erase(InstIter->get());
+        // Perform CSE. Delete duplicate instruction.
         InstIter = Runner->instructions().erase(InstIter);
       } else {
-        CandidateInstructions.erase(InstIter->get());
-        bool DidChange = InstIter->get()->updateArgs(Replacements);
+        // Update entry in the hash map
         CandidateInstructions[InstIter->get()] = InstIter->get();
-        if (!DidChange)
-          InstIter++;
+        InstIter++;
       }
     }
     VisitedBlocks.insert(Runner);
@@ -118,7 +127,3 @@ bool CommonSubexElimPass::shouldIgnore(Instruction *I) {
          dynamic_cast<WriteInstruction *>(I) != nullptr ||
          dynamic_cast<WriteNLInstruction *>(I) != nullptr;
 }
-
-bool CommonSubexElimPass::isPatchInst(Instruction *I) {
-  return dynamic_cast<PhiInstruction *>(I) != nullptr;
-};
