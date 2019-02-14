@@ -1,4 +1,5 @@
 #include "CommonSubexElimPass.h"
+#include "ConstExprEvalPass.h"
 #include "DeadCodeEliminationPass.h"
 #include "Filesystem.h"
 #include "IntegrityCheckPass.h"
@@ -37,6 +38,11 @@ int main(int ArgC, char **ArgV) {
   auto IR = AST.genIr();
 
   IntegrityCheckPass ICP;
+  ICP.run(*IR);
+
+  ConstExprEvalPass CEE;
+  CEE.run(*IR);
+
   ICP.run(*IR);
 
   CommonSubexElimPass CSE;

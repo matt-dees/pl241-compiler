@@ -93,7 +93,7 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveVal
     }
 
     if (auto Branch = dynamic_cast<BraInstruction *>(BB->terminator())) {
-      if (BB->instructions().size() == 1) {
+      if (BB->instructions().size() == 1 && BB->predecessors().size() == 1) {
         BB = Followers.front();
       } else {
         Branch->updateTarget(skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
@@ -139,12 +139,14 @@ void removeDeadBlocks(Function &F, BasicBlock *NewEntry) {
 }
 
 void trim(Function &F, const unordered_set<Value *> &LiveValues) {
-  unordered_set<BasicBlock *> VisitedBlocks;
-  BasicBlock *NewEntry = skipDeadBlocks(F.entryBlock(), LiveValues, VisitedBlocks);
-  removeDeadBlocks(F, NewEntry);
-  auto NewEntryIt = find_if(F.basicBlocks().begin(), F.basicBlocks().end(),
-                            [NewEntry](auto &Block) { return Block.get() == NewEntry; });
-  NewEntryIt->swap(F.basicBlocks().front());
+  for (int I = 1; I <= 2; ++I) {
+    unordered_set<BasicBlock *> VisitedBlocks;
+    BasicBlock *NewEntry = skipDeadBlocks(F.entryBlock(), LiveValues, VisitedBlocks);
+    removeDeadBlocks(F, NewEntry);
+    auto NewEntryIt = find_if(F.basicBlocks().begin(), F.basicBlocks().end(),
+                              [NewEntry](auto &Block) { return Block.get() == NewEntry; });
+    NewEntryIt->swap(F.basicBlocks().front());
+  }
 }
 } // namespace
 

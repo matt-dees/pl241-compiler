@@ -1,4 +1,5 @@
 #include "CommonSubexElimPass.h"
+#include "ConstExprEvalPass.h"
 #include "DeadCodeEliminationPass.h"
 #include "Filesystem.h"
 #include "IntegrityCheckPass.h"
@@ -24,6 +25,9 @@ TEST_CASE("Compile and run test programs") {
       vector<Token> Tokens = lex(Text);
       Computation AST = parse(Tokens);
       auto IR = AST.genIr();
+
+      ConstExprEvalPass CEE;
+      CEE.run(*IR);
 
       CommonSubexElimPass CSE;
       CSE.run(*IR);
