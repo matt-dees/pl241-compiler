@@ -32,6 +32,12 @@ bool canEvaluate(const Instruction *I) {
     return true;
   }
 
+  if (dynamic_cast<const PhiInstruction *>(I)) {
+    if (dynamic_cast<ConstantValue *>(Arguments[0])->Val == dynamic_cast<ConstantValue *>(Arguments[1])->Val) {
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -56,6 +62,10 @@ int evaluate(Instruction *I) {
   }
   if (dynamic_cast<DivInstruction *>(I)) {
     return Arg0 / Arg1;
+  }
+
+  if (dynamic_cast<PhiInstruction *>(I)) {
+    return Arg0;
   }
 
   throw logic_error("Cannot evaluate provided instruction.");
@@ -93,6 +103,14 @@ void process(Function &F) {
         }
 
         Substitions[I] = ConstantsMap[InstructionResult];
+      }
+
+      for (auto Follower : BB->terminator()->followingBlocks()) {
+        auto &Predecessors = Follower->predecessors();
+        if (all_of(Predecessors.begin(), Predecessors.end(),
+                   [MarkedBlocks](auto &Pred) { return MarkedBlocks.find(Pred) != MarkedBlocks.end(); })) {
+          WorkingSet.push_back(Follower);
+        }
       }
     }
   }
