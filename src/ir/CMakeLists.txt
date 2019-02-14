@@ -20,6 +20,8 @@ add_library(cs241c-ir
   Module.cpp
   Module.h
   Pass.h
+  RegisterAllocation.cpp
+  RegisterAllocation.h
   SSAContext.cpp
   SSAContext.h
   Value.cpp
@@ -28,4 +30,4 @@ add_library(cs241c-ir
   Variable.h)
 
 target_include_directories(cs241c-ir PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(cs241c-ir PRIVATE cs241c-util)
+target_link_libraries(cs241c-ir PRIVATE cs241c-util PUBLIC cs241c-vcg)

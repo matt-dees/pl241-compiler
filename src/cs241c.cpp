@@ -4,7 +4,6 @@
 #include "IntegrityCheckPass.h"
 #include "Lexer.h"
 #include "Parser.h"
-#include "VcgGen.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -51,10 +50,9 @@ int main(int ArgC, char **ArgV) {
   ICP.run(*IR);
 
   if (GenerateVcg) {
-    VcgGen VcgGenerator = VcgGen(IR.get());
     string VcgOutput{string(InputFile) + ".vcg"};
     removeFile(VcgOutput);
-    VcgGenerator.generate(VcgOutput);
+    IR->writeToFile(VcgOutput);
   }
 
   return 0;
