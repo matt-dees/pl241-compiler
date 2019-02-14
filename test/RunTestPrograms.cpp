@@ -1,3 +1,4 @@
+#include "CommonSubexElimPass.h"
 #include "DeadCodeEliminationPass.h"
 #include "Filesystem.h"
 #include "IntegrityCheckPass.h"
@@ -24,8 +25,11 @@ TEST_CASE("Compile and run test programs") {
       Computation AST = parse(Tokens);
       auto IR = AST.genIr();
 
+      CommonSubexElimPass CSE;
+      CSE.run(*IR);
+
       DeadCodeEliminationPass DCEP;
-      // DCEP.run(*IR);
+      DCEP.run(*IR);
 
       IntegrityCheckPass ICP;
       ICP.run(*IR);
