@@ -3,6 +3,8 @@ add_library(cs241c-ir
   BasicBlock.h
   CommonSubexElimPass.cpp
   CommonSubexElimPass.h
+  ConstExprEvalPass.cpp
+  ConstExprEvalPass.h
   DeadCodeEliminationPass.cpp
   DeadCodeEliminationPass.h
   DominatorTree.cpp
