@@ -67,6 +67,7 @@ protected:
   ConditionalBlockTerminator(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
 
 public:
+  BasicBlock *elseBlock() const;
   std::vector<BasicBlock *> followingBlocks() override;
   void updateTarget(BasicBlock *OldTarget, BasicBlock *NewTarget);
 };
@@ -172,6 +173,7 @@ public:
   BraInstruction(int Id, BasicBlock *Y);
   std::string_view mnemonic() const override;
   std::vector<BasicBlock *> followingBlocks() override;
+  void updateTarget(BasicBlock *NewTarget);
 };
 
 class BneInstruction : public ConditionalBlockTerminator {

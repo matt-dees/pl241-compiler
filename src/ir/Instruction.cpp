@@ -80,6 +80,8 @@ vector<BasicBlock *> BasicBlockTerminator::followingBlocks() { return {}; }
 ConditionalBlockTerminator::ConditionalBlockTerminator(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else)
     : BasicBlockTerminator(Id, {Cmp, Then, Else}) {}
 
+BasicBlock *ConditionalBlockTerminator::elseBlock() const { return dynamic_cast<BasicBlock *>(arguments()[2]); }
+
 vector<BasicBlock *> ConditionalBlockTerminator::followingBlocks() {
   return {dynamic_cast<BasicBlock *>(arguments()[1]), dynamic_cast<BasicBlock *>(arguments()[2])};
 }
@@ -188,6 +190,14 @@ vector<BasicBlock *> BraInstruction::followingBlocks() {
   auto *Target = dynamic_cast<BasicBlock *>(arguments()[0]);
   assert(Target);
   return {Target};
+}
+
+void BraInstruction::updateTarget(BasicBlock *NewTarget) {
+  auto *OldTarget = dynamic_cast<BasicBlock *>(arguments()[0]);
+  auto &OldPred = OldTarget->predecessors();
+  OldPred.erase(remove(OldPred.begin(), OldPred.end(), getOwner()), OldPred.end());
+  arguments()[0] = NewTarget;
+  NewTarget->predecessors().push_back(getOwner());
 }
 
 BneInstruction::BneInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else)
