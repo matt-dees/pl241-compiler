@@ -29,6 +29,12 @@ void IntegrityCheckPass::run(Module &M) {
                 [](auto &UniquePtr) { return UniquePtr.get(); });
 
       auto &Predecessors = BB->predecessors();
+      if (Predecessors.size() > 2) {
+        stringstream ErrorMessage;
+        ErrorMessage << "Block " << BB->name() << " has " << Predecessors.size() << " predecessors.";
+        throw logic_error(ErrorMessage.str());
+      }
+
       for (auto Pred : Predecessors) {
         auto FollowersPred = Pred->terminator()->followingBlocks();
         if (count(FollowersPred.begin(), FollowersPred.end(), BB.get()) != 1) {
