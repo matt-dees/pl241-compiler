@@ -25,6 +25,7 @@ public:
 
   void toSSA(IrGenContext &Ctx);
   void buildDominatorTree();
+  void allocateRegisters();
 
   std::vector<std::unique_ptr<GlobalVariable>> &globals();
   const std::vector<std::unique_ptr<GlobalVariable>> &globals() const;
