@@ -3,6 +3,7 @@
 #include "Module.h"
 #include "NameGen.h"
 #include <algorithm>
+#include <iterator>
 #include <stack>
 #include <unordered_set>
 #include <vector>
