@@ -42,7 +42,8 @@ void IntegrityCheckPass::run(Module &M) {
       auto Followers = BB->terminator()->followingBlocks();
       for (auto Follower : Followers) {
         auto &PredecessorsFollower = Follower->predecessors();
-        int EdgesToFollower = count(PredecessorsFollower.begin(), PredecessorsFollower.end(), BB.get());
+        vector<BasicBlock *>::difference_type EdgesToFollower =
+            count(PredecessorsFollower.begin(), PredecessorsFollower.end(), BB.get());
         if (EdgesToFollower != 1) {
           stringstream ErrorMessage;
           ErrorMessage << "Block " << BB->name() << " has " << EdgesToFollower << " edges to follower "
