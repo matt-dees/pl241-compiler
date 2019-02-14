@@ -33,6 +33,12 @@ void Module::toSSA(IrGenContext &Ctx) {
   }
 }
 
+void Module::allocateRegisters() {
+  for (auto &F : functions()) {
+    F->allocateRegisters();
+  }
+}
+
 void Module::writeFunction(std::ofstream &OutFileStream, Function *F) {
   const string FunctionName = F->name();
   for (auto &BB : F->basicBlocks()) {
