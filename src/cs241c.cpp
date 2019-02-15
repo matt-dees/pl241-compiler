@@ -55,6 +55,8 @@ int main(int ArgC, char **ArgV) {
 
   ICP.run(*IR);
 
+  //  IR->allocateRegisters();
+
   if (GenerateVcg) {
     string VcgOutput{string(InputFile) + ".vcg"};
     removeFile(VcgOutput);

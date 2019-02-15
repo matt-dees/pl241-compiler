@@ -28,29 +28,6 @@ private:
                              Value *NewVal);
 
 public:
-  // Iterator for walking the CFG of this function from the bottom to the top
-  class bottom_up_iterator_impl
-      : public std::iterator<std::forward_iterator_tag, BasicBlock *> {
-
-  public:
-    friend class Function;
-
-    bottom_up_iterator_impl(Function &Func)
-        : CurrentIndex(0), BottomUpOrdering({}), Func(Func) {}
-    unsigned long CurrentIndex;
-    std::vector<BasicBlock *> BottomUpOrdering;
-    Function &Func;
-
-    bottom_up_iterator_impl begin();
-    bottom_up_iterator_impl end();
-    bottom_up_iterator_impl &operator++();
-    bool operator==(const bottom_up_iterator_impl &Other) const;
-    BasicBlock *&operator*();
-    bool operator!=(bottom_up_iterator_impl Other);
-  };
-
-  using bottom_up_iterator = bottom_up_iterator_impl;
-
   Function() = default;
   Function(std::string Name,
            std::vector<std::unique_ptr<LocalVariable>> &&Locals);
@@ -66,6 +43,8 @@ public:
   std::vector<std::unique_ptr<BasicBlock>> &basicBlocks();
   const std::vector<std::unique_ptr<BasicBlock>> &basicBlocks() const;
   std::string toString() const override;
+
+  std::vector<BasicBlock *> postOrderCfg();
 };
 } // namespace cs241c
 

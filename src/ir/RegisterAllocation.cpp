@@ -6,9 +6,14 @@ using namespace std;
 
 InterferenceGraph RegisterAllocation::buildInterferenceGraph(Function &F) {
   InterferenceGraph IG;
-  Function::bottom_up_iterator BottomUpIter(F);
-  for (auto BBIter : BottomUpIter) {
-    cout << BBIter->toString() << "\n";
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
+      PredecessorLiveSetMap;
+  for (auto BBIter : F.postOrderCfg()) {
+    for (auto ReverseInstructionIt = BBIter->instructions().rbegin();
+         ReverseInstructionIt != BBIter->instructions().rend();
+         ReverseInstructionIt++) {
+      std::cout << ReverseInstructionIt->get()->toString() << "\n";
+    }
   }
   return IG;
 }

@@ -95,11 +95,12 @@ void Function::allocateRegisters() {
   RA.buildInterferenceGraph(*this);
 }
 
-Function::bottom_up_iterator_impl Function::bottom_up_iterator_impl::begin() {
+std::vector<BasicBlock *> Function::postOrderCfg() {
   stack<BasicBlock *> WorkStack;
   unordered_set<BasicBlock *> Visited;
+  std::vector<BasicBlock *> PostOrdering;
 
-  WorkStack.push(Func.entryBlock());
+  WorkStack.push(entryBlock());
 
   while (!WorkStack.empty()) {
     BasicBlock *B = WorkStack.top();
@@ -117,33 +118,7 @@ Function::bottom_up_iterator_impl Function::bottom_up_iterator_impl::begin() {
       continue;
 
     WorkStack.pop();
-    BottomUpOrdering.push_back(B);
+    PostOrdering.push_back(B);
   }
-
-  CurrentIndex = 0;
-  return *this;
-}
-Function::bottom_up_iterator_impl Function::bottom_up_iterator_impl::end() {
-  CurrentIndex = Func.basicBlocks().size();
-  return *this;
-}
-
-Function::bottom_up_iterator_impl &Function::bottom_up_iterator_impl::
-operator++() {
-  CurrentIndex++;
-  return *this;
-}
-
-bool Function::bottom_up_iterator_impl::
-operator==(const Function::bottom_up_iterator_impl &Other) const {
-  return CurrentIndex == Other.CurrentIndex;
-}
-
-BasicBlock *&Function::bottom_up_iterator_impl::operator*() {
-  return BottomUpOrdering.at(CurrentIndex);
-}
-
-bool Function::bottom_up_iterator_impl::
-operator!=(Function::bottom_up_iterator_impl Other) {
-  return !(*this == Other);
+  return PostOrdering;
 }
