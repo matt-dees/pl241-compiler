@@ -55,7 +55,7 @@ public:
     return Result;
   }
 
-  vector<BasicBlock *> reversePostOrder(const std::vector<BasicBlock *> &EntryBlocks) {
+  vector<BasicBlock *> reversePostOrder(const vector<BasicBlock *> &EntryBlocks) {
     vector<BasicBlock *> Cfg = postOrder(EntryBlocks);
     reverse(Cfg.begin(), Cfg.end());
     return Cfg;

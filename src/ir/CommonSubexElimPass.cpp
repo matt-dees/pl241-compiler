@@ -1,7 +1,10 @@
 #include "CommonSubexElimPass.h"
 #include <iostream>
 #include <stack>
+
 using namespace cs241c;
+using namespace std;
+
 void CommonSubexElimPass::run(Module &M) {
   for (auto &F : M.functions()) {
     run(*F);
@@ -10,8 +13,8 @@ void CommonSubexElimPass::run(Module &M) {
 
 namespace {
 struct InstructionHasher {
-  std::size_t operator()(Instruction *Instr) const {
-    std::size_t hash = 0;
+  size_t operator()(Instruction *Instr) const {
+    size_t hash = 0;
     hash ^= typeid(*Instr).hash_code();
     size_t Seed = 0xFEFEFEFE;
     for (Value *Arg : Instr->arguments()) {
@@ -24,23 +27,19 @@ struct InstructionHasher {
 
 struct InstructionEquality {
   bool operator()(Instruction *Instr, Instruction *Other) const {
-    return (Instr->arguments() == Other->arguments()) &&
-           typeid(Instr) == typeid(Other);
+    return (Instr->arguments() == Other->arguments()) && typeid(Instr) == typeid(Other);
   }
 };
 } // namespace
 
 namespace {
 bool shouldIgnore(Instruction *I) {
-  return dynamic_cast<BasicBlockTerminator *>(I) != nullptr ||
-         dynamic_cast<CallInstruction *>(I) != nullptr ||
-         dynamic_cast<ReadInstruction *>(I) != nullptr ||
-         dynamic_cast<WriteInstruction *>(I) != nullptr ||
+  return dynamic_cast<BasicBlockTerminator *>(I) != nullptr || dynamic_cast<CallInstruction *>(I) != nullptr ||
+         dynamic_cast<ReadInstruction *>(I) != nullptr || dynamic_cast<WriteInstruction *>(I) != nullptr ||
          dynamic_cast<WriteNLInstruction *>(I) != nullptr;
 }
 
-bool shouldExplore(BasicBlock *From, BasicBlock *To,
-                   const std::unordered_set<BasicBlock *> &Visited,
+bool shouldExplore(BasicBlock *From, BasicBlock *To, const unordered_set<BasicBlock *> &Visited,
                    const DominatorTree &DT) {
   for (auto &P : To->predecessors()) {
     // If the basic block we want to explore has a predecessor that is
@@ -63,12 +62,10 @@ void CommonSubexElimPass::run(Function &F) {
   //          Add Hash to map
   //      Replace all args according to replacement map
   //
-  std::unordered_map<Instruction *, Instruction *, InstructionHasher,
-                     InstructionEquality>
-      CandidateInstructions = {};
-  std::unordered_map<Value *, Value *> Replacements = {};
-  std::stack<BasicBlock *> BlocksToExplore = {};
-  std::unordered_set<BasicBlock *> VisitedBlocks = {};
+  unordered_map<Instruction *, Instruction *, InstructionHasher, InstructionEquality> CandidateInstructions = {};
+  unordered_map<Value *, Value *> Replacements = {};
+  stack<BasicBlock *> BlocksToExplore = {};
+  unordered_set<BasicBlock *> VisitedBlocks = {};
 
   BlocksToExplore.push(F.entryBlock());
 
@@ -81,8 +78,7 @@ void CommonSubexElimPass::run(Function &F) {
       continue;
     }
 
-    for (auto InstIter = Runner->instructions().begin();
-         InstIter != Runner->instructions().end();) {
+    for (auto InstIter = Runner->instructions().begin(); InstIter != Runner->instructions().end();) {
       if (shouldIgnore(InstIter->get())) {
         // If instruction should not be considered for CSE,
         // simply update arguments according to Replacements map and continue.
@@ -90,10 +86,8 @@ void CommonSubexElimPass::run(Function &F) {
         InstIter++;
         continue;
       }
-      bool HasMatch = CandidateInstructions.find(InstIter->get()) !=
-                      CandidateInstructions.end();
-      bool MatchIsMe = HasMatch && CandidateInstructions.at(InstIter->get()) ==
-                                       InstIter->get();
+      bool HasMatch = CandidateInstructions.find(InstIter->get()) != CandidateInstructions.end();
+      bool MatchIsMe = HasMatch && CandidateInstructions.at(InstIter->get()) == InstIter->get();
       if (MatchIsMe) {
         // If this existing entry in the map is this instruction, delete it
         // because our arguments may get updated. The instruction will
@@ -104,22 +98,17 @@ void CommonSubexElimPass::run(Function &F) {
       InstIter->get()->updateArgs(Replacements);
 
       // Rehash instruction because arguments may have changed
-      HasMatch = CandidateInstructions.find(InstIter->get()) !=
-                 CandidateInstructions.end();
-      bool DominatedByMatch =
-          HasMatch &&
-          F.dominatorTree().doesBlockDominate(
-              CandidateInstructions.at(InstIter->get())->getOwner(), Runner);
+      HasMatch = CandidateInstructions.find(InstIter->get()) != CandidateInstructions.end();
+      bool DominatedByMatch = HasMatch && F.dominatorTree().doesBlockDominate(
+                                              CandidateInstructions.at(InstIter->get())->getOwner(), Runner);
 
       if (DominatedByMatch) {
         // If this instruction is dominated by its match, update the
         // Replacements map which will dictate which instructions
         // should be replaced by what values.
-        Replacements[InstIter->get()] =
-            CandidateInstructions.at(InstIter->get());
-        std::cout << "[CSE] " << (*InstIter)->toString() << " --> "
-                  << CandidateInstructions.at(InstIter->get())->toString()
-                  << std::endl;
+        Replacements[InstIter->get()] = CandidateInstructions.at(InstIter->get());
+        cout << "[CSE] " << (*InstIter)->toString() << " --> " << CandidateInstructions.at(InstIter->get())->toString()
+             << "\n";
         for (auto &DFEntry : F.dominatorTree().dominanceFrontier(Runner)) {
           // Need to revisit all blocks in the dominance frontier.
           VisitedBlocks.erase(DFEntry);

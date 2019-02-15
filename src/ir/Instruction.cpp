@@ -42,7 +42,7 @@ void Instruction::setId(int Id) { this->Id = Id; }
 vector<Value *> &Instruction::arguments() { return Arguments; }
 const vector<Value *> &Instruction::arguments() const { return Arguments; }
 
-bool Instruction::updateArgs(const std::unordered_map<Value *, Value *> &UpdateCtx) {
+bool Instruction::updateArgs(const unordered_map<Value *, Value *> &UpdateCtx) {
   vector<Value *> Args = arguments();
   bool DidChange = false;
   for (long unsigned int i = 0; i < Args.size(); ++i) {

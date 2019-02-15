@@ -10,7 +10,7 @@ void Vcg::writeToFile(const string &OutFilePath) {
     throw runtime_error("VcgGen Error: File already exists: " + OutFilePath);
   }
 
-  std::ofstream VcgFileStream;
+  ofstream VcgFileStream;
   VcgFileStream.open(OutFilePath);
   VcgFileStream << "graph: {";
   writeProperties(VcgFileStream);
@@ -20,6 +20,6 @@ void Vcg::writeToFile(const string &OutFilePath) {
 }
 
 void Vcg::writeProperties(ofstream &OutFileStream) {
-  OutFileStream << "layoutalgorithm: dfs" << endl;
-  OutFileStream << "manhattan_edges: yes" << endl;
+  OutFileStream << "layoutalgorithm: dfs\n";
+  OutFileStream << "manhattan_edges: yes\n";
 }
