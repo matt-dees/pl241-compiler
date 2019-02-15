@@ -14,14 +14,19 @@ void CommonSubexElimPass::run(Module &M) {
 namespace {
 struct InstructionHasher {
   size_t operator()(Instruction *Instr) const {
-    size_t hash = 0;
-    hash ^= typeid(*Instr).hash_code();
-    size_t Seed = 0xFEFEFEFE;
+    // FNV-1a
+    const uint64_t FNVPrime = 1099511628211;
+    uint64_t Hash = 14695981039346656037ull;
+
+    Hash ^= typeid(*Instr).hash_code();
+    Hash *= FNVPrime;
+
     for (Value *Arg : Instr->arguments()) {
-      hash ^= std::hash<Value *>{}(Arg) ^ Seed;
-      Seed = ~(Seed << 1);
+      Hash ^= reinterpret_cast<uint64_t>(Arg);
+      Hash *= FNVPrime;
     }
-    return hash;
+
+    return Hash;
   }
 };
 
