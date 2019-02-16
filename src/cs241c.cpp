@@ -55,18 +55,18 @@ int main(int ArgC, char **ArgV) {
 
   ICP.run(*IR);
 
-  //  IR->allocateRegisters();
+  IR->allocateRegisters();
 
   if (GenerateVcg) {
     string VcgOutput{string(InputFile) + ".vcg"};
     removeFile(VcgOutput);
     IR->writeToFile(VcgOutput);
 
-    //    for (auto &F : IR->functions()) {
-    //      string IGOutput{string(InputFile) + "." + F->toString() +
-    //      ".ig.vcg"}; removeFile(IGOutput);
-    //      F->interferenceGraph().writeToFile(IGOutput);
-    //    }
+    for (auto &F : IR->functions()) {
+      string IGOutput{string(InputFile) + "." + F->toString() + ".ig.vcg"};
+      removeFile(IGOutput);
+      F->interferenceGraph().writeToFile(IGOutput);
+    }
   }
 
   return 0;
