@@ -14,9 +14,10 @@ protected:
   Variable(std::string Ident, int WordCount);
 
 public:
+  std::string ident();
+  int wordCount() const;
   virtual bool isMoveable() const = 0;
   bool isSingleWord() const;
-  std::string ident();
   std::string toString() const override;
 };
 
