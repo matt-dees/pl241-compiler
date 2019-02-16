@@ -4,6 +4,7 @@
 #include "BasicBlock.h"
 #include "DominatorTree.h"
 #include "IrGenContext.h"
+#include "RegisterAllocator.h"
 #include "SSAContext.h"
 #include "Value.h"
 #include "Variable.h"
@@ -20,6 +21,7 @@ class Function : public Value {
   std::vector<std::unique_ptr<LocalVariable>> Locals;
   std::vector<std::unique_ptr<BasicBlock>> BasicBlocks;
   DominatorTree DT;
+  InterferenceGraph IG;
 
 private:
   SSAContext recursiveNodeToSSA(BasicBlock *CurrentBB, SSAContext Ctx);
@@ -32,11 +34,12 @@ public:
   Function(std::string Name,
            std::vector<std::unique_ptr<LocalVariable>> &&Locals);
 
+  void buildInterferenceGraph();
   void buildDominatorTree();
   void toSSA(IrGenContext &GenCtx);
-  void allocateRegisters();
 
   DominatorTree &dominatorTree();
+  InterferenceGraph &interferenceGraph() { return IG; }
   std::vector<std::unique_ptr<ConstantValue>> &constants();
   std::vector<std::unique_ptr<LocalVariable>> &locals();
   BasicBlock *entryBlock() const;

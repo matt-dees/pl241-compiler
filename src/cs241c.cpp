@@ -40,27 +40,33 @@ int main(int ArgC, char **ArgV) {
   IntegrityCheckPass ICP;
   ICP.run(*IR);
 
-  ConstExprEvalPass CEE;
-  CEE.run(*IR);
+  //  ConstExprEvalPass CEE;
+  //  CEE.run(*IR);
+  //
+  //  ICP.run(*IR);
+  //
+  //  CommonSubexElimPass CSE;
+  //  CSE.run(*IR);
+  //
+  //  ICP.run(*IR);
+  //
+  //  DeadCodeEliminationPass DCEP;
+  //  DCEP.run(*IR);
+  //
+  //  ICP.run(*IR);
 
-  ICP.run(*IR);
-
-  CommonSubexElimPass CSE;
-  CSE.run(*IR);
-
-  ICP.run(*IR);
-
-  DeadCodeEliminationPass DCEP;
-  DCEP.run(*IR);
-
-  ICP.run(*IR);
-
-  //  IR->allocateRegisters();
+  IR->allocateRegisters();
 
   if (GenerateVcg) {
     string VcgOutput{string(InputFile) + ".vcg"};
     removeFile(VcgOutput);
     IR->writeToFile(VcgOutput);
+
+    for (auto &F : IR->functions()) {
+      string IGOutput{string(InputFile) + "." + F->toString() + ".ig.vcg"};
+      removeFile(IGOutput);
+      F->interferenceGraph().writeToFile(IGOutput);
+    }
   }
 
   return 0;

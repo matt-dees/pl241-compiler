@@ -1,5 +1,5 @@
 #include "Function.h"
-#include "RegisterAllocation.h"
+#include "RegisterAllocator.h"
 #include <algorithm>
 #include <stack>
 #include <unordered_set>
@@ -90,11 +90,6 @@ void Function::recursiveGenAllPhis(BasicBlock *CurrentBB,
   }
 }
 
-void Function::allocateRegisters() {
-  RegisterAllocation RA;
-  RA.buildInterferenceGraph(*this);
-}
-
 std::vector<BasicBlock *> Function::postOrderCfg() {
   stack<BasicBlock *> WorkStack;
   unordered_set<BasicBlock *> Visited;
@@ -121,4 +116,56 @@ std::vector<BasicBlock *> Function::postOrderCfg() {
     PostOrdering.push_back(B);
   }
   return PostOrdering;
+}
+
+void Function::buildInterferenceGraph() {
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
+      PredecessorLiveSetMap;
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
+      PredecessorPhiSets;
+  for (auto BB : postOrderCfg()) {
+    std::unordered_set<Value *> CurrentLiveSet = {};
+    if (PredecessorLiveSetMap.find(BB) != PredecessorLiveSetMap.end()) {
+      CurrentLiveSet = PredecessorLiveSetMap.at(BB);
+    }
+    // Iterate through instructions backwards.
+    for (auto ReverseInstructionIt = BB->instructions().rbegin();
+         ReverseInstructionIt != BB->instructions().rend();
+         ReverseInstructionIt++) {
+
+      // Erase the current instruction from the live set.
+      CurrentLiveSet.erase(ReverseInstructionIt->get());
+
+      // Loop through arguments and:
+      //    Create edges in interference graph
+      //    Update live set
+      for (auto Arg : ReverseInstructionIt->get()->arguments()) {
+        // If Phi instruction, update the set that will get propagated to the
+        // predecessor.
+        if (dynamic_cast<Instruction *>(Arg) == nullptr) {
+          continue;
+        }
+        IG.addEdges(CurrentLiveSet, Arg);
+        if (dynamic_cast<PhiInstruction *>(ReverseInstructionIt->get())) {
+          for (auto Pred : BB->predecessors()) {
+            if (PredecessorPhiSets.find(Pred) != PredecessorPhiSets.end()) {
+              PredecessorPhiSets[Pred].insert(Arg);
+            } else {
+              PredecessorPhiSets[Pred] = {Arg};
+            }
+          }
+        } else {
+          CurrentLiveSet.insert(Arg);
+        }
+      }
+    }
+
+    for (auto Pred : BB->predecessors()) {
+      if (PredecessorPhiSets.find(Pred) != PredecessorPhiSets.end()) {
+        PredecessorPhiSets[Pred].merge(CurrentLiveSet);
+        PredecessorLiveSetMap[Pred] = PredecessorPhiSets[Pred];
+        PredecessorPhiSets[Pred].clear();
+      }
+    }
+  }
 }

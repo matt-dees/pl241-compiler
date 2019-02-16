@@ -11,11 +11,15 @@ string Module::getIdentifier() const { return Name; }
 
 vector<unique_ptr<GlobalVariable>> &Module::globals() { return Globals; }
 
-const vector<unique_ptr<GlobalVariable>> &Module::globals() const { return Globals; }
+const vector<unique_ptr<GlobalVariable>> &Module::globals() const {
+  return Globals;
+}
 
 vector<unique_ptr<Function>> &Module::functions() { return Functions; }
 
-const vector<unique_ptr<Function>> &Module::functions() const { return Functions; }
+const vector<unique_ptr<Function>> &Module::functions() const {
+  return Functions;
+}
 
 void Module::buildDominatorTree() {
   for (auto &F : functions()) {
@@ -31,7 +35,7 @@ void Module::toSSA(IrGenContext &Ctx) {
 
 void Module::allocateRegisters() {
   for (auto &F : functions()) {
-    F->allocateRegisters();
+    F->buildInterferenceGraph();
   }
 }
 
@@ -42,7 +46,8 @@ void Module::writeFunction(ofstream &OutFileStream, Function *F) {
   }
 }
 
-void Module::writeBasicBlock(ofstream &OutFileStream, BasicBlock *BB, const string &Title) {
+void Module::writeBasicBlock(ofstream &OutFileStream, BasicBlock *BB,
+                             const string &Title) {
   OutFileStream << "node: {\n";
 
   OutFileStream << "title: "
@@ -62,7 +67,8 @@ void Module::writeBasicBlock(ofstream &OutFileStream, BasicBlock *BB, const stri
   }
 }
 
-void Module::writeEdge(ofstream &OutFileStream, BasicBlock *Source, BasicBlock *Destination) {
+void Module::writeEdge(ofstream &OutFileStream, BasicBlock *Source,
+                       BasicBlock *Destination) {
   OutFileStream << "edge: {\n";
 
   OutFileStream << "sourcename: "
