@@ -6,9 +6,11 @@ using namespace std;
 
 Variable::Variable(string Ident, int WordCount) : Ident(move(Ident)), WordCount(WordCount) {}
 
-bool cs241c::Variable::isSingleWord() const { return WordCount == 1; }
-
 string Variable::ident() { return Ident; }
+
+int Variable::wordCount() const { return WordCount; }
+
+bool cs241c::Variable::isSingleWord() const { return WordCount == 1; }
 
 string Variable::toString() const {
   auto Prefix = !isMoveable() ? "&" : "";
