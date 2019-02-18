@@ -13,6 +13,8 @@ add_library(cs241c-ir
   Function.h
   Instruction.cpp
   Instruction.h
+  InstructionType.cpp
+  InstructionType.h
   IntegrityCheckPass.cpp
   IntegrityCheckPass.h
   IrGenContext.cpp

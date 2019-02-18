@@ -1,4 +1,5 @@
 #include "CommonSubexElimPass.h"
+#include <array>
 #include <iostream>
 #include <stack>
 
@@ -39,9 +40,11 @@ struct InstructionEquality {
 
 namespace {
 bool shouldIgnore(Instruction *I) {
-  return dynamic_cast<BasicBlockTerminator *>(I) != nullptr || dynamic_cast<CallInstruction *>(I) != nullptr ||
-         dynamic_cast<ReadInstruction *>(I) != nullptr || dynamic_cast<WriteInstruction *>(I) != nullptr ||
-         dynamic_cast<WriteNLInstruction *>(I) != nullptr;
+  static const array<InstructionType, 4> IgnoredInstructions{InstructionType::Call, InstructionType::Read,
+                                                             InstructionType::Write, InstructionType::WriteNL};
+
+  return dynamic_cast<BasicBlockTerminator *>(I) != nullptr ||
+         find(IgnoredInstructions.begin(), IgnoredInstructions.end(), I->InstrT) != IgnoredInstructions.end();
 }
 
 bool shouldExplore(BasicBlock *From, BasicBlock *To, const unordered_set<BasicBlock *> &Visited,

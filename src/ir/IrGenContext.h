@@ -51,6 +51,11 @@ public:
 
   ConstantValue *makeConstant(int Val);
 
+  Instruction *makeInstruction(InstructionType);
+  Instruction *makeInstruction(InstructionType, Value *);
+  Instruction *makeInstruction(InstructionType, Value *, Value *);
+  Instruction *makeInstruction(InstructionType, std::vector<Value *> &&);
+
   template <typename T, typename... Params> T *makeInstruction(Params... Args) {
     auto Instr = std::make_unique<T>(genInstructionId(), Args...);
     T *InstrP = Instr.get();
@@ -58,16 +63,14 @@ public:
     return InstrP;
   }
 
-  template <typename... Params>
-  PhiInstruction *makePhiInstruction(Params... Args) {
+  template <typename... Params> PhiInstruction *makePhiInstruction(Params... Args) {
     auto Instr = std::make_unique<PhiInstruction>(genInstructionId(), Args...);
     PhiInstruction *InstrP = Instr.get();
     CurrentBlock->insertPhiInstruction(move(Instr));
     return InstrP;
   }
-  BasicBlock *makeBasicBlock();
 
-  void compUnitToSSA();
+  BasicBlock *makeBasicBlock();
 };
 } // namespace cs241c
 

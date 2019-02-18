@@ -49,7 +49,7 @@ BasicBlock *Mem2VarPass::run(BasicBlock *BB) {
         KnownVars[Object] = LocalPtr;
       }
     } else if (auto Store = dynamic_cast<StoreInstruction *>(InstrPtr)) {
-    } else if (auto Call = dynamic_cast<CallInstruction *>(InstrPtr)) {
+    } else if (InstrPtr->InstrT == InstructionType::Call) {
     }
   }
   return nullptr;

@@ -99,7 +99,7 @@ struct DLXObject {
     Word[0] = Op << 2 | ((A >> 3) & 0x3);
     Word[1] = A << 5 | (B & 0x1F);
     Word[2] = C >> 8;
-    Word[3] = C;
+    Word[3] = static_cast<uint8_t>(C);
     copy(Word.begin(), Word.end(), back_inserter(CodeSegment));
   }
 
@@ -122,7 +122,7 @@ struct DLXObject {
   }
 
   void addFunction(Function *F) {
-    int32_t Address = CodeSegment.size();
+    int32_t Address = static_cast<int32_t>(CodeSegment.size());
     FunctionAddresses[F] = Address;
 
     unordered_map<LocalVariable *, int16_t> LocalOffsets;

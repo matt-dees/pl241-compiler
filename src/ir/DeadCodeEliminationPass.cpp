@@ -3,6 +3,7 @@
 #include "Module.h"
 #include "NameGen.h"
 #include <algorithm>
+#include <array>
 #include <iterator>
 #include <stack>
 #include <unordered_set>
@@ -19,6 +20,10 @@ void DeadCodeEliminationPass::run(Module &M) {
 
 namespace {
 unordered_set<Value *> mark(Function &F) {
+  static const array<InstructionType, 8> PreLive{InstructionType::Store, InstructionType::Move,   InstructionType::Call,
+                                                 InstructionType::Ret,   InstructionType::End,    InstructionType::Read,
+                                                 InstructionType::Write, InstructionType::WriteNL};
+
   DominatorTree ControlDependence(true);
   ControlDependence.buildDominatorTree(F);
 
@@ -27,7 +32,7 @@ unordered_set<Value *> mark(Function &F) {
 
   for (auto &BB : F.basicBlocks()) {
     for (auto &I : BB->instructions()) {
-      if (I->isPreLive()) {
+      if (find(PreLive.begin(), PreLive.end(), I->InstrT) != PreLive.end()) {
         LiveSet.insert(I.get());
         WorkList.push_back(I.get());
       }

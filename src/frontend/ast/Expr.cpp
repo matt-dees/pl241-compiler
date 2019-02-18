@@ -1,4 +1,5 @@
 #include "Expr.h"
+#include "Function.h"
 #include "Instruction.h"
 #include "IrGenContext.h"
 #include <algorithm>
@@ -7,6 +8,8 @@
 
 using namespace cs241c;
 using namespace std;
+
+using T = InstructionType;
 
 template <typename T> void VisitedExpr<T>::visit(ExprVisitor *V) { V->visit(static_cast<T *>(this)); }
 
@@ -44,11 +47,11 @@ Value *ArrayDesignator::calculateMemoryOffset(IrGenContext &Ctx) const {
   auto Sym = Ctx.lookupVariable(Ident);
   auto DimensionsEnd = Sym.Dimensions.end() - 1;
   for (auto Dimension = Sym.Dimensions.begin(); Dimension != DimensionsEnd; ++Dimension) {
-    Offset = Ctx.makeInstruction<MulInstruction>(Offset, Ctx.makeConstant(*Dimension));
-    Offset = Ctx.makeInstruction<AddInstruction>(Offset, Dim.at(Dimension - Sym.Dimensions.begin() + 1)->genIr(Ctx));
+    Offset = Ctx.makeInstruction(T::Mul, Offset, Ctx.makeConstant(*Dimension));
+    Offset = Ctx.makeInstruction(T::Add, Offset, Dim.at(Dimension - Sym.Dimensions.begin() + 1)->genIr(Ctx));
   }
 
-  Offset = Ctx.makeInstruction<MulInstruction>(Offset, Ctx.makeConstant(4));
+  Offset = Ctx.makeInstruction(T::Mul, Offset, Ctx.makeConstant(4));
 
   return Offset;
 }
@@ -62,7 +65,7 @@ ArrayDesignator::ArrayDesignator(string Ident, vector<unique_ptr<Expr>> Dim) : I
 namespace {
 Value *genBaseAddress(IrGenContext &Ctx, Variable *Var) {
   if (dynamic_cast<GlobalVariable *>(Var)) {
-    return Ctx.makeInstruction<AddInstruction>(Ctx.globalBase(), Var);
+    return Ctx.makeInstruction(T::Add, Ctx.globalBase(), Var);
   }
   return Var;
 }
@@ -88,22 +91,23 @@ FunctionCall::FunctionCall(string Ident, vector<unique_ptr<Expr>> Args) : Ident(
 
 Value *FunctionCall::genIr(IrGenContext &Ctx) const {
   if (Ident == "InputNum") {
-    return Ctx.makeInstruction<ReadInstruction>();
+    return Ctx.makeInstruction(InstructionType::Read);
   }
   if (Ident == "OutputNum") {
-    return Ctx.makeInstruction<WriteInstruction>(Args.front()->genIr(Ctx));
+    return Ctx.makeInstruction(InstructionType::Write, Args.front()->genIr(Ctx));
   }
   if (Ident == "OutputNewLine") {
-    return Ctx.makeInstruction<WriteNLInstruction>();
+    return Ctx.makeInstruction(InstructionType::WriteNL);
   }
 
   Function *Target = Ctx.lookupFuncion(Ident);
 
   vector<Value *> Arguments;
+  Arguments.push_back(Target);
   transform(Args.begin(), Args.end(), back_inserter(Arguments),
             [&Ctx](const unique_ptr<Expr> &Arg) { return Arg->genIr(Ctx); });
 
-  return Ctx.makeInstruction<CallInstruction>(Target, move(Arguments));
+  return Ctx.makeInstruction(InstructionType::Call, move(Arguments));
 }
 
 MathExpr::MathExpr(MathExpr::Operation Op, unique_ptr<Expr> Left, unique_ptr<Expr> Right)
@@ -114,13 +118,13 @@ Value *MathExpr::genIr(IrGenContext &Ctx) const {
   Value *Y = Right->genIr(Ctx);
   switch (Op) {
   case Operation::Add:
-    return Ctx.makeInstruction<AddInstruction>(X, Y);
+    return Ctx.makeInstruction(T::Add, X, Y);
   case Operation::Sub:
-    return Ctx.makeInstruction<SubInstruction>(X, Y);
+    return Ctx.makeInstruction(T::Sub, X, Y);
   case Operation::Mul:
-    return Ctx.makeInstruction<MulInstruction>(X, Y);
+    return Ctx.makeInstruction(T::Mul, X, Y);
   case Operation::Div:
-    return Ctx.makeInstruction<DivInstruction>(X, Y);
+    return Ctx.makeInstruction(T::Div, X, Y);
   }
   throw logic_error("Invalid value for Op.");
 }

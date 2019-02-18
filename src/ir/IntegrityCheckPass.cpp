@@ -71,7 +71,7 @@ void IntegrityCheckPass::run(Module &M) {
         for (auto Arg : Instr->arguments()) {
           if (Values.find(Arg) == Values.end()) {
             stringstream ErrorMessage;
-            ErrorMessage << "Instruction [" << Instr->name() << ": " << Instr->mnemonic() << "] argument " << ArgIndex
+            ErrorMessage << "Instruction [" << Instr->name() << ": " << mnemonic(Instr->InstrT) << "] argument " << ArgIndex
                          << " in block " << BB->name() << " is deleted.";
             throw logic_error(ErrorMessage.str());
           }
