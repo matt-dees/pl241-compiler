@@ -13,7 +13,7 @@ public:
   uint32_t costToSpill();
   void visit();
   std::string toString() { return Val->toString(); }
-  Value *&value() { return Val; }
+  Value *value() const { return Val; }
 };
 } // namespace cs241c
 #endif // CS241C_REGALLOCVALUE_H

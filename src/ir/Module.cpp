@@ -36,6 +36,8 @@ void Module::toSSA(IrGenContext &Ctx) {
 void Module::allocateRegisters() {
   for (auto &F : functions()) {
     F->buildInterferenceGraph();
+    RegisterAllocator RA;
+    RegisterAllocator::Coloring C = RA.color(F->interferenceGraph());
   }
 }
 

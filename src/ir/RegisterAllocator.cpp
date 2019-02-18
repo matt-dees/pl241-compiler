@@ -1,5 +1,6 @@
 #include "RegisterAllocator.h"
 #include <iostream>
+#include <limits>
 
 using namespace cs241c;
 using namespace std;
@@ -16,9 +17,7 @@ void InterferenceGraph::writeGraph(ofstream &OutStream) {
 void InterferenceGraph::addEdges(
     const std::unordered_set<RegAllocValue *> &FromSet, RegAllocValue *To) {
   for (auto Node : FromSet) {
-    // Bidirectional graph
     addEdge(Node, To);
-    addEdge(To, Node);
   }
 }
 
@@ -30,6 +29,12 @@ void InterferenceGraph::addEdge(RegAllocValue *From, RegAllocValue *To) {
     IG[From] = {To};
   } else {
     IG[From].insert(To);
+  }
+  // Bidirectional graph
+  if (IG.find(To) == IG.end()) {
+    IG[To] = {From};
+  } else {
+    IG[To].insert(From);
   }
 }
 
@@ -64,4 +69,92 @@ void InterferenceGraph::writeEdge(ofstream &OutStream, RegAllocValue *From,
   OutStream << "targetname: "
             << "\"" << To->toString() << "\"\n";
   OutStream << "}\n";
+}
+
+std::unordered_set<RegAllocValue *>
+InterferenceGraph::neighbors(RegAllocValue *RAV) {
+  if (IG.find(RAV) == IG.end()) {
+    throw logic_error("Value " + RAV->toString() + " not in graph.");
+  }
+  return IG.at(RAV);
+}
+
+std::unordered_set<RegAllocValue *>
+InterferenceGraph::removeNode(RegAllocValue *RAV) {
+  std::unordered_set<RegAllocValue *> Neighbors = neighbors(RAV);
+  IG.erase(RAV);
+  for (auto Neighbor : Neighbors) {
+    IG[Neighbor].erase(RAV);
+  }
+  return Neighbors;
+}
+
+RegisterAllocator::Coloring RegisterAllocator::color(InterferenceGraph IG) {
+  if (IG.graph().size() == 0) {
+    throw logic_error("Register Allocator cannot color empty graph.");
+  }
+
+  Coloring CurrentColoring = {};
+  colorRecur(IG, CurrentColoring);
+  return CurrentColoring;
+}
+
+void RegisterAllocator::colorRecur(
+    InterferenceGraph &IG, RegisterAllocator::Coloring &CurrentColoring) {
+  if (IG.graph().size() == 1) {
+    assignColor(IG, CurrentColoring, IG.graph().begin()->first);
+    return;
+  }
+  RegAllocValue *NextNode = chooseNextNodeToColor(IG);
+  std::unordered_set<RegAllocValue *> NeighborsOfRemoved =
+      IG.removeNode(NextNode);
+  colorRecur(IG, CurrentColoring);
+  IG.addEdges(NeighborsOfRemoved, NextNode);
+  assignColor(IG, CurrentColoring, NextNode);
+}
+
+RegAllocValue *
+RegisterAllocator::getValWithLowestSpillCost(InterferenceGraph &IG) {
+  // TODO: Change implementation of this function
+  // to use priority queue data structure.
+  RegAllocValue *ToReturn = nullptr;
+  int32_t CurrentMinSpillCost = std::numeric_limits<int32_t>::max();
+  for (auto RAVPair : IG.graph()) {
+    int32_t const RAVSpillCost = RAVPair.first->costToSpill();
+    if (RAVSpillCost < CurrentMinSpillCost) {
+      CurrentMinSpillCost = RAVSpillCost;
+      ToReturn = RAVPair.first;
+    }
+  }
+  return ToReturn;
+}
+
+RegAllocValue *RegisterAllocator::chooseNextNodeToColor(InterferenceGraph &IG) {
+  RegAllocValue *NextNode = nullptr;
+  for (auto RAVPair : IG.graph()) {
+    if (IG.neighbors(RAVPair.first).size() < NUM_REGISTERS) {
+      NextNode = RAVPair.first;
+      break;
+    }
+  }
+
+  if (!NextNode) {
+    NextNode = getValWithLowestSpillCost(IG);
+  }
+  return NextNode;
+}
+
+void RegisterAllocator::assignColor(
+    cs241c::InterferenceGraph &IG,
+    cs241c::RegisterAllocator::Coloring &CurrentColoring,
+    cs241c::RegAllocValue *NodeToColor) {
+  std::unordered_set<RA_REGISTER> Colors = {R1, R2, R3, R4, R5, R6, R7, R8};
+  for (auto Neighbor : IG.neighbors(NodeToColor)) {
+    Colors.erase(CurrentColoring[Neighbor->value()]);
+  }
+  if (Colors.size() == 0) {
+    CurrentColoring[NodeToColor->value()] = RA_REGISTER::SPILL;
+  } else {
+    CurrentColoring[NodeToColor->value()] = *(Colors.begin());
+  }
 }
