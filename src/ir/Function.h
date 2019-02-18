@@ -20,6 +20,9 @@ class Function : public Value {
   std::vector<std::unique_ptr<ConstantValue>> Constants;
   std::vector<std::unique_ptr<LocalVariable>> Locals;
   std::vector<std::unique_ptr<BasicBlock>> BasicBlocks;
+
+  std::unordered_map<Value *, std::unique_ptr<RegAllocValue>>
+      ValueToRegAllocVal;
   DominatorTree DT;
   InterferenceGraph IG;
 
@@ -28,6 +31,7 @@ private:
   void recursiveGenAllPhis(BasicBlock *CurrentBB, IrGenContext &GenCtx);
   void propagateChangeToPhis(BasicBlock *SourceBB, Variable *ChangedVar,
                              Value *NewVal);
+  RegAllocValue *lookupRegAllocVal(Value *);
 
 public:
   Function() = default;

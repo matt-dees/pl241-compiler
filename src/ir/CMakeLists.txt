@@ -24,6 +24,8 @@ add_library(cs241c-ir
   Pass.h
   RegisterAllocator.cpp
   RegisterAllocator.h
+  RegAllocValue.cpp
+  RegAllocValue.h
   SSAContext.cpp
   SSAContext.h
   Value.cpp

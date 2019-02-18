@@ -13,8 +13,8 @@ void InterferenceGraph::writeGraph(ofstream &OutStream) {
   writeNodes(OutStream);
 }
 
-void InterferenceGraph::addEdges(const std::unordered_set<Value *> &FromSet,
-                                 Value *To) {
+void InterferenceGraph::addEdges(
+    const std::unordered_set<RegAllocValue *> &FromSet, RegAllocValue *To) {
   for (auto Node : FromSet) {
     // Bidirectional graph
     addEdge(Node, To);
@@ -22,7 +22,7 @@ void InterferenceGraph::addEdges(const std::unordered_set<Value *> &FromSet,
   }
 }
 
-void InterferenceGraph::addEdge(Value *From, Value *To) {
+void InterferenceGraph::addEdge(RegAllocValue *From, RegAllocValue *To) {
   if (From == To) {
     return;
   }
@@ -46,7 +46,8 @@ void InterferenceGraph::writeNodes(ofstream &OutStream) {
   }
 }
 
-void InterferenceGraph::writeEdge(ofstream &OutStream, Value *From, Value *To) {
+void InterferenceGraph::writeEdge(ofstream &OutStream, RegAllocValue *From,
+                                  RegAllocValue *To) {
   if (WrittenEdges.find(To) != WrittenEdges.end()) {
     if (WrittenEdges.at(To).find(From) != WrittenEdges.at(To).end()) {
       return;
