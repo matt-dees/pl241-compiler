@@ -2,6 +2,7 @@
 #include "Function.h"
 #include "Module.h"
 #include <algorithm>
+#include <array>
 #include <iterator>
 #include <stdexcept>
 #include <unordered_map>
@@ -12,32 +13,25 @@ using namespace cs241c;
 using namespace std;
 
 namespace {
+array<InstructionType, 5> ArithmethicInstrs{InstructionType::Neg, InstructionType::Add, InstructionType::Sub,
+                                            InstructionType::Mul, InstructionType::Div};
+
 bool canEvaluate(const Instruction *I) {
   auto Arguments = I->arguments();
-  bool ConstArgs = all_of(Arguments.begin(), Arguments.end(), [](Value *Arg) {
-    return dynamic_cast<ConstantValue *>(Arg) != nullptr;
-  });
+  bool ConstArgs = all_of(Arguments.begin(), Arguments.end(),
+                          [](Value *Arg) { return dynamic_cast<ConstantValue *>(Arg) != nullptr; });
   if (!ConstArgs) {
     return false;
   }
 
-  if (dynamic_cast<const NegInstruction *>(I) ||
-      dynamic_cast<const AddInstruction *>(I) ||
-      dynamic_cast<const SubInstruction *>(I) ||
-      dynamic_cast<const MulInstruction *>(I)) {
-    return true;
-  }
-
-  if (dynamic_cast<const DivInstruction *>(I)) {
-    if (dynamic_cast<ConstantValue *>(Arguments[1])->Val == 0) {
-      return false;
+  if (find(ArithmethicInstrs.begin(), ArithmethicInstrs.end(), I->InstrT) != ArithmethicInstrs.end()) {
+    if (I->InstrT != InstructionType::Div || dynamic_cast<ConstantValue *>(Arguments[1])->Val != 0) {
+      return true;
     }
-    return true;
   }
 
-  if (dynamic_cast<const PhiInstruction *>(I)) {
-    if (dynamic_cast<ConstantValue *>(Arguments[0])->Val ==
-        dynamic_cast<ConstantValue *>(Arguments[1])->Val) {
+  if (I->InstrT == InstructionType::Phi) {
+    if (dynamic_cast<ConstantValue *>(Arguments[0])->Val == dynamic_cast<ConstantValue *>(Arguments[1])->Val) {
       return true;
     }
   }
@@ -50,25 +44,25 @@ int evaluate(Instruction *I) {
 
   int Arg0 = dynamic_cast<ConstantValue *>(Arguments[0])->Val;
 
-  if (dynamic_cast<NegInstruction *>(I)) {
+  if (I->InstrT == InstructionType::Neg) {
     return -Arg0;
   }
 
   int Arg1 = dynamic_cast<ConstantValue *>(Arguments[1])->Val;
-  if (dynamic_cast<AddInstruction *>(I)) {
+  if (I->InstrT == InstructionType::Add) {
     return Arg0 + Arg1;
   }
-  if (dynamic_cast<SubInstruction *>(I)) {
+  if (I->InstrT == InstructionType::Sub) {
     return Arg0 - Arg1;
   }
-  if (dynamic_cast<MulInstruction *>(I)) {
+  if (I->InstrT == InstructionType::Mul) {
     return Arg0 * Arg1;
   }
-  if (dynamic_cast<DivInstruction *>(I)) {
+  if (I->InstrT == InstructionType::Div) {
     return Arg0 / Arg1;
   }
 
-  if (dynamic_cast<PhiInstruction *>(I)) {
+  if (I->InstrT == InstructionType::Phi) {
     return Arg0;
   }
 
@@ -79,11 +73,8 @@ void process(Function &F) {
   auto &Constants = F.constants();
 
   unordered_map<int, ConstantValue *> ConstantsMap;
-  transform(Constants.begin(), Constants.end(),
-            inserter(ConstantsMap, ConstantsMap.end()),
-            [](unique_ptr<ConstantValue> &Constant) {
-              return make_pair(Constant->Val, Constant.get());
-            });
+  transform(Constants.begin(), Constants.end(), inserter(ConstantsMap, ConstantsMap.end()),
+            [](unique_ptr<ConstantValue> &Constant) { return make_pair(Constant->Val, Constant.get()); });
 
   unordered_map<Value *, Value *> Substitions;
 
@@ -116,9 +107,7 @@ void process(Function &F) {
     for (auto Follower : BB->terminator()->followingBlocks()) {
       auto &Predecessors = Follower->predecessors();
       if (all_of(Predecessors.begin(), Predecessors.end(),
-                 [MarkedBlocks](auto &Pred) {
-                   return MarkedBlocks.find(Pred) != MarkedBlocks.end();
-                 })) {
+                 [MarkedBlocks](auto &Pred) { return MarkedBlocks.find(Pred) != MarkedBlocks.end(); })) {
         WorkingSet.push_back(Follower);
       }
     }

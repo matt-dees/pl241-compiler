@@ -8,20 +8,15 @@
 using namespace cs241c;
 using namespace std;
 
-IrGenContext::IrGenContext(Module *CompilationUnit)
-    : CompilationUnit(CompilationUnit) {}
+IrGenContext::IrGenContext(Module *CompilationUnit) : CompilationUnit(CompilationUnit) {}
 
 Value *IrGenContext::globalBase() { return CompilationUnit->globalBase(); }
 
 BasicBlock *&IrGenContext::currentBlock() { return CurrentBlock; }
 
-const unordered_map<string, Symbol> &IrGenContext::localsTable() const {
-  return LocalsTable;
-}
+const unordered_map<string, Symbol> &IrGenContext::localsTable() const { return LocalsTable; }
 
-string IrGenContext::genBasicBlockName() {
-  return NameGen::genBasicBlockName();
-}
+string IrGenContext::genBasicBlockName() { return NameGen::genBasicBlockName(); }
 
 int IrGenContext::genInstructionId() { return NameGen::genInstructionId(); }
 
@@ -78,13 +73,28 @@ ConstantValue *IrGenContext::makeConstant(int Val) {
       return CV.get();
     }
   }
-  return CurrentFunction->constants()
-      .emplace_back(make_unique<ConstantValue>(Val))
-      .get();
+  return CurrentFunction->constants().emplace_back(make_unique<ConstantValue>(Val)).get();
+}
+
+Instruction *IrGenContext::makeInstruction(InstructionType InstrT) {
+  return makeInstruction(InstrT, vector<Value *>{});
+}
+
+Instruction *IrGenContext::makeInstruction(InstructionType InstrT, Value *Arg0) {
+  return makeInstruction(InstrT, vector<Value *>{Arg0});
+}
+
+Instruction *IrGenContext::makeInstruction(InstructionType InstrT, Value *Arg0, Value *Arg1) {
+  return makeInstruction(InstrT, {Arg0, Arg1});
+}
+
+Instruction *IrGenContext::makeInstruction(InstructionType InstrT, vector<Value *> &&Args) {
+  auto Instr = std::make_unique<Instruction>(InstrT, genInstructionId(), move(Args));
+  Instruction *InstrP = Instr.get();
+  CurrentBlock->appendInstruction(move(Instr));
+  return InstrP;
 }
 
 BasicBlock *IrGenContext::makeBasicBlock() {
-  return CurrentFunction->basicBlocks()
-      .emplace_back(make_unique<BasicBlock>(genBasicBlockName()))
-      .get();
+  return CurrentFunction->basicBlocks().emplace_back(make_unique<BasicBlock>(genBasicBlockName())).get();
 }
