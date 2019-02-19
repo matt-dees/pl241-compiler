@@ -104,7 +104,7 @@ void process(Function &F) {
       }
     }
 
-    for (auto Follower : BB->terminator()->followingBlocks()) {
+    for (auto Follower : BB->successors()) {
       auto &Predecessors = Follower->predecessors();
       if (all_of(Predecessors.begin(), Predecessors.end(),
                  [MarkedBlocks](auto &Pred) { return MarkedBlocks.find(Pred) != MarkedBlocks.end(); })) {

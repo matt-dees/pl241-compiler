@@ -28,12 +28,12 @@ private:
   std::deque<std::unique_ptr<Instruction>> Instructions;
 
 public:
-  BasicBlock(std::string Name,
-             std::deque<std::unique_ptr<Instruction>> Instructions = {});
+  BasicBlock(std::string Name, std::deque<std::unique_ptr<Instruction>> Instructions = {});
 
-  std::vector<BasicBlock *> &predecessors();
+  const std::vector<BasicBlock *> &predecessors() const;
+  std::vector<BasicBlock *> successors() const;
   std::deque<std::unique_ptr<Instruction>> &instructions();
-  BasicBlockTerminator *terminator();
+  BasicBlockTerminator *terminator() const;
 
   void appendPredecessor(BasicBlock *BB);
   void appendInstruction(std::unique_ptr<Instruction> I);
@@ -46,8 +46,7 @@ public:
   void insertPhiInstruction(std::unique_ptr<PhiInstruction> Phi);
   void updatePhiInst(BasicBlock *From, Variable *VarToChange, Value *NewVal);
 
-  std::vector<BasicBlock *>::difference_type
-  getPredecessorIndex(BasicBlock *Predecessor);
+  std::vector<BasicBlock *>::difference_type getPredecessorIndex(BasicBlock *Predecessor);
 
   std::vector<Variable *> getMoveTargets();
 
@@ -55,6 +54,9 @@ public:
   iterator end();
 
   std::string toString() const override;
+
+  friend class ConditionalBlockTerminator;
+  friend class BraInstruction;
 };
 } // namespace cs241c
 

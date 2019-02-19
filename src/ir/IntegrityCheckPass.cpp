@@ -36,7 +36,7 @@ void IntegrityCheckPass::run(Module &M) {
       }
 
       for (auto Pred : Predecessors) {
-        auto FollowersPred = Pred->terminator()->followingBlocks();
+        auto FollowersPred = Pred->successors();
         if (count(FollowersPred.begin(), FollowersPred.end(), BB.get()) != 1) {
           stringstream ErrorMessage;
           ErrorMessage << "Block " << BB->name() << " and predecessor " << Pred->name()
@@ -45,7 +45,7 @@ void IntegrityCheckPass::run(Module &M) {
         }
       }
 
-      auto Followers = BB->terminator()->followingBlocks();
+      auto Followers = BB->successors();
       for (auto Follower : Followers) {
         auto &PredecessorsFollower = Follower->predecessors();
         vector<BasicBlock *>::difference_type EdgesToFollower =

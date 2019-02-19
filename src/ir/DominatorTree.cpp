@@ -15,11 +15,11 @@ class DominatorTreeBuilder {
 
   vector<BasicBlock *> predecessors(BasicBlock &Block) {
     return !Reversed ? Block.predecessors()
-                     : Block.terminator()->followingBlocks();
+                     : Block.successors();
   }
 
   vector<BasicBlock *> followers(BasicBlock &Block) {
-    return !Reversed ? Block.terminator()->followingBlocks()
+    return !Reversed ? Block.successors()
                      : Block.predecessors();
   }
 

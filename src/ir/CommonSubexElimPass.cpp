@@ -34,8 +34,7 @@ struct InstructionHasher {
 
 struct InstructionEquality {
   bool operator()(Instruction *Instr, Instruction *Other) const {
-    return (Instr->arguments() == Other->arguments()) &&
-           typeid(Instr) == typeid(Other);
+    return (Instr->arguments() == Other->arguments()) && typeid(Instr) == typeid(Other);
   }
 };
 } // namespace
@@ -46,12 +45,10 @@ bool shouldIgnore(Instruction *I) {
                                                              InstructionType::Call,  InstructionType::Read,
                                                              InstructionType::Write, InstructionType::WriteNL};
   return dynamic_cast<BasicBlockTerminator *>(I) != nullptr ||
-         find(IgnoredInstructions.begin(), IgnoredInstructions.end(),
-              I->InstrT) != IgnoredInstructions.end();
+         find(IgnoredInstructions.begin(), IgnoredInstructions.end(), I->InstrT) != IgnoredInstructions.end();
 }
 
-bool shouldExplore(BasicBlock *From, BasicBlock *To,
-                   const unordered_set<BasicBlock *> &Visited,
+bool shouldExplore(BasicBlock *From, BasicBlock *To, const unordered_set<BasicBlock *> &Visited,
                    const DominatorTree &DT) {
   for (auto &P : To->predecessors()) {
     // If the basic block we want to explore has a predecessor that is
@@ -74,9 +71,7 @@ void CommonSubexElimPass::run(Function &F) {
   //          Add Hash to map
   //      Replace all args according to replacement map
   //
-  unordered_map<Instruction *, Instruction *, InstructionHasher,
-                InstructionEquality>
-      CandidateInstructions = {};
+  unordered_map<Instruction *, Instruction *, InstructionHasher, InstructionEquality> CandidateInstructions = {};
   unordered_map<Value *, Value *> Replacements = {};
   stack<BasicBlock *> BlocksToExplore = {};
   unordered_set<BasicBlock *> VisitedBlocks = {};
@@ -92,8 +87,7 @@ void CommonSubexElimPass::run(Function &F) {
       continue;
     }
 
-    for (auto InstIter = Runner->instructions().begin();
-         InstIter != Runner->instructions().end();) {
+    for (auto InstIter = Runner->instructions().begin(); InstIter != Runner->instructions().end();) {
       if (shouldIgnore(InstIter->get())) {
         // If instruction should not be considered for CSE,
         // simply update arguments according to Replacements map and continue.
@@ -101,10 +95,8 @@ void CommonSubexElimPass::run(Function &F) {
         InstIter++;
         continue;
       }
-      bool HasMatch = CandidateInstructions.find(InstIter->get()) !=
-                      CandidateInstructions.end();
-      bool MatchIsMe = HasMatch && CandidateInstructions.at(InstIter->get()) ==
-                                       InstIter->get();
+      bool HasMatch = CandidateInstructions.find(InstIter->get()) != CandidateInstructions.end();
+      bool MatchIsMe = HasMatch && CandidateInstructions.at(InstIter->get()) == InstIter->get();
       if (MatchIsMe) {
         // If this existing entry in the map is this instruction, delete it
         // because our arguments may get updated. The instruction will
@@ -115,21 +107,17 @@ void CommonSubexElimPass::run(Function &F) {
       InstIter->get()->updateArgs(Replacements);
 
       // Rehash instruction because arguments may have changed
-      HasMatch = CandidateInstructions.find(InstIter->get()) !=
-                 CandidateInstructions.end();
-      bool DominatedByMatch =
-          HasMatch &&
-          F.dominatorTree().doesBlockDominate(
-              CandidateInstructions.at(InstIter->get())->getOwner(), Runner);
+      HasMatch = CandidateInstructions.find(InstIter->get()) != CandidateInstructions.end();
+      bool DominatedByMatch = HasMatch && F.dominatorTree().doesBlockDominate(
+                                              CandidateInstructions.at(InstIter->get())->getOwner(), Runner);
 
       if (DominatedByMatch) {
         // If this instruction is dominated by its match, update the
         // Replacements map which will dictate which instructions
         // should be replaced by what values.
-        Replacements[InstIter->get()] =
-            CandidateInstructions.at(InstIter->get());
-        cout << "[CSE] " << (*InstIter)->toString() << " --> "
-             << CandidateInstructions.at(InstIter->get())->toString() << "\n";
+        Replacements[InstIter->get()] = CandidateInstructions.at(InstIter->get());
+        cout << "[CSE] " << (*InstIter)->toString() << " --> " << CandidateInstructions.at(InstIter->get())->toString()
+             << "\n";
         for (auto &DFEntry : F.dominatorTree().dominanceFrontier(Runner)) {
           // Need to revisit all blocks in the dominance frontier.
           VisitedBlocks.erase(DFEntry);
@@ -144,12 +132,9 @@ void CommonSubexElimPass::run(Function &F) {
       }
     }
     VisitedBlocks.insert(Runner);
-    BasicBlockTerminator *Terminator = Runner->terminator();
-    if (Terminator) {
-      for (auto &BB : Terminator->followingBlocks()) {
-        if (shouldExplore(Runner, BB, VisitedBlocks, F.dominatorTree())) {
-          BlocksToExplore.push(BB);
-        }
+    for (auto &BB : Runner->successors()) {
+      if (shouldExplore(Runner, BB, VisitedBlocks, F.dominatorTree())) {
+        BlocksToExplore.push(BB);
       }
     }
   }

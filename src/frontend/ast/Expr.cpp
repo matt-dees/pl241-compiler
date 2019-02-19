@@ -107,7 +107,7 @@ Value *FunctionCall::genIr(IrGenContext &Ctx) const {
   }
 
   Function *Target = Ctx.lookupFuncion(Ident);
-  return Ctx.makeInstruction(InstructionType::Call, Target, Ctx.makeConstant(Args.size()));
+  return Ctx.makeInstruction(InstructionType::Call, Target, Ctx.makeConstant(static_cast<int>(Args.size())));
 }
 
 MathExpr::MathExpr(MathExpr::Operation Op, unique_ptr<Expr> Left, unique_ptr<Expr> Right)

@@ -93,9 +93,9 @@ void ConditionalBlockTerminator::updateTarget(BasicBlock *OldTarget, BasicBlock 
   auto &Arguments = arguments();
   auto OldTargetIt = find(Arguments.begin(), Arguments.end(), OldTarget);
   *OldTargetIt = NewTarget;
-  auto &OldPred = OldTarget->predecessors();
+  auto &OldPred = OldTarget->Predecessors;
   OldPred.erase(remove(OldPred.begin(), OldPred.end(), getOwner()), OldPred.end());
-  NewTarget->predecessors().push_back(getOwner());
+  NewTarget->Predecessors.push_back(getOwner());
 }
 
 CmpInstruction::CmpInstruction(int Id, Value *X, Value *Y) : Instruction(T::Cmp, Id, {X, Y}) {}
@@ -153,8 +153,8 @@ vector<BasicBlock *> BraInstruction::followingBlocks() {
 
 void BraInstruction::updateTarget(BasicBlock *NewTarget) {
   auto *OldTarget = dynamic_cast<BasicBlock *>(arguments()[0]);
-  auto &OldPred = OldTarget->predecessors();
+  auto &OldPred = OldTarget->Predecessors;
   OldPred.erase(remove(OldPred.begin(), OldPred.end(), getOwner()), OldPred.end());
   arguments()[0] = NewTarget;
-  NewTarget->predecessors().push_back(getOwner());
+  NewTarget->Predecessors.push_back(getOwner());
 }

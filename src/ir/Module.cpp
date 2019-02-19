@@ -64,7 +64,7 @@ void Module::writeBasicBlock(ofstream &OutFileStream, BasicBlock *BB,
   OutFileStream << "\"\n";
   OutFileStream << "}\n";
 
-  for (auto &Next : BB->terminator()->followingBlocks()) {
+  for (auto &Next : BB->successors()) {
     writeEdge(OutFileStream, BB, Next);
   }
 }

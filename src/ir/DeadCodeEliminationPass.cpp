@@ -53,10 +53,10 @@ unordered_set<Value *> mark(Function &F) {
       }
     }
 
-    auto &ControleDependencies = ControlDependence.DominanceFrontier[I->getOwner()];
-    transform(ControleDependencies.begin(), ControleDependencies.end(), inserter(LiveSet, LiveSet.end()),
+    auto &ControlDependencies = ControlDependence.DominanceFrontier[I->getOwner()];
+    transform(ControlDependencies.begin(), ControlDependencies.end(), inserter(LiveSet, LiveSet.end()),
               [](BasicBlock *CD) { return CD->terminator(); });
-    transform(ControleDependencies.begin(), ControleDependencies.end(), back_inserter(WorkList),
+    transform(ControlDependencies.begin(), ControlDependencies.end(), back_inserter(WorkList),
               [](BasicBlock *CD) { return CD->terminator(); });
   }
 
@@ -77,8 +77,7 @@ void erase(Function &F, const unordered_set<Value *> &LiveValues) {
 
 BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveValues,
                            unordered_set<BasicBlock *> &VisitedBlocks) {
-  BasicBlockTerminator *Terminator = BB->terminator();
-  auto Followers = Terminator->followingBlocks();
+  auto Followers = BB->successors();
 
   while (!Followers.empty() && VisitedBlocks.find(BB) == VisitedBlocks.end()) {
     VisitedBlocks.insert(BB);
@@ -88,8 +87,7 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveVal
         auto NewTerminator = make_unique<BraInstruction>(NameGen::genInstructionId(), ConditionalBranch->elseBlock());
         BB->releaseTerminator();
         BB->terminate(move(NewTerminator));
-        BasicBlockTerminator *Terminator = BB->terminator();
-        Followers = Terminator->followingBlocks();
+        Followers = BB->successors();
       } else {
         for (BasicBlock *Follower : Followers) {
           ConditionalBranch->updateTarget(Follower, skipDeadBlocks(Follower, LiveValues, VisitedBlocks));
@@ -107,8 +105,7 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveVal
       }
     }
 
-    Terminator = BB->terminator();
-    Followers = Terminator->followingBlocks();
+    Followers = BB->successors();
   }
 
   return BB;
@@ -125,7 +122,7 @@ void removeDeadBlocks(Function &F, BasicBlock *NewEntry) {
     WorkingStack.pop();
     MarkedBlocks.insert(Block);
 
-    for (BasicBlock *Follower : Block->terminator()->followingBlocks()) {
+    for (BasicBlock *Follower : Block->successors()) {
       if (MarkedBlocks.find(Follower) == MarkedBlocks.end()) {
         WorkingStack.push(Follower);
       }

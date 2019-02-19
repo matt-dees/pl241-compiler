@@ -51,7 +51,7 @@ SSAContext Function::recursiveNodeToSSA(BasicBlock *CurrentBB,
   for (auto VarChange : SSACtx.ssaVariableMap()) {
     propagateChangeToPhis(CurrentBB, VarChange.first, VarChange.second);
   }
-  for (auto BB : CurrentBB->terminator()->followingBlocks()) {
+  for (auto BB : CurrentBB->successors()) {
     SSAContext Ret = recursiveNodeToSSA(BB, SSACtx);
     SSACtx.merge(Ret);
   }
@@ -85,7 +85,7 @@ void Function::recursiveGenAllPhis(BasicBlock *CurrentBB,
       recursiveGenAllPhis(DFEntry, PhiGenCtx);
     }
   }
-  for (auto BB : CurrentBB->terminator()->followingBlocks()) {
+  for (auto BB : CurrentBB->successors()) {
     recursiveGenAllPhis(BB, PhiGenCtx);
   }
 }
@@ -102,7 +102,7 @@ std::vector<BasicBlock *> Function::postOrderCfg() {
     Visited.insert(B);
 
     bool HasUnvisitedFollower = false;
-    for (BasicBlock *Follower : B->terminator()->followingBlocks()) {
+    for (BasicBlock *Follower : B->successors()) {
       if (Visited.find(Follower) == Visited.end()) {
         HasUnvisitedFollower = true;
         WorkStack.push(Follower);
