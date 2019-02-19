@@ -7,6 +7,7 @@ using namespace std;
 
 void InterferenceGraph::writeGraph(ofstream &OutStream) {
   WrittenEdges = {};
+  OutStream << "layoutalgorithm: circular\n";
   OutStream << "title: "
             << "\""
             << "Interference Graph"
@@ -44,6 +45,8 @@ void InterferenceGraph::writeNodes(ofstream &OutStream) {
     OutStream << "title: "
               << "\"" << VertexEdgePair.first->toString() << "\"\n";
     OutStream << "label: \"" + VertexEdgePair.first->toString() << "\"\n";
+    OutStream << "color:red"
+              << "\n";
     OutStream << "}\n";
     for (auto Destination : VertexEdgePair.second) {
       writeEdge(OutStream, VertexEdgePair.first, Destination);
@@ -68,6 +71,8 @@ void InterferenceGraph::writeEdge(ofstream &OutStream, RegAllocValue *From,
             << "\"" << From->toString() << "\"\n";
   OutStream << "targetname: "
             << "\"" << To->toString() << "\"\n";
+  OutStream << "arrowstyle: none"
+            << "\n";
   OutStream << "}\n";
 }
 

@@ -20,6 +20,5 @@ void Vcg::writeToFile(const string &OutFilePath) {
 }
 
 void Vcg::writeProperties(ofstream &OutFileStream) {
-  OutFileStream << "layoutalgorithm: dfs\n";
   OutFileStream << "manhattan_edges: yes\n";
 }
