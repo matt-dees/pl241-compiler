@@ -17,7 +17,7 @@ using T = InstructionType;
 Instruction::Instruction(InstructionType InstrT, int Id, Value *Arg1) : Instruction(InstrT, Id, Arg1, nullptr) {}
 
 Instruction::Instruction(InstructionType InstrT, int Id, Value *Arg1, Value *Arg2)
-    : InstrT(InstrT), Id(Id), Arg1(Arg1), Arg2(Arg2) {}
+    : Value(valTy(InstrT)), InstrT(InstrT), Id(Id), Arg1(Arg1), Arg2(Arg2) {}
 
 bool Instruction::operator==(const Instruction &other) const {
   return (typeid(this).hash_code() == typeid(other).hash_code()) && other.arguments() == this->arguments();

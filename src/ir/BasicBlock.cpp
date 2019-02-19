@@ -19,7 +19,7 @@ BasicBlock::FallthroughSuccessorProxy &BasicBlock::FallthroughSuccessorProxy::op
 }
 
 BasicBlock::BasicBlock(string Name, deque<unique_ptr<Instruction>> Instructions)
-    : Name(move(Name)), Predecessors({}), Instructions(move(Instructions)) {}
+    : Value(ValueType::BasicBlock), Name(move(Name)), Predecessors({}), Instructions(move(Instructions)) {}
 
 const vector<BasicBlock *> &BasicBlock::predecessors() const { return Predecessors; }
 

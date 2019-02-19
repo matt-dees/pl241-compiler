@@ -4,7 +4,14 @@
 #include <string>
 
 namespace cs241c {
+enum class ValueType { Undef = -1, None, Any, Value, Constant, Variable, Cmp, Adda, BasicBlock, Function };
+
 class Value {
+  const ValueType ValTy;
+
+protected:
+  Value(ValueType);
+
 public:
   virtual ~Value() = default;
   virtual std::string name() const;

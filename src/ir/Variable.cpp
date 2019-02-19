@@ -4,7 +4,7 @@
 using namespace cs241c;
 using namespace std;
 
-Variable::Variable(string Ident, int WordCount) : Ident(move(Ident)), WordCount(WordCount) {}
+Variable::Variable(string Ident, int WordCount) : Value(ValueType::Variable), Ident(move(Ident)), WordCount(WordCount) {}
 
 string Variable::ident() { return Ident; }
 

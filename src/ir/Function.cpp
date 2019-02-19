@@ -7,7 +7,7 @@ using namespace cs241c;
 using namespace std;
 
 Function::Function(string Name, vector<unique_ptr<LocalVariable>> &&Locals)
-    : Name(move(Name)), Locals(move(Locals)) {}
+    : Value(ValueType::Function), Name(move(Name)), Locals(move(Locals)) {}
 
 vector<unique_ptr<ConstantValue>> &Function::constants() { return Constants; }
 
@@ -16,9 +16,7 @@ vector<unique_ptr<LocalVariable>> &Function::locals() { return Locals; }
 BasicBlock *Function::entryBlock() const { return BasicBlocks.front().get(); }
 
 vector<unique_ptr<BasicBlock>> &Function::basicBlocks() { return BasicBlocks; }
-const vector<unique_ptr<BasicBlock>> &Function::basicBlocks() const {
-  return BasicBlocks;
-}
+const vector<unique_ptr<BasicBlock>> &Function::basicBlocks() const { return BasicBlocks; }
 
 string Function::toString() const { return Name; }
 
@@ -37,8 +35,7 @@ void Function::toSSA(IrGenContext &GenCtx) {
   recursiveNodeToSSA(entryBlock(), SSACtx);
 }
 
-SSAContext Function::recursiveNodeToSSA(BasicBlock *CurrentBB,
-                                        SSAContext SSACtx) {
+SSAContext Function::recursiveNodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx) {
   static unordered_set<BasicBlock *> Visited = {};
   if (Visited.find(CurrentBB) != Visited.end()) {
     // Already visited this node. Skip.
@@ -58,19 +55,16 @@ SSAContext Function::recursiveNodeToSSA(BasicBlock *CurrentBB,
   return SSACtx;
 }
 
-void Function::propagateChangeToPhis(cs241c::BasicBlock *SourceBB,
-                                     cs241c::Variable *ChangedVar,
+void Function::propagateChangeToPhis(cs241c::BasicBlock *SourceBB, cs241c::Variable *ChangedVar,
                                      cs241c::Value *NewVal) {
   for (auto BB : DT.dominanceFrontier(SourceBB)) {
-    if (find(BB->predecessors().begin(), BB->predecessors().end(), SourceBB) !=
-        BB->predecessors().end()) {
+    if (find(BB->predecessors().begin(), BB->predecessors().end(), SourceBB) != BB->predecessors().end()) {
       BB->updatePhiInst(SourceBB, ChangedVar, NewVal);
     }
   }
 }
 
-void Function::recursiveGenAllPhis(BasicBlock *CurrentBB,
-                                   IrGenContext &PhiGenCtx) {
+void Function::recursiveGenAllPhis(BasicBlock *CurrentBB, IrGenContext &PhiGenCtx) {
   static unordered_set<BasicBlock *> Visited;
   if (Visited.find(CurrentBB) != Visited.end()) {
     return;
@@ -119,18 +113,15 @@ std::vector<BasicBlock *> Function::postOrderCfg() {
 }
 
 void Function::buildInterferenceGraph() {
-  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>>
-      PredecessorLiveSetMap;
-  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>>
-      PredecessorPhiSets;
+  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>> PredecessorLiveSetMap;
+  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>> PredecessorPhiSets;
   for (auto BB : postOrderCfg()) {
     std::unordered_set<RegAllocValue *> CurrentLiveSet = {};
     if (PredecessorLiveSetMap.find(BB) != PredecessorLiveSetMap.end()) {
       CurrentLiveSet = PredecessorLiveSetMap.at(BB);
     }
     // Iterate through instructions backwards.
-    for (auto ReverseInstructionIt = BB->instructions().rbegin();
-         ReverseInstructionIt != BB->instructions().rend();
+    for (auto ReverseInstructionIt = BB->instructions().rbegin(); ReverseInstructionIt != BB->instructions().rend();
          ReverseInstructionIt++) {
 
       // Erase the current instruction from the live set.
