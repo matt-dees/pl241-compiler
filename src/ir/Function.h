@@ -25,6 +25,7 @@ class Function : public Value {
       ValueToRegAllocVal;
   DominatorTree DT;
   InterferenceGraph IG;
+  RegisterAllocator::Coloring RAColoring;
 
 private:
   SSAContext recursiveNodeToSSA(BasicBlock *CurrentBB, SSAContext Ctx);
@@ -41,7 +42,9 @@ public:
   void buildInterferenceGraph();
   void buildDominatorTree();
   void toSSA(IrGenContext &GenCtx);
+  void assignRegisters();
 
+  RegisterAllocator::Coloring &registerColoring() { return RAColoring; }
   DominatorTree &dominatorTree();
   InterferenceGraph &interferenceGraph() { return IG; }
   std::vector<std::unique_ptr<ConstantValue>> &constants();
