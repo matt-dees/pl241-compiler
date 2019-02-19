@@ -3,6 +3,7 @@
 #include <array>
 #include <iostream>
 #include <stack>
+#include <type_traits>
 
 using namespace cs241c;
 using namespace std;
@@ -15,16 +16,16 @@ void CommonSubexElimPass::run(Module &M) {
 
 namespace {
 struct InstructionHasher {
-  size_t operator()(Instruction *Instr) const {
+  size_t operator()(const Instruction *Instr) const {
     // FNV-1a
     const uint64_t FNVPrime = 1099511628211;
     uint64_t Hash = 14695981039346656037ull;
 
-    Hash ^= typeid(*Instr).hash_code();
+    Hash ^= static_cast<underlying_type<InstructionType>::type>(Instr->InstrT);
     Hash *= FNVPrime;
 
     for (Value *Arg : Instr->arguments()) {
-      Hash ^= reinterpret_cast<uint64_t>(Arg);
+      Hash ^= reinterpret_cast<uintptr_t>(Arg);
       Hash *= FNVPrime;
     }
 
