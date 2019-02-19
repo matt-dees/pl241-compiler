@@ -57,7 +57,7 @@ void BasicBlock::updateSuccessor(BasicBlock *From, BasicBlock *To) {
     assert(Terminator != nullptr);
 
     int TargetPos = Terminator->InstrT == InstructionType::Bra ? 0 : 1;
-    Terminator->Arguments[TargetPos] = To;
+    Terminator->updateArg(TargetPos, To);
   }
 
   if (To != nullptr) {

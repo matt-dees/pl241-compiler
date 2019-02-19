@@ -30,8 +30,7 @@ TEST_CASE("Test Dominator Tree Generation 1") {
   BB3->terminate(make_unique<BraInstruction>(Context.genInstructionId(), BB4));
 
   Context.currentBlock() = BB4;
-  BB4->terminate(
-      make_unique<BasicBlockTerminator>(InstructionType::End, Context.genInstructionId(), vector<Value *>{}));
+  BB4->terminate(make_unique<BasicBlockTerminator>(InstructionType::End, Context.genInstructionId()));
 
   DominatorTree D;
   D.buildDominatorTree(*FPtr);
@@ -73,8 +72,7 @@ TEST_CASE("Test Dominator Tree Generation 2") {
   BB4->terminate(make_unique<BraInstruction>(Context.genInstructionId(), BB5));
 
   Context.currentBlock() = BB5;
-  BB5->terminate(
-      make_unique<BasicBlockTerminator>(InstructionType::End, Context.genInstructionId(), vector<Value *>{}));
+  BB5->terminate(make_unique<BasicBlockTerminator>(InstructionType::End, Context.genInstructionId()));
   DominatorTree D;
   D.buildDominatorTree(*FPtr);
   CHECK(true);

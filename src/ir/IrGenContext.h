@@ -54,7 +54,6 @@ public:
   Instruction *makeInstruction(InstructionType);
   Instruction *makeInstruction(InstructionType, Value *);
   Instruction *makeInstruction(InstructionType, Value *, Value *);
-  Instruction *makeInstruction(InstructionType, std::vector<Value *> &&);
 
   template <typename T, typename... Params> T *makeInstruction(Params... Args) {
     auto Instr = std::make_unique<T>(genInstructionId(), Args...);

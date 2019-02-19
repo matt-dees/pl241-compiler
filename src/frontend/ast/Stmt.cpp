@@ -12,7 +12,7 @@ ReturnStmt::ReturnStmt(unique_ptr<Expr> E) : E(move(E)) {}
 
 void ReturnStmt::genIr(IrGenContext &Ctx) const {
   Ctx.currentBlock()->terminate(
-      make_unique<BasicBlockTerminator>(InstructionType::Ret, Ctx.genInstructionId(), vector<Value *>{E->genIr(Ctx)}));
+      make_unique<BasicBlockTerminator>(InstructionType::Ret, Ctx.genInstructionId(), E->genIr(Ctx)));
 }
 
 FunctionCallStmt::FunctionCallStmt(FunctionCall CallExpr) : CallExpr(move(CallExpr)) {}

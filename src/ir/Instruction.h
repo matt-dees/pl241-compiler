@@ -3,7 +3,6 @@
 
 #include "InstructionType.h"
 #include "Value.h"
-#include <cstdint>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -25,17 +24,18 @@ public:
 private:
   int Id;
   BasicBlock *Owner{};
-  std::vector<Value *> Arguments;
+  Value *Arg1;
+  Value *Arg2;
 
 protected:
-  virtual void updateArg(unsigned long Index, Value *NewVal);
+  virtual void updateArg(int Index, Value *NewVal);
 
 public:
-  Instruction(InstructionType, int Id, std::vector<Value *> &&Arguments);
+  Instruction(InstructionType, int Id, Value *Arg1);
+  Instruction(InstructionType, int Id, Value *Arg1, Value *Arg2);
 
   BasicBlock *getOwner() const;
-  std::vector<Value *> &arguments();
-  const std::vector<Value *> &arguments() const;
+  std::vector<Value *> arguments() const;
   bool updateArgs(const std::unordered_map<Value *, Value *> &UpdateCtx);
   bool updateArgs(const SSAContext &SSAVarCtx);
 
@@ -51,7 +51,8 @@ class MemoryInstruction : public Instruction {
 protected:
   Variable *Object;
 
-  MemoryInstruction(InstructionType, int Id, Variable *Object, std::vector<Value *> &&Arguments);
+  MemoryInstruction(InstructionType, int Id, Variable *Object, Value *Arg1);
+  MemoryInstruction(InstructionType, int Id, Variable *Object, Value *Arg1, Value *Arg2);
 
 public:
   Variable *object() const;
@@ -61,7 +62,9 @@ class BasicBlockTerminator : public Instruction {
   virtual BasicBlock *target();
 
 public:
-  BasicBlockTerminator(InstructionType, int Id, std::vector<Value *> &&Arguments);
+  BasicBlockTerminator(InstructionType, int Id);
+  BasicBlockTerminator(InstructionType, int Id, Value *Arg1);
+  BasicBlockTerminator(InstructionType, int Id, Value *Arg1, Value *Arg2);
 
   friend class BasicBlock;
 };
@@ -85,13 +88,11 @@ public:
 class LoadInstruction : public MemoryInstruction {
 public:
   LoadInstruction(int Id, Variable *Object, AddaInstruction *Address);
-  void updateArg(unsigned long Index, Value *NewVal) override;
 };
 
 class StoreInstruction : public MemoryInstruction {
 public:
   StoreInstruction(int Id, Variable *Object, Value *Y, AddaInstruction *Address);
-  void updateArg(unsigned long Index, Value *NewVal) override;
 };
 
 class MoveInstruction : public Instruction {

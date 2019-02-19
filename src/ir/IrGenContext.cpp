@@ -76,20 +76,14 @@ ConstantValue *IrGenContext::makeConstant(int Val) {
   return CurrentFunction->constants().emplace_back(make_unique<ConstantValue>(Val)).get();
 }
 
-Instruction *IrGenContext::makeInstruction(InstructionType InstrT) {
-  return makeInstruction(InstrT, vector<Value *>{});
-}
+Instruction *IrGenContext::makeInstruction(InstructionType InstrT) { return makeInstruction(InstrT, nullptr, nullptr); }
 
 Instruction *IrGenContext::makeInstruction(InstructionType InstrT, Value *Arg0) {
-  return makeInstruction(InstrT, vector<Value *>{Arg0});
+  return makeInstruction(InstrT, Arg0, nullptr);
 }
 
 Instruction *IrGenContext::makeInstruction(InstructionType InstrT, Value *Arg0, Value *Arg1) {
-  return makeInstruction(InstrT, {Arg0, Arg1});
-}
-
-Instruction *IrGenContext::makeInstruction(InstructionType InstrT, vector<Value *> &&Args) {
-  auto Instr = std::make_unique<Instruction>(InstrT, genInstructionId(), move(Args));
+  auto Instr = std::make_unique<Instruction>(InstrT, genInstructionId(), Arg0, Arg1);
   Instruction *InstrP = Instr.get();
   CurrentBlock->appendInstruction(move(Instr));
   return InstrP;

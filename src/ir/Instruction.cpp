@@ -14,8 +14,10 @@ using namespace std;
 
 using T = InstructionType;
 
-Instruction::Instruction(InstructionType InstrT, int Id, vector<Value *> &&Arguments)
-    : InstrT(InstrT), Id(Id), Arguments(move(Arguments)) {}
+Instruction::Instruction(InstructionType InstrT, int Id, Value *Arg1) : Instruction(InstrT, Id, Arg1, nullptr) {}
+
+Instruction::Instruction(InstructionType InstrT, int Id, Value *Arg1, Value *Arg2)
+    : InstrT(InstrT), Id(Id), Arg1(Arg1), Arg2(Arg2) {}
 
 bool Instruction::operator==(const Instruction &other) const {
   return (typeid(this).hash_code() == typeid(other).hash_code()) && other.arguments() == this->arguments();
@@ -40,8 +42,16 @@ string Instruction::toString() const {
 
 void Instruction::setId(int Id) { this->Id = Id; }
 
-vector<Value *> &Instruction::arguments() { return Arguments; }
-const vector<Value *> &Instruction::arguments() const { return Arguments; }
+vector<Value *> Instruction::arguments() const {
+  vector<Value *> Arguments;
+  if (Arg1 != nullptr) {
+    Arguments.push_back(Arg1);
+    if (Arg2 != nullptr) {
+      Arguments.push_back(Arg2);
+    }
+  }
+  return Arguments;
+}
 
 bool Instruction::updateArgs(const unordered_map<Value *, Value *> &UpdateCtx) {
   vector<Value *> Args = arguments();
@@ -67,49 +77,47 @@ bool Instruction::updateArgs(const SSAContext &SSAVarCtx) {
   return DidChange;
 }
 
-void Instruction::updateArg(unsigned long Index, Value *NewVal) { Arguments.at(Index) = NewVal; }
+void Instruction::updateArg(int Index, Value *NewVal) {
+  Value *&Arg = Index == 0 ? Arg1 : Arg2;
+  Arg = NewVal;
+}
 
-MemoryInstruction::MemoryInstruction(InstructionType InstrT, int Id, Variable *Object, vector<Value *> &&Arguments)
-    : Instruction(InstrT, Id, move(Arguments)), Object(Object) {}
+MemoryInstruction::MemoryInstruction(InstructionType InstrT, int Id, Variable *Object, Value *Arg1)
+    : MemoryInstruction(InstrT, Id, Object, Arg1, nullptr) {}
+
+MemoryInstruction::MemoryInstruction(InstructionType InstrT, int Id, Variable *Object, Value *Arg1, Value *Arg2)
+    : Instruction(InstrT, Id, Arg1, Arg2), Object(Object) {}
 
 Variable *MemoryInstruction::object() const { return Object; }
 
-BasicBlockTerminator::BasicBlockTerminator(InstructionType InstrT, int Id, vector<Value *> &&Arguments)
-    : Instruction(InstrT, Id, move(Arguments)) {}
+BasicBlockTerminator::BasicBlockTerminator(InstructionType InstrT, int Id)
+    : BasicBlockTerminator(InstrT, Id, nullptr, nullptr) {}
+
+BasicBlockTerminator::BasicBlockTerminator(InstructionType InstrT, int Id, Value *Arg1)
+    : BasicBlockTerminator(InstrT, Id, Arg1, nullptr) {}
+
+BasicBlockTerminator::BasicBlockTerminator(InstructionType InstrT, int Id, Value *Arg1, Value *Arg2)
+    : Instruction(InstrT, Id, Arg1, Arg2) {}
 
 BasicBlock *BasicBlockTerminator::target() { return nullptr; }
 
 ConditionalBlockTerminator::ConditionalBlockTerminator(InstructionType InstrT, int Id, CmpInstruction *Cmp,
                                                        BasicBlock *Target)
-    : BasicBlockTerminator(InstrT, Id, {Cmp, Target}) {}
+    : BasicBlockTerminator(InstrT, Id, Cmp, Target) {}
 
 BasicBlock *ConditionalBlockTerminator::target() { return dynamic_cast<BasicBlock *>(arguments()[1]); }
 
-CmpInstruction::CmpInstruction(int Id, Value *X, Value *Y) : Instruction(T::Cmp, Id, {X, Y}) {}
+CmpInstruction::CmpInstruction(int Id, Value *X, Value *Y) : Instruction(T::Cmp, Id, X, Y) {}
 
-AddaInstruction::AddaInstruction(int Id, Value *X, Value *Y) : Instruction(T::Adda, Id, {X, Y}) {}
+AddaInstruction::AddaInstruction(int Id, Value *X, Value *Y) : Instruction(T::Adda, Id, X, Y) {}
 
 LoadInstruction::LoadInstruction(int Id, Variable *Object, AddaInstruction *Address)
-    : MemoryInstruction(T::Load, Id, Object, {Address}) {}
-
-void LoadInstruction::updateArg(unsigned long Index, Value *NewVal) {
-  if (Index == 0 && !dynamic_cast<AddaInstruction *>(NewVal)) {
-    throw logic_error("Paramater of LoadInstruction is not AddaInstruction.");
-  }
-  MemoryInstruction::updateArg(Index, NewVal);
-}
+    : MemoryInstruction(T::Load, Id, Object, Address) {}
 
 StoreInstruction::StoreInstruction(int Id, Variable *Object, Value *Y, AddaInstruction *Address)
-    : MemoryInstruction(T::Store, Id, Object, {Y, Address}) {}
+    : MemoryInstruction(T::Store, Id, Object, Y, Address) {}
 
-void StoreInstruction::updateArg(unsigned long Index, Value *NewVal) {
-  if (Index == 1 && !dynamic_cast<AddaInstruction *>(NewVal)) {
-    throw logic_error("Second paramater of StoreInstruction is not AddaInstruction.");
-  }
-  MemoryInstruction::updateArg(Index, NewVal);
-}
-
-MoveInstruction::MoveInstruction(int Id, Value *Y, Value *X) : Instruction(T::Move, Id, {Y, X}) {}
+MoveInstruction::MoveInstruction(int Id, Value *Y, Value *X) : Instruction(T::Move, Id, Y, X) {}
 
 void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) { arguments() = {NewSource, NewTarget}; }
 
@@ -118,7 +126,7 @@ Value *MoveInstruction::source() const { return arguments()[0]; }
 Value *MoveInstruction::target() const { return arguments()[1]; }
 
 PhiInstruction::PhiInstruction(int Id, Variable *Target, Value *X1, Value *X2)
-    : Instruction(T::Phi, Id, {X1, X2}), Target(Target) {}
+    : Instruction(T::Phi, Id, X1, X2), Target(Target) {}
 
 namespace {
 vector<Value *> prepareCallArguments(Function *Target, const vector<Value *> &Arguments) {
