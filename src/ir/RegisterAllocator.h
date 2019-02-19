@@ -22,8 +22,10 @@ private:
       WrittenEdges;
 
 public:
+  void addNode(RegAllocValue *Node);
   std::unordered_set<RegAllocValue *> removeNode(RegAllocValue *);
   std::unordered_set<RegAllocValue *> neighbors(RegAllocValue *);
+  bool hasNode(RegAllocValue *Node);
   void addEdge(RegAllocValue *From, RegAllocValue *To);
   void addEdges(const std::unordered_set<RegAllocValue *> &FromSet,
                 RegAllocValue *To);

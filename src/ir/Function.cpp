@@ -174,7 +174,7 @@ void Function::buildInterferenceGraph() {
 
 RegAllocValue *Function::lookupRegAllocVal(Value *Val) {
   if (ValueToRegAllocVal.find(Val) == ValueToRegAllocVal.end()) {
-    ValueToRegAllocVal[Val] = std::make_unique<RegAllocValue>();
+    ValueToRegAllocVal[Val] = std::make_unique<RegAllocValue>(Val);
   }
 
   return ValueToRegAllocVal[Val].get();

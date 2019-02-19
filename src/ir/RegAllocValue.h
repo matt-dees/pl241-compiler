@@ -9,7 +9,7 @@ class RegAllocValue {
   Value *Val;
 
 public:
-  RegAllocValue() : NumUses(0), Val(nullptr){};
+  RegAllocValue(Value * Val) : NumUses(0), Val(Val){};
   uint32_t costToSpill();
   void visit();
   std::string toString() { return Val->toString(); }

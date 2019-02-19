@@ -89,15 +89,33 @@ InterferenceGraph::removeNode(RegAllocValue *RAV) {
   return Neighbors;
 }
 
+bool InterferenceGraph::hasNode(RegAllocValue *Node) {
+  return IG.find(Node) != IG.end();
+}
+
+void InterferenceGraph::addNode(RegAllocValue *Node) { IG[Node] = {}; }
+
 RegisterAllocator::Coloring RegisterAllocator::color(InterferenceGraph IG) {
   if (IG.graph().size() == 0) {
-    throw logic_error("Register Allocator cannot color empty graph.");
+    return {};
   }
 
   Coloring CurrentColoring = {};
   colorRecur(IG, CurrentColoring);
   return CurrentColoring;
 }
+
+namespace {
+void addNodeBack(InterferenceGraph &IG, RegAllocValue *Node,
+                 std::unordered_set<RegAllocValue *> &Neighbors) {
+  IG.addNode(Node);
+  for (auto Neighbor : Neighbors) {
+    if (IG.hasNode(Neighbor)) {
+      IG.addEdge(Node, Neighbor);
+    }
+  }
+}
+}; // namespace
 
 void RegisterAllocator::colorRecur(
     InterferenceGraph &IG, RegisterAllocator::Coloring &CurrentColoring) {
@@ -109,7 +127,7 @@ void RegisterAllocator::colorRecur(
   std::unordered_set<RegAllocValue *> NeighborsOfRemoved =
       IG.removeNode(NextNode);
   colorRecur(IG, CurrentColoring);
-  IG.addEdges(NeighborsOfRemoved, NextNode);
+  addNodeBack(IG, NextNode, NeighborsOfRemoved);
   assignColor(IG, CurrentColoring, NextNode);
 }
 
