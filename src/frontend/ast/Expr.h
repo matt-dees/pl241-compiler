@@ -113,8 +113,7 @@ public:
   Relation(Type T, std::unique_ptr<Expr> Left, std::unique_ptr<Expr> Right);
 
   CmpInstruction *genCmp(IrGenContext &Ctx) const;
-  std::unique_ptr<BasicBlockTerminator> genBranch(IrGenContext &Ctx, CmpInstruction *Cmp, BasicBlock *Then,
-                                                  BasicBlock *Else) const;
+  std::unique_ptr<BasicBlockTerminator> genBranch(IrGenContext &Ctx, CmpInstruction *Cmp, BasicBlock *Target) const;
 };
 } // namespace cs241c
 

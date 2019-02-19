@@ -77,26 +77,13 @@ Variable *MemoryInstruction::object() const { return Object; }
 BasicBlockTerminator::BasicBlockTerminator(InstructionType InstrT, int Id, vector<Value *> &&Arguments)
     : Instruction(InstrT, Id, move(Arguments)) {}
 
-vector<BasicBlock *> BasicBlockTerminator::followingBlocks() { return {}; }
+BasicBlock *BasicBlockTerminator::target() { return nullptr; }
 
 ConditionalBlockTerminator::ConditionalBlockTerminator(InstructionType InstrT, int Id, CmpInstruction *Cmp,
-                                                       BasicBlock *Then, BasicBlock *Else)
-    : BasicBlockTerminator(InstrT, Id, {Cmp, Then, Else}) {}
+                                                       BasicBlock *Target)
+    : BasicBlockTerminator(InstrT, Id, {Cmp, Target}) {}
 
-BasicBlock *ConditionalBlockTerminator::elseBlock() const { return dynamic_cast<BasicBlock *>(arguments()[2]); }
-
-vector<BasicBlock *> ConditionalBlockTerminator::followingBlocks() {
-  return {dynamic_cast<BasicBlock *>(arguments()[1]), dynamic_cast<BasicBlock *>(arguments()[2])};
-}
-
-void ConditionalBlockTerminator::updateTarget(BasicBlock *OldTarget, BasicBlock *NewTarget) {
-  auto &Arguments = arguments();
-  auto OldTargetIt = find(Arguments.begin(), Arguments.end(), OldTarget);
-  *OldTargetIt = NewTarget;
-  auto &OldPred = OldTarget->Predecessors;
-  OldPred.erase(remove(OldPred.begin(), OldPred.end(), getOwner()), OldPred.end());
-  NewTarget->Predecessors.push_back(getOwner());
-}
+BasicBlock *ConditionalBlockTerminator::target() { return dynamic_cast<BasicBlock *>(arguments()[1]); }
 
 CmpInstruction::CmpInstruction(int Id, Value *X, Value *Y) : Instruction(T::Cmp, Id, {X, Y}) {}
 
@@ -145,16 +132,8 @@ vector<Value *> prepareCallArguments(Function *Target, const vector<Value *> &Ar
 
 BraInstruction::BraInstruction(int Id, BasicBlock *Y) : BasicBlockTerminator(T::Bra, Id, {Y}) {}
 
-vector<BasicBlock *> BraInstruction::followingBlocks() {
+BasicBlock *BraInstruction::target() {
   auto *Target = dynamic_cast<BasicBlock *>(arguments()[0]);
   assert(Target);
-  return {Target};
-}
-
-void BraInstruction::updateTarget(BasicBlock *NewTarget) {
-  auto *OldTarget = dynamic_cast<BasicBlock *>(arguments()[0]);
-  auto &OldPred = OldTarget->Predecessors;
-  OldPred.erase(remove(OldPred.begin(), OldPred.end(), getOwner()), OldPred.end());
-  arguments()[0] = NewTarget;
-  NewTarget->Predecessors.push_back(getOwner());
+  return Target;
 }

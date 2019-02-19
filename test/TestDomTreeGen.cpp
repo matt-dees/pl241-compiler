@@ -61,8 +61,8 @@ TEST_CASE("Test Dominator Tree Generation 2") {
   CmpInstruction *CmpP = Cmp.get();
   BB2->appendInstruction(move(Cmp));
 
-  BB2->terminate(
-      make_unique<ConditionalBlockTerminator>(InstructionType::Bne, Context.genInstructionId(), CmpP, BB3, BB4));
+  BB2->fallthoughSuccessor() = BB3;
+  BB2->terminate(make_unique<ConditionalBlockTerminator>(InstructionType::Bne, Context.genInstructionId(), CmpP, BB4));
 
   Context.currentBlock() = BB3;
 

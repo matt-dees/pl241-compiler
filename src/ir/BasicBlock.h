@@ -20,18 +20,35 @@ class BasicBlock : public Value {
 public:
   using iterator = std::deque<std::unique_ptr<Instruction>>::iterator;
 
+  class FallthroughSuccessorProxy {
+    BasicBlock *BB;
+    FallthroughSuccessorProxy(BasicBlock *);
+
+  public:
+    operator BasicBlock *() const;
+    FallthroughSuccessorProxy &operator=(BasicBlock *Other);
+
+    friend class BasicBlock;
+  };
+  friend class FallthroughSuccessorProxy;
+
 private:
   std::string Name;
   std::unordered_map<Variable *, PhiInstruction *> PhiInstrMap;
 
   std::vector<BasicBlock *> Predecessors;
+  BasicBlock *FallthroughSuccessor = nullptr;
   std::deque<std::unique_ptr<Instruction>> Instructions;
 
 public:
   BasicBlock(std::string Name, std::deque<std::unique_ptr<Instruction>> Instructions = {});
 
   const std::vector<BasicBlock *> &predecessors() const;
+
+  FallthroughSuccessorProxy fallthoughSuccessor();
   std::vector<BasicBlock *> successors() const;
+  void updateSuccessor(BasicBlock *From, BasicBlock *To);
+
   std::deque<std::unique_ptr<Instruction>> &instructions();
   BasicBlockTerminator *terminator() const;
 

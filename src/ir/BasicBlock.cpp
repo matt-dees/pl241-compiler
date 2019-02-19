@@ -2,22 +2,74 @@
 #include "SSAContext.h"
 #include "Variable.h"
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <utility>
 
 using namespace cs241c;
 using namespace std;
 
+BasicBlock::FallthroughSuccessorProxy::FallthroughSuccessorProxy(BasicBlock *BB) : BB(BB) {}
+
+BasicBlock::FallthroughSuccessorProxy::operator BasicBlock *() const { return BB->FallthroughSuccessor; }
+
+BasicBlock::FallthroughSuccessorProxy &BasicBlock::FallthroughSuccessorProxy::operator=(BasicBlock *Other) {
+  BB->updateSuccessor(BB->FallthroughSuccessor, Other);
+  return *this;
+}
+
 BasicBlock::BasicBlock(string Name, deque<unique_ptr<Instruction>> Instructions)
     : Name(move(Name)), Predecessors({}), Instructions(move(Instructions)) {}
 
 const vector<BasicBlock *> &BasicBlock::predecessors() const { return Predecessors; }
 
-vector<BasicBlock *> BasicBlock::successors() const { return terminator()->followingBlocks(); }
+BasicBlock::FallthroughSuccessorProxy BasicBlock::fallthoughSuccessor() { return {this}; }
+
+vector<BasicBlock *> BasicBlock::successors() const {
+  vector<BasicBlock *> Result;
+  if (FallthroughSuccessor != nullptr) {
+    Result.push_back(FallthroughSuccessor);
+  }
+
+  auto Terminator = terminator();
+  if (Terminator != nullptr) {
+    auto Target = Terminator->target();
+    if (Target != nullptr) {
+      Result.push_back(Target);
+    }
+  }
+
+  return Result;
+}
+
+void BasicBlock::updateSuccessor(BasicBlock *From, BasicBlock *To) {
+  if (From != nullptr) {
+    auto &FromPreds = From->Predecessors;
+    FromPreds.erase(remove(FromPreds.begin(), FromPreds.end(), this), FromPreds.end());
+  }
+
+  if (From == FallthroughSuccessor) {
+    FallthroughSuccessor = To;
+  } else {
+    assert(To != nullptr);
+
+    auto Terminator = terminator();
+    assert(Terminator != nullptr);
+
+    int TargetPos = Terminator->InstrT == InstructionType::Bra ? 0 : 1;
+    Terminator->Arguments[TargetPos] = To;
+  }
+
+  if (To != nullptr) {
+    To->Predecessors.push_back(this);
+  }
+}
 
 deque<unique_ptr<Instruction>> &BasicBlock::instructions() { return Instructions; }
 
 BasicBlockTerminator *BasicBlock::terminator() const {
+  if (Instructions.empty())
+    return nullptr;
   return dynamic_cast<BasicBlockTerminator *>(Instructions.back().get());
 }
 
@@ -32,22 +84,44 @@ bool BasicBlock::isTerminated() {
 }
 
 void BasicBlock::terminate(unique_ptr<BasicBlockTerminator> T) {
+  static const array<InstructionType, 6> ConditionalBranches{InstructionType::Bne, InstructionType::Beq,
+                                                             InstructionType::Ble, InstructionType::Blt,
+                                                             InstructionType::Bge, InstructionType::Bgt};
+  if (find(ConditionalBranches.begin(), ConditionalBranches.end(), T->InstrT) == ConditionalBranches.end()) {
+    fallthoughSuccessor() = nullptr;
+  }
+
   T->Owner = this;
-  for (auto BB : T->followingBlocks()) {
-    BB->appendPredecessor(this);
+  auto BranchSuccessor = T->target();
+  if (BranchSuccessor != nullptr) {
+    BranchSuccessor->appendPredecessor(this);
   }
   Instructions.push_back(move(T));
 }
 
 unique_ptr<BasicBlockTerminator> BasicBlock::releaseTerminator() {
-  unique_ptr<BasicBlockTerminator> Terminator{dynamic_cast<BasicBlockTerminator *>(Instructions.back().release())};
+  if (Instructions.empty())
+    return nullptr;
+
+  auto &LastInstruction = Instructions.back();
+
+  auto Terminator = dynamic_cast<BasicBlockTerminator *>(LastInstruction.get());
+  if (Terminator == nullptr)
+    return nullptr;
+
+  LastInstruction.release();
+  std::unique_ptr<BasicBlockTerminator> TerminatorPtr(Terminator);
+
   Instructions.pop_back();
-  for (auto Follower : Terminator->followingBlocks()) {
-    auto &FollowerPredecessors = Follower->Predecessors;
+
+  auto Successor = Terminator->target();
+  if (Successor != nullptr) {
+    auto &FollowerPredecessors = Terminator->target()->Predecessors;
     FollowerPredecessors.erase(remove(FollowerPredecessors.begin(), FollowerPredecessors.end(), this),
                                FollowerPredecessors.end());
   }
-  return Terminator;
+
+  return TerminatorPtr;
 }
 
 void BasicBlock::toSSA(SSAContext &SSACtx) {

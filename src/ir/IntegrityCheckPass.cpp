@@ -57,12 +57,6 @@ void IntegrityCheckPass::run(Module &M) {
           throw logic_error(ErrorMessage.str());
         }
       }
-
-      if (BB->terminator() == nullptr) {
-        stringstream ErrorMessage;
-        ErrorMessage << "Block " << BB->name() << " is not terminated.";
-        throw logic_error(ErrorMessage.str());
-      }
     }
 
     for (auto &BB : F->basicBlocks()) {
@@ -71,8 +65,8 @@ void IntegrityCheckPass::run(Module &M) {
         for (auto Arg : Instr->arguments()) {
           if (Values.find(Arg) == Values.end()) {
             stringstream ErrorMessage;
-            ErrorMessage << "Instruction [" << Instr->name() << ": " << mnemonic(Instr->InstrT) << "] argument " << ArgIndex
-                         << " in block " << BB->name() << " is deleted.";
+            ErrorMessage << "Instruction [" << Instr->name() << ": " << mnemonic(Instr->InstrT) << "] argument "
+                         << ArgIndex << " in block " << BB->name() << " is deleted.";
             throw logic_error(ErrorMessage.str());
           }
           ++ArgIndex;

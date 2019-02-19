@@ -27,8 +27,9 @@ void IfStmt::genIr(IrGenContext &Ctx) const {
   auto FalseBB = Ctx.makeBasicBlock();
   auto FollowBB = Ctx.makeBasicBlock();
 
+  Ctx.currentBlock()->fallthoughSuccessor() = TrueBB;
   auto Comparison = Rel.genCmp(Ctx);
-  auto Branch = Rel.genBranch(Ctx, Comparison, TrueBB, FalseBB);
+  auto Branch = Rel.genBranch(Ctx, Comparison, FalseBB);
   Ctx.currentBlock()->terminate(move(Branch));
 
   Ctx.currentBlock() = TrueBB;
@@ -46,7 +47,7 @@ void IfStmt::genIr(IrGenContext &Ctx) const {
   }
 
   if (!Ctx.currentBlock()->isTerminated()) {
-    Ctx.currentBlock()->terminate(make_unique<BraInstruction>(Ctx.genInstructionId(), FollowBB));
+    Ctx.currentBlock()->fallthoughSuccessor() = FollowBB;
   }
 
   Ctx.currentBlock() = FollowBB;
@@ -56,13 +57,14 @@ WhileStmt::WhileStmt(Relation Rel, vector<unique_ptr<Stmt>> Body) : Rel(move(Rel
 
 void WhileStmt::genIr(IrGenContext &Ctx) const {
   BasicBlock *HeaderBB = Ctx.makeBasicBlock();
-  Ctx.currentBlock()->terminate(make_unique<BraInstruction>(Ctx.genInstructionId(), HeaderBB));
+  Ctx.currentBlock()->fallthoughSuccessor() = HeaderBB;
   Ctx.currentBlock() = HeaderBB;
 
   auto Comparison = Rel.genCmp(Ctx);
   BasicBlock *BodyBB = Ctx.makeBasicBlock();
+  Ctx.currentBlock()->fallthoughSuccessor() = BodyBB;
   BasicBlock *FollowBB = Ctx.makeBasicBlock();
-  auto HeaderBranch = Rel.genBranch(Ctx, Comparison, BodyBB, FollowBB);
+  auto HeaderBranch = Rel.genBranch(Ctx, Comparison, FollowBB);
   HeaderBB->terminate(move(HeaderBranch));
 
   Ctx.currentBlock() = BodyBB;

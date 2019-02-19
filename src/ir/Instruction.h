@@ -58,7 +58,7 @@ public:
 };
 
 class BasicBlockTerminator : public Instruction {
-  virtual std::vector<BasicBlock *> followingBlocks();
+  virtual BasicBlock *target();
 
 public:
   BasicBlockTerminator(InstructionType, int Id, std::vector<Value *> &&Arguments);
@@ -67,12 +67,9 @@ public:
 };
 
 class ConditionalBlockTerminator : public BasicBlockTerminator {
-  std::vector<BasicBlock *> followingBlocks() override;
-
 public:
-  ConditionalBlockTerminator(InstructionType, int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
-  BasicBlock *elseBlock() const;
-  void updateTarget(BasicBlock *OldTarget, BasicBlock *NewTarget);
+  ConditionalBlockTerminator(InstructionType, int Id, CmpInstruction *Cmp, BasicBlock *Target);
+  BasicBlock *target() override;
 };
 
 class CmpInstruction : public Instruction {
@@ -114,12 +111,10 @@ public:
 };
 
 class BraInstruction : public BasicBlockTerminator {
-  std::vector<BasicBlock *> followingBlocks() override;
+  BasicBlock *target() override;
 
 public:
   BraInstruction(int Id, BasicBlock *Y);
-
-  void updateTarget(BasicBlock *NewTarget);
 };
 } // namespace cs241c
 

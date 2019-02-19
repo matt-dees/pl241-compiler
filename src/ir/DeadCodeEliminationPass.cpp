@@ -84,13 +84,12 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveVal
 
     if (auto ConditionalBranch = dynamic_cast<ConditionalBlockTerminator *>(BB->terminator())) {
       if (LiveValues.find(ConditionalBranch) == LiveValues.end()) {
-        auto NewTerminator = make_unique<BraInstruction>(NameGen::genInstructionId(), ConditionalBranch->elseBlock());
+        BB->fallthoughSuccessor() = ConditionalBranch->target();
         BB->releaseTerminator();
-        BB->terminate(move(NewTerminator));
         Followers = BB->successors();
       } else {
         for (BasicBlock *Follower : Followers) {
-          ConditionalBranch->updateTarget(Follower, skipDeadBlocks(Follower, LiveValues, VisitedBlocks));
+          BB->updateSuccessor(Follower, skipDeadBlocks(Follower, LiveValues, VisitedBlocks));
         }
         break;
       }
@@ -100,7 +99,14 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveVal
       if (BB->instructions().size() == 1 && BB->predecessors().size() <= 1) {
         BB = Followers.front();
       } else {
-        Branch->updateTarget(skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
+        BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
+        break;
+      }
+    } else if (BB->fallthoughSuccessor() != nullptr) {
+      if (BB->instructions().size() == 0 && BB->predecessors().size() <= 1) {
+        BB = Followers.front();
+      } else {
+        BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
         break;
       }
     }
@@ -133,6 +139,7 @@ void removeDeadBlocks(Function &F, BasicBlock *NewEntry) {
   for_each(BasicBlocks.begin(), BasicBlocks.end(), [&MarkedBlocks](auto &Block) {
     if (MarkedBlocks.find(Block.get()) == MarkedBlocks.end()) {
       Block->releaseTerminator();
+      Block->fallthoughSuccessor() = nullptr;
     }
   });
   BasicBlocks.erase(
