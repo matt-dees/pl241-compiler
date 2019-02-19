@@ -58,18 +58,14 @@ public:
 };
 
 class BasicBlockTerminator : public Instruction {
-protected:
-  BasicBlockTerminator(InstructionType, int Id, std::vector<Value *> &&Arguments);
-
 public:
+  BasicBlockTerminator(InstructionType, int Id, std::vector<Value *> &&Arguments);
   virtual std::vector<BasicBlock *> followingBlocks();
 };
 
 class ConditionalBlockTerminator : public BasicBlockTerminator {
-protected:
-  ConditionalBlockTerminator(InstructionType, int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
-
 public:
+  ConditionalBlockTerminator(InstructionType, int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
   BasicBlock *elseBlock() const;
   std::vector<BasicBlock *> followingBlocks() override;
   void updateTarget(BasicBlock *OldTarget, BasicBlock *NewTarget);
@@ -113,53 +109,12 @@ public:
   Variable *Target;
 };
 
-class RetInstruction : public BasicBlockTerminator {
-public:
-  RetInstruction(int Id);
-  RetInstruction(int Id, Value *X);
-};
-
-class EndInstruction : public BasicBlockTerminator {
-public:
-  EndInstruction(int Id);
-};
-
 class BraInstruction : public BasicBlockTerminator {
 public:
   BraInstruction(int Id, BasicBlock *Y);
 
   std::vector<BasicBlock *> followingBlocks() override;
   void updateTarget(BasicBlock *NewTarget);
-};
-
-class BneInstruction : public ConditionalBlockTerminator {
-public:
-  BneInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
-};
-
-class BeqInstruction : public ConditionalBlockTerminator {
-public:
-  BeqInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
-};
-
-class BltInstruction : public ConditionalBlockTerminator {
-public:
-  BltInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
-};
-
-class BleInstruction : public ConditionalBlockTerminator {
-public:
-  BleInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
-};
-
-class BgeInstruction : public ConditionalBlockTerminator {
-public:
-  BgeInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
-};
-
-class BgtInstruction : public ConditionalBlockTerminator {
-public:
-  BgtInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else);
 };
 } // namespace cs241c
 

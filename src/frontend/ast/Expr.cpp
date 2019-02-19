@@ -3,8 +3,10 @@
 #include "Instruction.h"
 #include "IrGenContext.h"
 #include <algorithm>
+#include <array>
 #include <functional>
 #include <stdexcept>
+#include <utility>
 
 using namespace cs241c;
 using namespace std;
@@ -142,28 +144,21 @@ namespace {
 using RelT = Relation::Type;
 static unique_ptr<BasicBlockTerminator> makeBranch(IrGenContext &Ctx, RelT T, CmpInstruction *Cmp, BasicBlock *Then,
                                                    BasicBlock *Else) {
+  static const array<pair<RelT, InstructionType>, 6> OpToInstrT{{
+      {RelT::Eq, InstructionType::Beq},
+      {RelT::Ne, InstructionType::Bne},
+      {RelT::Lt, InstructionType::Blt},
+      {RelT::Le, InstructionType::Ble},
+      {RelT::Ge, InstructionType::Bge},
+      {RelT::Gt, InstructionType::Bgt},
+  }};
+
+  InstructionType InstrT = find_if(OpToInstrT.begin(), OpToInstrT.end(),
+                                   [T](pair<RelT, InstructionType> Mapping) { return Mapping.first == T; })
+                               ->second;
+
   int Id = Ctx.genInstructionId();
-  unique_ptr<BasicBlockTerminator> Terminator;
-  switch (T) {
-  case RelT::Eq:
-    Terminator = make_unique<BeqInstruction>(Id, Cmp, Then, Else);
-    break;
-  case RelT::Ne:
-    Terminator = make_unique<BneInstruction>(Id, Cmp, Then, Else);
-    break;
-  case RelT::Lt:
-    Terminator = make_unique<BltInstruction>(Id, Cmp, Then, Else);
-    break;
-  case RelT::Le:
-    Terminator = make_unique<BleInstruction>(Id, Cmp, Then, Else);
-    break;
-  case RelT::Ge:
-    Terminator = make_unique<BgeInstruction>(Id, Cmp, Then, Else);
-    break;
-  case RelT::Gt:
-    Terminator = make_unique<BgtInstruction>(Id, Cmp, Then, Else);
-    break;
-  }
+  auto Terminator = make_unique<ConditionalBlockTerminator>(InstrT, Id, Cmp, Then, Else);
   return Terminator;
 }
 } // namespace

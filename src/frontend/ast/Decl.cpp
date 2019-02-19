@@ -70,6 +70,7 @@ void Func::genIr(IrGenContext &Ctx) {
   }
 
   if (!Ctx.currentBlock()->isTerminated()) {
-    Ctx.currentBlock()->terminate(make_unique<RetInstruction>(Ctx.genInstructionId()));
+    Ctx.currentBlock()->terminate(
+        make_unique<BasicBlockTerminator>(InstructionType::Ret, Ctx.genInstructionId(), vector<Value *>{}));
   }
 }

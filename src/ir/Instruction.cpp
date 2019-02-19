@@ -143,11 +143,6 @@ vector<Value *> prepareCallArguments(Function *Target, const vector<Value *> &Ar
 }
 } // namespace
 
-RetInstruction::RetInstruction(int Id) : BasicBlockTerminator(T::Ret, Id, {}) {}
-RetInstruction::RetInstruction(int Id, Value *X) : BasicBlockTerminator(T::Ret, Id, {X}) {}
-
-EndInstruction::EndInstruction(int Id) : BasicBlockTerminator(T::End, Id, {}) {}
-
 BraInstruction::BraInstruction(int Id, BasicBlock *Y) : BasicBlockTerminator(T::Bra, Id, {Y}) {}
 
 vector<BasicBlock *> BraInstruction::followingBlocks() {
@@ -163,21 +158,3 @@ void BraInstruction::updateTarget(BasicBlock *NewTarget) {
   arguments()[0] = NewTarget;
   NewTarget->predecessors().push_back(getOwner());
 }
-
-BneInstruction::BneInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else)
-    : ConditionalBlockTerminator(T::Bne, Id, Cmp, Then, Else) {}
-
-BeqInstruction::BeqInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else)
-    : ConditionalBlockTerminator(T::Beq, Id, Cmp, Then, Else) {}
-
-BltInstruction::BltInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else)
-    : ConditionalBlockTerminator(T::Blt, Id, Cmp, Then, Else) {}
-
-BleInstruction::BleInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else)
-    : ConditionalBlockTerminator(T::Ble, Id, Cmp, Then, Else) {}
-
-BgeInstruction::BgeInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else)
-    : ConditionalBlockTerminator(T::Bge, Id, Cmp, Then, Else) {}
-
-BgtInstruction::BgtInstruction(int Id, CmpInstruction *Cmp, BasicBlock *Then, BasicBlock *Else)
-    : ConditionalBlockTerminator(T::Bgt, Id, Cmp, Then, Else) {}
