@@ -38,6 +38,8 @@ TEST_CASE("Compile and run test programs") {
       IntegrityCheckPass ICP;
       ICP.run(*IR);
 
+      IR->allocateRegisters();
+
       CHECK(true);
     }
   }
