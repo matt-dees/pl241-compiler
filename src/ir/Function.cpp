@@ -1,8 +1,10 @@
 #include "Function.h"
 #include "RegisterAllocator.h"
 #include <algorithm>
+#include <iterator>
 #include <stack>
 #include <unordered_set>
+
 using namespace cs241c;
 using namespace std;
 
@@ -155,7 +157,8 @@ void Function::buildInterferenceGraph() {
 
     for (auto Pred : BB->predecessors()) {
       if (PredecessorPhiSets.find(Pred) != PredecessorPhiSets.end()) {
-        PredecessorPhiSets[Pred].merge(CurrentLiveSet);
+        copy(CurrentLiveSet.begin(), CurrentLiveSet.end(),
+             inserter(PredecessorPhiSets[Pred], PredecessorPhiSets[Pred].end()));
         PredecessorLiveSetMap[Pred] = PredecessorPhiSets[Pred];
         PredecessorPhiSets[Pred].clear();
       }
