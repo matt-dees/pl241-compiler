@@ -102,14 +102,12 @@ Value *FunctionCall::genIr(IrGenContext &Ctx) const {
     return Ctx.makeInstruction(InstructionType::WriteNL);
   }
 
+  for (const auto &Arg : Args) {
+    Ctx.makeInstruction(InstructionType::Param, Arg->genIr(Ctx));
+  }
+
   Function *Target = Ctx.lookupFuncion(Ident);
-
-  vector<Value *> Arguments;
-  Arguments.push_back(Target);
-  transform(Args.begin(), Args.end(), back_inserter(Arguments),
-            [&Ctx](const unique_ptr<Expr> &Arg) { return Arg->genIr(Ctx); });
-
-  return Ctx.makeInstruction(InstructionType::Call, move(Arguments));
+  return Ctx.makeInstruction(InstructionType::Call, Target, Ctx.makeConstant(Args.size()));
 }
 
 MathExpr::MathExpr(MathExpr::Operation Op, unique_ptr<Expr> Left, unique_ptr<Expr> Right)

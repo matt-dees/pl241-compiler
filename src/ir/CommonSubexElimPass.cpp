@@ -42,10 +42,9 @@ struct InstructionEquality {
 
 namespace {
 bool shouldIgnore(Instruction *I) {
-  static const array<InstructionType, 4> IgnoredInstructions{
-      InstructionType::Call, InstructionType::Read, InstructionType::Write,
-      InstructionType::WriteNL};
-
+  static const array<InstructionType, 6> IgnoredInstructions{InstructionType::Store, InstructionType::Param,
+                                                             InstructionType::Call,  InstructionType::Read,
+                                                             InstructionType::Write, InstructionType::WriteNL};
   return dynamic_cast<BasicBlockTerminator *>(I) != nullptr ||
          find(IgnoredInstructions.begin(), IgnoredInstructions.end(),
               I->InstrT) != IgnoredInstructions.end();

@@ -20,9 +20,10 @@ void DeadCodeEliminationPass::run(Module &M) {
 
 namespace {
 unordered_set<Value *> mark(Function &F) {
-  static const array<InstructionType, 8> PreLive{InstructionType::Store, InstructionType::Move,   InstructionType::Call,
-                                                 InstructionType::Ret,   InstructionType::End,    InstructionType::Read,
-                                                 InstructionType::Write, InstructionType::WriteNL};
+  static const array<InstructionType, 9> PreLive{
+      InstructionType::Store, InstructionType::Move,  InstructionType::Param,
+      InstructionType::Call,  InstructionType::Ret,   InstructionType::End,
+      InstructionType::Read,  InstructionType::Write, InstructionType::WriteNL};
 
   DominatorTree ControlDependence(true);
   ControlDependence.buildDominatorTree(F);

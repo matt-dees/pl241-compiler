@@ -27,6 +27,7 @@ enum class InstructionType {
   Bge,
   Bgt,
 
+  Param,
   Call,
   Ret,
 
