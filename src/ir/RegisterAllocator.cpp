@@ -168,18 +168,15 @@ RegAllocValue *RegisterAllocator::chooseNextNodeToColor(InterferenceGraph &IG) {
 }
 
 void RegisterAllocator::assignColor(
-    cs241c::InterferenceGraph &IG,
-    cs241c::RegisterAllocator::Coloring &CurrentColoring,
-    cs241c::RegAllocValue *NodeToColor) {
-  std::unordered_set<RA_REGISTER> Colors = {R1, R2, R3, R4, R5, R6, R7, R8};
+    InterferenceGraph &IG, RegisterAllocator::Coloring &CurrentColoring,
+    RegAllocValue *NodeToColor) {
+  std::unordered_set<RA_REGISTER> RemainingColors = {R1, R2, R3, R4,
+                                                     R5, R6, R7, R8};
   for (auto Neighbor : IG.neighbors(NodeToColor)) {
-    Colors.erase(CurrentColoring[Neighbor->value()]);
+    RemainingColors.erase(CurrentColoring[Neighbor->value()]);
   }
-  if (Colors.size() == 0) {
-    CurrentColoring[NodeToColor->value()] = RA_REGISTER::SPILL;
-  } else {
-    CurrentColoring[NodeToColor->value()] = *(Colors.begin());
-  }
+  CurrentColoring[NodeToColor->value()] =
+      RemainingColors.empty() ? RA_REGISTER::SPILL : *(RemainingColors.begin());
 }
 
 void AnnotatedIG::writeGraph(std::ofstream &OutFileStream) {

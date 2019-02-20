@@ -39,7 +39,7 @@ class RegisterAllocator {
 public:
   enum RA_REGISTER { SPILL = 0, R1 = 1, R2, R3, R4, R5, R6, R7, R8 };
   using Coloring = std::unordered_map<Value *, RA_REGISTER>;
-  static const int8_t NUM_REGISTERS = 8;
+  static const uint8_t NUM_REGISTERS = 8;
 
 public:
   Coloring color(InterferenceGraph IG);
