@@ -2,11 +2,16 @@
 #define CS241C_IR_VALUE_H
 
 #include <string>
+#include <string_view>
 
 namespace cs241c {
-enum class ValueType { Undef = -1, None, Any, Value, Constant, Variable, Cmp, Adda, BasicBlock, Function };
+enum class ValueType { Undef, Any, Unit, Value, Constant, Variable, Cmp, Adda, BasicBlock, Function };
+
+bool isSubtype(ValueType This, ValueType Super);
+std::string_view name(ValueType);
 
 class Value {
+public:
   const ValueType ValTy;
 
 protected:

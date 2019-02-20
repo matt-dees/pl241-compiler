@@ -3,6 +3,7 @@
 
 #include "InstructionType.h"
 #include "Value.h"
+#include <array>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -24,8 +25,7 @@ public:
 private:
   int Id;
   BasicBlock *Owner{};
-  Value *Arg1;
-  Value *Arg2;
+  std::array<Value *, 2> Args;
 
 protected:
   virtual void updateArg(int Index, Value *NewVal);
@@ -43,6 +43,9 @@ public:
   std::string name() const override;
   std::string toString() const override;
   bool operator==(const Instruction &other) const;
+
+private:
+  void checkArgs();
 
   friend class BasicBlock;
 };
