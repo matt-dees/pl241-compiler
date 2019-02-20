@@ -6,7 +6,7 @@ using namespace cs241c;
 using namespace std;
 
 void InterferenceGraph::writeGraph(ofstream &OutStream) {
-  WrittenEdges = {};
+  reset();
   OutStream << "layoutalgorithm: circular\n";
   OutStream << "title: "
             << "\""
@@ -179,5 +179,56 @@ void RegisterAllocator::assignColor(
     CurrentColoring[NodeToColor->value()] = RA_REGISTER::SPILL;
   } else {
     CurrentColoring[NodeToColor->value()] = *(Colors.begin());
+  }
+}
+
+void AnnotatedIG::writeGraph(std::ofstream &OutFileStream) {
+  IG.reset();
+  OutFileStream << "layoutalgorithm: circular\n";
+  OutFileStream << "title: "
+                << "\""
+                << "Colored Interference Graph"
+                << "\"\n";
+  writeNodes(OutFileStream);
+}
+
+std::string AnnotatedIG::lookupColor(RegAllocValue *RAV) {
+  if (C.find(RAV->value()) == C.end()) {
+    return "white";
+  }
+  switch (C.at(RAV->value())) {
+  case RegisterAllocator::RA_REGISTER::SPILL:
+    return "darkgrey";
+  case RegisterAllocator::RA_REGISTER::R1:
+    return "lightblue";
+  case RegisterAllocator::RA_REGISTER::R2:
+    return "lightcyan";
+  case RegisterAllocator::RA_REGISTER::R3:
+    return "lightgreen";
+  case RegisterAllocator::RA_REGISTER::R4:
+    return "lightmagenta";
+  case RegisterAllocator::RA_REGISTER::R5:
+    return "lightred";
+  case RegisterAllocator::RA_REGISTER::R6:
+    return "lightyellow";
+  case RegisterAllocator::RA_REGISTER::R7:
+    return "pink";
+  case RegisterAllocator::RA_REGISTER::R8:
+    return "yellowgreen";
+  }
+  return "white";
+}
+
+void AnnotatedIG::writeNodes(std::ofstream &OutFileStream) {
+  for (auto &VertexEdgePair : IG.graph()) {
+    OutFileStream << "node: {\n";
+    OutFileStream << "title: "
+                  << "\"" << VertexEdgePair.first->toString() << "\"\n";
+    OutFileStream << "label: \"" + VertexEdgePair.first->toString() << "\"\n";
+    OutFileStream << "color:" + lookupColor(VertexEdgePair.first) << "\n";
+    OutFileStream << "}\n";
+    for (auto Destination : VertexEdgePair.second) {
+      IG.writeEdge(OutFileStream, VertexEdgePair.first, Destination);
+    }
   }
 }

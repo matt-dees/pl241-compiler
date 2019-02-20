@@ -14,7 +14,9 @@
 using namespace cs241c;
 using namespace std;
 
-static void printUsage(const string_view &Executable) { cout << "Usage: " << Executable << " [--vcg] <source>\n"; }
+static void printUsage(const string_view &Executable) {
+  cout << "Usage: " << Executable << " [--vcg] <source>\n";
+}
 
 int main(int ArgC, char **ArgV) {
   string_view Executable = ArgV[0];
@@ -63,7 +65,8 @@ int main(int ArgC, char **ArgV) {
     for (auto &F : IR->functions()) {
       string IGOutput{string(InputFile) + "." + F->toString() + ".ig.vcg"};
       removeFile(IGOutput);
-      F->interferenceGraph().writeToFile(IGOutput);
+      AnnotatedIG AIG(F->interferenceGraph(), F->registerColoring());
+      AIG.writeToFile(IGOutput);
     }
   }
 
