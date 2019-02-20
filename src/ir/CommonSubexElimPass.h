@@ -7,6 +7,7 @@
 namespace cs241c {
 class CommonSubexElimPass : public Pass {
 public:
+  bool PrintDebug = false;
   void run(Module &) override;
 
 private:

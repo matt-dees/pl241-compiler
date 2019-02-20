@@ -14,9 +14,7 @@
 using namespace cs241c;
 using namespace std;
 
-static void printUsage(const string_view &Executable) {
-  cout << "Usage: " << Executable << " [--vcg] <source>\n";
-}
+static void printUsage(const string_view &Executable) { cout << "Usage: " << Executable << " [--vcg] <source>\n"; }
 
 int main(int ArgC, char **ArgV) {
   string_view Executable = ArgV[0];
@@ -46,6 +44,7 @@ int main(int ArgC, char **ArgV) {
   ICP.run(*IR);
 
   CommonSubexElimPass CSE;
+  CSE.PrintDebug = true;
   CSE.run(*IR);
 
   ICP.run(*IR);

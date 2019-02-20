@@ -117,8 +117,9 @@ void CommonSubexElimPass::run(Function &F) {
         // Replacements map which will dictate which instructions
         // should be replaced by what values.
         Replacements[InstIter->get()] = CandidateInstructions.at(InstIter->get());
-        cout << "[CSE] " << (*InstIter)->toString() << " --> " << CandidateInstructions.at(InstIter->get())->toString()
-             << "\n";
+        if (PrintDebug)
+          cout << "[CSE] " << (*InstIter)->toString() << " --> "
+               << CandidateInstructions.at(InstIter->get())->toString() << "\n";
         for (auto &DFEntry : F.dominatorTree().dominanceFrontier(Runner)) {
           // Need to revisit all blocks in the dominance frontier.
           VisitedBlocks.erase(DFEntry);
