@@ -28,7 +28,8 @@ BasicBlock *Mem2VarPass::run(BasicBlock *BB) {
   const auto BBEnd = BB->end();
   for (size_t InstrI = 0; InstrI < BB->instructions().size(); ++InstrI) {
     Instruction *InstrPtr = BB->instructions()[InstrI].get();
-    if (auto Load = dynamic_cast<LoadInstruction *>(InstrPtr)) {
+    if (InstrPtr->InstrT == InstructionType::Load) {
+      auto Load = dynamic_cast<MemoryInstruction *>(InstrPtr);
       auto Object = Load->object();
       CurrentFunctionLoads.insert(Object);
       if (!Object->isSingleWord())
@@ -48,7 +49,7 @@ BasicBlock *Mem2VarPass::run(BasicBlock *BB) {
         BB->instructions().insert(BB->begin() + InstrI + 1, move(Move));
         KnownVars[Object] = LocalPtr;
       }
-    } else if (auto Store = dynamic_cast<StoreInstruction *>(InstrPtr)) {
+    } else if (InstrPtr->InstrT == InstructionType::Store) {
     } else if (InstrPtr->InstrT == InstructionType::Call) {
     }
   }

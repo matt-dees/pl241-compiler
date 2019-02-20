@@ -51,10 +51,10 @@ class MemoryInstruction : public Instruction {
 protected:
   Variable *Object;
 
-  MemoryInstruction(InstructionType, int Id, Variable *Object, Value *Arg1);
-  MemoryInstruction(InstructionType, int Id, Variable *Object, Value *Arg1, Value *Arg2);
-
 public:
+  MemoryInstruction(int Id, InstructionType, Variable *Object, Value *Arg1);
+  MemoryInstruction(int Id, InstructionType, Variable *Object, Value *Arg1, Value *Arg2);
+
   Variable *object() const;
 };
 
@@ -73,16 +73,6 @@ class ConditionalBlockTerminator : public BasicBlockTerminator {
 public:
   ConditionalBlockTerminator(InstructionType, int Id, Instruction *Cmp, BasicBlock *Target);
   BasicBlock *target() override;
-};
-
-class LoadInstruction : public MemoryInstruction {
-public:
-  LoadInstruction(int Id, Variable *Object, Instruction *Address);
-};
-
-class StoreInstruction : public MemoryInstruction {
-public:
-  StoreInstruction(int Id, Variable *Object, Value *Y, Instruction *Address);
 };
 
 class MoveInstruction : public Instruction {

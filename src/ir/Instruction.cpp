@@ -107,10 +107,10 @@ void Instruction::checkArgs() {
   }
 }
 
-MemoryInstruction::MemoryInstruction(InstructionType InstrT, int Id, Variable *Object, Value *Arg1)
-    : MemoryInstruction(InstrT, Id, Object, Arg1, nullptr) {}
+MemoryInstruction::MemoryInstruction(int Id, InstructionType InstrT, Variable *Object, Value *Arg1)
+    : MemoryInstruction(Id, InstrT, Object, Arg1, nullptr) {}
 
-MemoryInstruction::MemoryInstruction(InstructionType InstrT, int Id, Variable *Object, Value *Arg1, Value *Arg2)
+MemoryInstruction::MemoryInstruction(int Id, InstructionType InstrT, Variable *Object, Value *Arg1, Value *Arg2)
     : Instruction(InstrT, Id, Arg1, Arg2), Object(Object) {}
 
 Variable *MemoryInstruction::object() const { return Object; }
@@ -131,12 +131,6 @@ ConditionalBlockTerminator::ConditionalBlockTerminator(InstructionType InstrT, i
     : BasicBlockTerminator(InstrT, Id, Cmp, Target) {}
 
 BasicBlock *ConditionalBlockTerminator::target() { return dynamic_cast<BasicBlock *>(arguments()[1]); }
-
-LoadInstruction::LoadInstruction(int Id, Variable *Object, Instruction *Address)
-    : MemoryInstruction(T::Load, Id, Object, Address) {}
-
-StoreInstruction::StoreInstruction(int Id, Variable *Object, Value *Y, Instruction *Address)
-    : MemoryInstruction(T::Store, Id, Object, Y, Address) {}
 
 MoveInstruction::MoveInstruction(int Id, Value *Y, Value *X) : Instruction(T::Move, Id, Y, X) {}
 
