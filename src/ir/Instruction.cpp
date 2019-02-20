@@ -28,7 +28,16 @@ bool Instruction::operator==(const Instruction &other) const {
 
 BasicBlock *Instruction::getOwner() const { return Owner; }
 
-string Instruction::name() const { return string("(") + to_string(Id) + ")"; }
+Variable *&Instruction::storage() { return Storage; }
+
+string Instruction::name() const {
+  stringstream S;
+  if (Storage != nullptr) {
+    S << Storage->ident();
+  }
+  S << "(" << Id << ")";
+  return S.str();
+}
 
 string Instruction::toString() const {
   stringstream Result;

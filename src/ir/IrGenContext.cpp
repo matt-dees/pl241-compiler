@@ -14,6 +14,8 @@ Value *IrGenContext::globalBase() { return CompilationUnit->globalBase(); }
 
 BasicBlock *&IrGenContext::currentBlock() { return CurrentBlock; }
 
+Variable *&IrGenContext::currentVariable() { return CurrentVariable; }
+
 const unordered_map<string, Symbol> &IrGenContext::localsTable() const { return LocalsTable; }
 
 string IrGenContext::genBasicBlockName() { return NameGen::genBasicBlockName(); }
@@ -84,6 +86,9 @@ Instruction *IrGenContext::makeInstruction(InstructionType InstrT, Value *Arg0) 
 
 Instruction *IrGenContext::makeInstruction(InstructionType InstrT, Value *Arg0, Value *Arg1) {
   auto Instr = std::make_unique<Instruction>(InstrT, genInstructionId(), Arg0, Arg1);
+  if (!DisableStorageAssignment && isSubtype(Instr->ValTy, ValueType::Value)) {
+    Instr->storage() = CurrentVariable;
+  }
   Instruction *InstrP = Instr.get();
   CurrentBlock->appendInstruction(move(Instr));
   return InstrP;

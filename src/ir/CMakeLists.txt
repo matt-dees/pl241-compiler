@@ -24,6 +24,8 @@ add_library(cs241c-ir
   Module.cpp
   Module.h
   Pass.h
+  Phi2VarPass.cpp
+  Phi2VarPass.h
   RegisterAllocator.cpp
   RegisterAllocator.h
   RegAllocValue.cpp

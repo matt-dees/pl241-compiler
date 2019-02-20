@@ -22,6 +22,7 @@ public:
 private:
   int Id;
   BasicBlock *Owner{};
+  Variable *Storage{};
   std::array<Value *, 2> Args;
 
 protected:
@@ -32,6 +33,7 @@ public:
   Instruction(InstructionType, int Id, Value *Arg1, Value *Arg2);
 
   BasicBlock *getOwner() const;
+  Variable *&storage();
   std::vector<Value *> arguments() const;
   bool updateArgs(const std::unordered_map<Value *, Value *> &UpdateCtx);
   bool updateArgs(const SSAContext &SSAVarCtx);

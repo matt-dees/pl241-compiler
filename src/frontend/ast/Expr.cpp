@@ -13,15 +13,15 @@ using namespace std;
 
 using T = InstructionType;
 
-template <typename T> void VisitedExpr<T>::visit(ExprVisitor *V) { V->visit(static_cast<T *>(this)); }
-
 ConstantExpr::ConstantExpr(int32_t Val) : Val(Val) {}
 
 Value *ConstantExpr::genIr(IrGenContext &Ctx) const { return Ctx.makeConstant(Val); }
 
-template <typename T> void VisitedDesignator<T>::visit(ExprVisitor *V) { V->visit(static_cast<T *>(this)); }
+Designator::Designator(string Ident) : Ident(move(Ident)) {}
 
-VarDesignator::VarDesignator(string Ident) : Ident(move(Ident)) {}
+const string &Designator::ident() const { return Ident; }
+
+VarDesignator::VarDesignator(string Ident) : Designator(move(Ident)) {}
 
 Value *VarDesignator::genIr(IrGenContext &Ctx) const {
   auto Var = Ctx.lookupVariable(Ident).Var;
@@ -58,7 +58,7 @@ Value *ArrayDesignator::calculateMemoryOffset(IrGenContext &Ctx) const {
   return Offset;
 }
 
-ArrayDesignator::ArrayDesignator(string Ident, vector<unique_ptr<Expr>> Dim) : Ident(move(Ident)), Dim(move(Dim)) {
+ArrayDesignator::ArrayDesignator(string Ident, vector<unique_ptr<Expr>> Dim) : Designator(move(Ident)), Dim(move(Dim)) {
   if (this->Dim.empty()) {
     throw logic_error("Array with no dimensions");
   }

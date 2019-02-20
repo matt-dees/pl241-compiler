@@ -6,7 +6,11 @@ using namespace std;
 
 Assignment::Assignment(unique_ptr<Designator> Lhs, unique_ptr<Expr> Rhs) : Lhs(move(Lhs)), Rhs(move(Rhs)) {}
 
-void Assignment::genIr(IrGenContext &Ctx) const { Lhs->genStore(Ctx, Rhs->genIr(Ctx)); }
+void Assignment::genIr(IrGenContext &Ctx) const {
+  Ctx.currentVariable() = Ctx.lookupVariable(Lhs->ident()).Var;
+  Lhs->genStore(Ctx, Rhs->genIr(Ctx));
+  Ctx.currentVariable() = nullptr;
+}
 
 ReturnStmt::ReturnStmt(unique_ptr<Expr> E) : E(move(E)) {}
 

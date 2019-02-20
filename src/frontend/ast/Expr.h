@@ -8,35 +8,18 @@
 #include <vector>
 
 namespace cs241c {
-class ArrayDesignator;
 class BasicBlock;
 class BasicBlockTerminator;
 class Instruction;
-class ConstantExpr;
-class FunctionCall;
 class IrGenContext;
-class MathExpr;
-class VarDesignator;
-
-class ExprVisitor {
-public:
-  virtual void visit(ConstantExpr *) = 0;
-  virtual void visit(VarDesignator *) = 0;
-  virtual void visit(ArrayDesignator *) = 0;
-  virtual void visit(FunctionCall *) = 0;
-  virtual void visit(MathExpr *) = 0;
-};
 
 class Expr {
 public:
   virtual ~Expr() = default;
   virtual Value *genIr(IrGenContext &Ctx) const = 0;
-  virtual void visit(ExprVisitor *) = 0;
 };
 
-template <typename T> class VisitedExpr : public Expr { void visit(ExprVisitor *) override; };
-
-class ConstantExpr : public VisitedExpr<ConstantExpr> {
+class ConstantExpr : public Expr {
   int32_t Val;
 
 public:
@@ -46,15 +29,17 @@ public:
 };
 
 class Designator : public Expr {
+protected:
+  std::string Ident;
+
+  Designator(std::string Ident);
+
 public:
+  const std::string &ident() const;
   virtual void genStore(IrGenContext &Ctx, Value *V) = 0;
 };
 
-template <typename T> class VisitedDesignator : public Designator { void visit(ExprVisitor *) override; };
-
-class VarDesignator : public VisitedDesignator<VarDesignator> {
-  std::string Ident;
-
+class VarDesignator : public Designator {
 public:
   VarDesignator(std::string Ident);
 
@@ -62,8 +47,7 @@ public:
   void genStore(IrGenContext &Ctx, Value *V) override;
 };
 
-class ArrayDesignator : public VisitedDesignator<ArrayDesignator> {
-  std::string Ident;
+class ArrayDesignator : public Designator {
   std::vector<std::unique_ptr<Expr>> Dim;
 
   Value *calculateMemoryOffset(IrGenContext &) const;
@@ -75,7 +59,7 @@ public:
   void genStore(IrGenContext &Ctx, Value *V) override;
 };
 
-class FunctionCall : public VisitedExpr<FunctionCall> {
+class FunctionCall : public Expr {
   std::string Ident;
   std::vector<std::unique_ptr<Expr>> Args;
 
@@ -85,7 +69,7 @@ public:
   Value *genIr(IrGenContext &Ctx) const override;
 };
 
-class MathExpr : public VisitedExpr<MathExpr> {
+class MathExpr : public Expr {
 public:
   enum class Operation { Add, Sub, Mul, Div };
 
