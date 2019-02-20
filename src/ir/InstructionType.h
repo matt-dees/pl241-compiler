@@ -2,6 +2,7 @@
 #define CS241C_IR_INSTRUCTIONTYPE_H
 
 #include "Value.h"
+#include <array>
 #include <string_view>
 
 namespace cs241c {
@@ -37,13 +38,12 @@ enum class InstructionType {
   WriteNL
 };
 
-struct InstructionDefinition {
+struct InstructionSignature {
   const ValueType ValTy;
-  const ValueType Arg1;
-  const ValueType Arg2;
+  const std::array<ValueType, 2> Args;
 };
 
-const InstructionDefinition &instructionDefinition(InstructionType);
+const InstructionSignature &signature(InstructionType);
 ValueType valTy(InstructionType);
 std::string_view mnemonic(InstructionType);
 } // namespace cs241c

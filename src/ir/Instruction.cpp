@@ -7,6 +7,7 @@
 #include <cassert>
 #include <iterator>
 #include <sstream>
+#include <stdexcept>
 #include <typeinfo>
 
 using namespace cs241c;
@@ -17,7 +18,9 @@ using T = InstructionType;
 Instruction::Instruction(InstructionType InstrT, int Id, Value *Arg1) : Instruction(InstrT, Id, Arg1, nullptr) {}
 
 Instruction::Instruction(InstructionType InstrT, int Id, Value *Arg1, Value *Arg2)
-    : Value(valTy(InstrT)), InstrT(InstrT), Id(Id), Arg1(Arg1), Arg2(Arg2) {}
+    : Value(valTy(InstrT)), InstrT(InstrT), Id(Id), Args{Arg1, Arg2} {
+  checkArgs();
+}
 
 bool Instruction::operator==(const Instruction &other) const {
   return (typeid(this).hash_code() == typeid(other).hash_code()) && other.arguments() == this->arguments();
@@ -44,10 +47,10 @@ void Instruction::setId(int Id) { this->Id = Id; }
 
 vector<Value *> Instruction::arguments() const {
   vector<Value *> Arguments;
-  if (Arg1 != nullptr) {
-    Arguments.push_back(Arg1);
-    if (Arg2 != nullptr) {
-      Arguments.push_back(Arg2);
+  if (Args[0] != nullptr) {
+    Arguments.push_back(Args[0]);
+    if (Args[1] != nullptr) {
+      Arguments.push_back(Args[1]);
     }
   }
   return Arguments;
@@ -62,6 +65,7 @@ bool Instruction::updateArgs(const unordered_map<Value *, Value *> &UpdateCtx) {
       DidChange = true;
     }
   }
+  checkArgs();
   return DidChange;
 }
 
@@ -74,12 +78,33 @@ bool Instruction::updateArgs(const SSAContext &SSAVarCtx) {
       DidChange = true;
     }
   }
+  checkArgs();
   return DidChange;
 }
 
-void Instruction::updateArg(int Index, Value *NewVal) {
-  Value *&Arg = Index == 0 ? Arg1 : Arg2;
-  Arg = NewVal;
+void Instruction::updateArg(int Index, Value *NewVal) { Args[Index] = NewVal; }
+
+void Instruction::checkArgs() {
+  const InstructionSignature &Sig = signature(InstrT);
+  for (size_t I = 0; I < Args.size(); ++I) {
+    Value *Arg = Args[I];
+    ValueType Type = Sig.Args[I];
+
+    if (Arg == nullptr) {
+      if (Type != ValueType::Undef && Type != ValueType::Any) {
+        // The explicit any part is for ret instructions... maybe not very clean.
+        stringstream M;
+        M << "Argument " << I << " of instruction " << Id << " (" << mnemonic(InstrT) << ") is missing, expected "
+          << cs241c::name(Type) << ".";
+        throw logic_error(M.str());
+      }
+    } else if (!isSubtype(Arg->ValTy, Type)) {
+      stringstream M;
+      M << "Argument " << I << " of instruction " << Id << " (" << mnemonic(InstrT) << ") has type "
+        << cs241c::name(Arg->ValTy) << ", expected " << cs241c::name(Type) << ".";
+      throw logic_error(M.str());
+    }
+  }
 }
 
 MemoryInstruction::MemoryInstruction(InstructionType InstrT, int Id, Variable *Object, Value *Arg1)
@@ -128,17 +153,7 @@ Value *MoveInstruction::target() const { return arguments()[1]; }
 PhiInstruction::PhiInstruction(int Id, Variable *Target, Value *X1, Value *X2)
     : Instruction(T::Phi, Id, X1, X2), Target(Target) {}
 
-namespace {
-vector<Value *> prepareCallArguments(Function *Target, const vector<Value *> &Arguments) {
-  vector<Value *> CallArguments;
-  CallArguments.reserve(Arguments.size() + 1);
-  CallArguments.push_back(Target);
-  copy(Arguments.begin(), Arguments.end(), back_inserter(CallArguments));
-  return CallArguments;
-}
-} // namespace
-
-BraInstruction::BraInstruction(int Id, BasicBlock *Y) : BasicBlockTerminator(T::Bra, Id, {Y}) {}
+BraInstruction::BraInstruction(int Id, BasicBlock *Y) : BasicBlockTerminator(T::Bra, Id, Y) {}
 
 BasicBlock *BraInstruction::target() {
   auto *Target = dynamic_cast<BasicBlock *>(arguments()[0]);
