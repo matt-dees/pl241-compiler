@@ -56,8 +56,9 @@ TEST_CASE("Test Dominator Tree Generation 2") {
   BB1->terminate(make_unique<BraInstruction>(Context.genInstructionId(), BB2));
 
   Context.currentBlock() = BB2;
-  auto Cmp = make_unique<CmpInstruction>(Context.genInstructionId(), Context.makeConstant(5), Context.makeConstant(5));
-  CmpInstruction *CmpP = Cmp.get();
+  auto Cmp = make_unique<Instruction>(InstructionType::Cmp, Context.genInstructionId(), Context.makeConstant(5),
+                                      Context.makeConstant(5));
+  Instruction *CmpP = Cmp.get();
   BB2->appendInstruction(move(Cmp));
 
   BB2->fallthoughSuccessor() = BB3;

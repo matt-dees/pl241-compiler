@@ -11,7 +11,7 @@ namespace cs241c {
 class ArrayDesignator;
 class BasicBlock;
 class BasicBlockTerminator;
-class CmpInstruction;
+class Instruction;
 class ConstantExpr;
 class FunctionCall;
 class IrGenContext;
@@ -112,8 +112,8 @@ private:
 public:
   Relation(Type T, std::unique_ptr<Expr> Left, std::unique_ptr<Expr> Right);
 
-  CmpInstruction *genCmp(IrGenContext &Ctx) const;
-  std::unique_ptr<BasicBlockTerminator> genBranch(IrGenContext &Ctx, CmpInstruction *Cmp, BasicBlock *Target) const;
+  Instruction *genCmp(IrGenContext &Ctx) const;
+  std::unique_ptr<BasicBlockTerminator> genBranch(IrGenContext &Ctx, Instruction *Cmp, BasicBlock *Target) const;
 };
 } // namespace cs241c
 

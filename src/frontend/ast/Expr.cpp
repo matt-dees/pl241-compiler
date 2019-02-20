@@ -28,7 +28,7 @@ Value *VarDesignator::genIr(IrGenContext &Ctx) const {
   if (Var->isMoveable()) {
     return Var;
   } else {
-    auto BaseAddress = Ctx.makeInstruction<AddaInstruction>(Ctx.globalBase(), Var);
+    auto BaseAddress = Ctx.makeInstruction(T::Adda, Ctx.globalBase(), Var);
     return Ctx.makeInstruction<LoadInstruction>(Var, BaseAddress);
   }
 }
@@ -38,7 +38,7 @@ void VarDesignator::genStore(IrGenContext &Ctx, Value *V) {
   if (Var->isMoveable()) {
     Ctx.makeInstruction<MoveInstruction>(V, Var);
   } else {
-    auto BaseAddress = Ctx.makeInstruction<AddaInstruction>(Ctx.globalBase(), Var);
+    auto BaseAddress = Ctx.makeInstruction(T::Adda, Ctx.globalBase(), Var);
     Ctx.makeInstruction<StoreInstruction>(Var, V, BaseAddress);
   }
 }
@@ -77,7 +77,7 @@ Value *ArrayDesignator::genIr(IrGenContext &Ctx) const {
   auto Var = Ctx.lookupVariable(Ident).Var;
   Value *BaseAddress = genBaseAddress(Ctx, Var);
   Value *Offset = calculateMemoryOffset(Ctx);
-  auto TargetAddress = Ctx.makeInstruction<AddaInstruction>(BaseAddress, Offset);
+  auto TargetAddress = Ctx.makeInstruction(T::Adda, BaseAddress, Offset);
   return Ctx.makeInstruction<LoadInstruction>(Var, TargetAddress);
 }
 
@@ -85,7 +85,7 @@ void ArrayDesignator::genStore(IrGenContext &Ctx, Value *V) {
   auto Var = Ctx.lookupVariable(Ident).Var;
   Value *BaseAddress = genBaseAddress(Ctx, Var);
   Value *Offset = calculateMemoryOffset(Ctx);
-  auto TargetAddress = Ctx.makeInstruction<AddaInstruction>(BaseAddress, Offset);
+  auto TargetAddress = Ctx.makeInstruction(T::Adda, BaseAddress, Offset);
   Ctx.makeInstruction<StoreInstruction>(Var, V, TargetAddress);
 }
 
@@ -132,15 +132,15 @@ Value *MathExpr::genIr(IrGenContext &Ctx) const {
 Relation::Relation(Relation::Type T, unique_ptr<Expr> Left, unique_ptr<Expr> Right)
     : T(T), Left(move(Left)), Right(move(Right)) {}
 
-CmpInstruction *Relation::genCmp(IrGenContext &Ctx) const {
+Instruction *Relation::genCmp(IrGenContext &Ctx) const {
   Value *X = Left->genIr(Ctx);
   Value *Y = Right->genIr(Ctx);
-  return Ctx.makeInstruction<CmpInstruction>(X, Y);
+  return Ctx.makeInstruction(T::Cmp, X, Y);
 }
 
 namespace {
 using RelT = Relation::Type;
-static unique_ptr<BasicBlockTerminator> makeBranch(IrGenContext &Ctx, RelT T, CmpInstruction *Cmp, BasicBlock *Target) {
+unique_ptr<BasicBlockTerminator> makeBranch(IrGenContext &Ctx, RelT T, Instruction *Cmp, BasicBlock *Target) {
   static const array<pair<RelT, InstructionType>, 6> OpToInstrT{{
       {RelT::Eq, InstructionType::Bne},
       {RelT::Ne, InstructionType::Beq},
@@ -160,6 +160,6 @@ static unique_ptr<BasicBlockTerminator> makeBranch(IrGenContext &Ctx, RelT T, Cm
 }
 } // namespace
 
-unique_ptr<BasicBlockTerminator> Relation::genBranch(IrGenContext &Ctx, CmpInstruction *Cmp, BasicBlock *Target) const {
+unique_ptr<BasicBlockTerminator> Relation::genBranch(IrGenContext &Ctx, Instruction *Cmp, BasicBlock *Target) const {
   return makeBranch(Ctx, T, Cmp, Target);
 }

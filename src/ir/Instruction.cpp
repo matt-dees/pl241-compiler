@@ -126,20 +126,16 @@ BasicBlockTerminator::BasicBlockTerminator(InstructionType InstrT, int Id, Value
 
 BasicBlock *BasicBlockTerminator::target() { return nullptr; }
 
-ConditionalBlockTerminator::ConditionalBlockTerminator(InstructionType InstrT, int Id, CmpInstruction *Cmp,
+ConditionalBlockTerminator::ConditionalBlockTerminator(InstructionType InstrT, int Id, Instruction *Cmp,
                                                        BasicBlock *Target)
     : BasicBlockTerminator(InstrT, Id, Cmp, Target) {}
 
 BasicBlock *ConditionalBlockTerminator::target() { return dynamic_cast<BasicBlock *>(arguments()[1]); }
 
-CmpInstruction::CmpInstruction(int Id, Value *X, Value *Y) : Instruction(T::Cmp, Id, X, Y) {}
-
-AddaInstruction::AddaInstruction(int Id, Value *X, Value *Y) : Instruction(T::Adda, Id, X, Y) {}
-
-LoadInstruction::LoadInstruction(int Id, Variable *Object, AddaInstruction *Address)
+LoadInstruction::LoadInstruction(int Id, Variable *Object, Instruction *Address)
     : MemoryInstruction(T::Load, Id, Object, Address) {}
 
-StoreInstruction::StoreInstruction(int Id, Variable *Object, Value *Y, AddaInstruction *Address)
+StoreInstruction::StoreInstruction(int Id, Variable *Object, Value *Y, Instruction *Address)
     : MemoryInstruction(T::Store, Id, Object, Y, Address) {}
 
 MoveInstruction::MoveInstruction(int Id, Value *Y, Value *X) : Instruction(T::Move, Id, Y, X) {}

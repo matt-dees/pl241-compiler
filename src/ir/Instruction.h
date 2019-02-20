@@ -15,9 +15,6 @@ class Function;
 class SSAContext;
 class Variable;
 
-class AddaInstruction;
-class CmpInstruction;
-
 class Instruction : public Value {
 public:
   const InstructionType InstrT;
@@ -74,28 +71,18 @@ public:
 
 class ConditionalBlockTerminator : public BasicBlockTerminator {
 public:
-  ConditionalBlockTerminator(InstructionType, int Id, CmpInstruction *Cmp, BasicBlock *Target);
+  ConditionalBlockTerminator(InstructionType, int Id, Instruction *Cmp, BasicBlock *Target);
   BasicBlock *target() override;
-};
-
-class CmpInstruction : public Instruction {
-public:
-  CmpInstruction(int Id, Value *X, Value *Y);
-};
-
-class AddaInstruction : public Instruction {
-public:
-  AddaInstruction(int Id, Value *X, Value *Y);
 };
 
 class LoadInstruction : public MemoryInstruction {
 public:
-  LoadInstruction(int Id, Variable *Object, AddaInstruction *Address);
+  LoadInstruction(int Id, Variable *Object, Instruction *Address);
 };
 
 class StoreInstruction : public MemoryInstruction {
 public:
-  StoreInstruction(int Id, Variable *Object, Value *Y, AddaInstruction *Address);
+  StoreInstruction(int Id, Variable *Object, Value *Y, Instruction *Address);
 };
 
 class MoveInstruction : public Instruction {
