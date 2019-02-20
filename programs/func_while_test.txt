@@ -1,15 +1,15 @@
 main
 procedure foo( );
-var i, j;
+var a, b;
 {
-	let i <- 0;
-	let j <- 0;
-	while i < 10 do
-	    while j < 10 do
-	        let j <- j + 1
-	    od;
-	    let i <- i + 1
-	od
+	let a <- 1;
+	while a != b do
+		let b <- a + 1;
+		let a <- a * 2
+	od;
+	let b <- a;
+	call OutputNum(b);
+	call OutputNum(a)
 };
 
 {

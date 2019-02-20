@@ -153,6 +153,7 @@ void Function::buildInterferenceGraph() {
         if (dynamic_cast<PhiInstruction *>(ReverseInstructionIt->get())) {
           for (auto Pred : BB->predecessors()) {
             if (PredecessorPhiSets.find(Pred) != PredecessorPhiSets.end()) {
+              IG.addEdges(PredecessorPhiSets[Pred], RegAlArg);
               PredecessorPhiSets[Pred].insert(RegAlArg);
             } else {
               PredecessorPhiSets[Pred] = {RegAlArg};
