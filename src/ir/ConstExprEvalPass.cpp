@@ -79,14 +79,10 @@ void process(Function &F) {
 
   unordered_map<Value *, Value *> Substitutions;
 
-  vector<BasicBlock *> WorkingSet{F.entryBlock()};
-  unordered_set<BasicBlock *> MarkedBlocks;
+  auto BlockOrder = F.postOrderCfg();
+  reverse(BlockOrder.begin(), BlockOrder.end());
 
-  while (!WorkingSet.empty()) {
-    BasicBlock *BB = WorkingSet.back();
-    WorkingSet.pop_back();
-    MarkedBlocks.insert(BB);
-
+  for (auto BB : BlockOrder) {
     for (auto &InstructionPtr : BB->instructions()) {
       Instruction *I = InstructionPtr.get();
       I->updateArgs(Substitutions);
@@ -102,14 +98,6 @@ void process(Function &F) {
         }
 
         Substitutions[I] = ConstantsMap[InstructionResult];
-      }
-    }
-
-    for (auto Follower : BB->successors()) {
-      auto &Predecessors = Follower->predecessors();
-      if (all_of(Predecessors.begin(), Predecessors.end(),
-                 [MarkedBlocks](auto &Pred) { return MarkedBlocks.find(Pred) != MarkedBlocks.end(); })) {
-        WorkingSet.push_back(Follower);
       }
     }
   }
