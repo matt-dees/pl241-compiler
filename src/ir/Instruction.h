@@ -4,9 +4,9 @@
 #include "InstructionType.h"
 #include "Value.h"
 #include <array>
+#include <map>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
 namespace cs241c {
@@ -28,8 +28,13 @@ public:
   ValueRef(Value *Ptr);
   ValueRef(ValueType Ty, int Id);
 
+  bool isUndef();
+
   operator Value *() const;
   Value *operator->() const;
+
+  bool operator==(ValueRef Other) const;
+  bool operator<(ValueRef Other) const;
 };
 
 class Instruction : public Value {
@@ -43,16 +48,16 @@ private:
   std::array<ValueRef, 2> Args;
 
 protected:
-  virtual void updateArg(int Index, Value *NewVal);
+  virtual void updateArg(int Index, ValueRef NewVal);
 
 public:
-  Instruction(InstructionType, int Id, Value *Arg1);
-  Instruction(InstructionType, int Id, Value *Arg1, Value *Arg2);
+  Instruction(InstructionType, int Id, ValueRef Arg1);
+  Instruction(InstructionType, int Id, ValueRef Arg1, ValueRef Arg2);
 
   BasicBlock *getOwner() const;
   Variable *&storage();
   std::vector<ValueRef> arguments() const;
-  bool updateArgs(const std::unordered_map<Value *, Value *> &UpdateCtx);
+  bool updateArgs(const std::map<ValueRef, ValueRef> &UpdateCtx);
   bool updateArgs(const SSAContext &SSAVarCtx);
 
   void setId(int Id);
@@ -96,7 +101,7 @@ public:
 
 class MoveInstruction : public Instruction {
 public:
-  MoveInstruction(int Id, Value *Y, Value *X);
+  MoveInstruction(int Id, ValueRef Y, ValueRef X);
 
   void updateArgs(Value *NewTarget, Value *NewSource);
   Value *source() const;

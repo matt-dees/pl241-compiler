@@ -77,7 +77,7 @@ void process(Function &F) {
   transform(Constants.begin(), Constants.end(), inserter(ConstantsMap, ConstantsMap.end()),
             [](unique_ptr<ConstantValue> &Constant) { return make_pair(Constant->Val, Constant.get()); });
 
-  unordered_map<Value *, Value *> Substitutions;
+  map<ValueRef, ValueRef> Substitutions;
 
   auto BlockOrder = F.postOrderCfg();
   reverse(BlockOrder.begin(), BlockOrder.end());

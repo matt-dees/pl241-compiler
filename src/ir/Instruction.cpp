@@ -18,12 +18,32 @@ using T = InstructionType;
 ValueRef::ValueRef() : ValTy(ValueType::Undef) {}
 ValueRef::ValueRef(Value *Ptr) : ValTy(Ptr ? Ptr->ValTy : ValueType::Undef) { R.Ptr = Ptr; }
 ValueRef::ValueRef(ValueType Ty, int Id) : ValTy(Ty) { R.Id = Id; }
+bool ValueRef::isUndef() { return ValTy == ValueType::Undef; }
 ValueRef::operator Value *() const { return R.Ptr; }
 Value *ValueRef::operator->() const { return R.Ptr; }
 
-Instruction::Instruction(InstructionType InstrT, int Id, Value *Arg1) : Instruction(InstrT, Id, Arg1, nullptr) {}
+bool ValueRef::operator==(ValueRef Other) const {
+  if (ValTy == Other.ValTy) {
+    if (ValTy == ValueType::Register) {
+      return R.Id == Other.R.Id;
+    }
+    return R.Ptr == Other.R.Ptr;
+  }
+  return false;
+}
+bool ValueRef::operator<(ValueRef Other) const {
+  if (ValTy == Other.ValTy) {
+    if (ValTy == ValueType::Register) {
+      return R.Id < Other.R.Id;
+    }
+    return R.Ptr < Other.R.Ptr;
+  }
+  return ValTy < Other.ValTy;
+}
 
-Instruction::Instruction(InstructionType InstrT, int Id, Value *Arg1, Value *Arg2)
+Instruction::Instruction(InstructionType InstrT, int Id, ValueRef Arg1) : Instruction(InstrT, Id, Arg1, nullptr) {}
+
+Instruction::Instruction(InstructionType InstrT, int Id, ValueRef Arg1, ValueRef Arg2)
     : Value(valTy(InstrT)), InstrT(InstrT), Id(Id), Args{Arg1, Arg2} {
   checkArgs();
 }
@@ -80,7 +100,7 @@ vector<ValueRef> Instruction::arguments() const {
   return Arguments;
 }
 
-bool Instruction::updateArgs(const unordered_map<Value *, Value *> &UpdateCtx) {
+bool Instruction::updateArgs(const map<ValueRef, ValueRef> &UpdateCtx) {
   vector<ValueRef> Args = arguments();
   bool DidChange = false;
   for (long unsigned int i = 0; i < Args.size(); ++i) {
@@ -106,7 +126,7 @@ bool Instruction::updateArgs(const SSAContext &SSAVarCtx) {
   return DidChange;
 }
 
-void Instruction::updateArg(int Index, Value *NewVal) { Args[Index] = NewVal; }
+void Instruction::updateArg(int Index, ValueRef NewVal) { Args[Index] = NewVal; }
 
 void Instruction::checkArgs() {
   const InstructionSignature &Sig = signature(InstrT);
@@ -114,7 +134,7 @@ void Instruction::checkArgs() {
     auto Arg = Args[I];
     ValueType Type = Sig.Args[I];
 
-    if (Arg == nullptr) {
+    if (Arg.isUndef()) {
       if (Type != ValueType::Undef && Type != ValueType::Any) {
         // The explicit any part is for ret instructions... maybe not very clean.
         stringstream M;
@@ -156,7 +176,7 @@ ConditionalBlockTerminator::ConditionalBlockTerminator(InstructionType InstrT, i
 
 BasicBlock *ConditionalBlockTerminator::target() { return dynamic_cast<BasicBlock *>(&*arguments()[1]); }
 
-MoveInstruction::MoveInstruction(int Id, Value *Y, Value *X) : Instruction(T::Move, Id, Y, X) {}
+MoveInstruction::MoveInstruction(int Id, ValueRef Y, ValueRef X) : Instruction(T::Move, Id, Y, X) {}
 
 void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) { arguments() = {NewSource, NewTarget}; }
 

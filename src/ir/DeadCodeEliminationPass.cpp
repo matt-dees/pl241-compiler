@@ -99,14 +99,16 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveVal
 
     if (auto Branch = dynamic_cast<BraInstruction *>(BB->terminator())) {
       if (BB->instructions().size() == 1 && BB->predecessors().size() <= 1) {
-        BB = Followers.front();
+        // Disable removal of empty blocks for Phi2Var.
+        //BB = Followers.front();
       } else {
         BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
         break;
       }
     } else if (BB->fallthoughSuccessor() != nullptr) {
       if (BB->instructions().size() == 0 && BB->predecessors().size() <= 1) {
-        BB = Followers.front();
+        // Disable removal of empty blocks for Phi2Var.
+        //BB = Followers.front();
       } else {
         BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
         break;

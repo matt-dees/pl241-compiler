@@ -75,7 +75,10 @@ BasicBlockTerminator *BasicBlock::terminator() const {
 
 void BasicBlock::appendInstruction(unique_ptr<Instruction> I) {
   I->Owner = this;
-  Instructions.push_back(move(I));
+  auto Pos = Instructions.end();
+  if (!Instructions.empty() && dynamic_cast<BasicBlockTerminator *>(Instructions.back().get()))
+    --Pos;
+  Instructions.insert(Pos, move(I));
 }
 
 void BasicBlock::appendPredecessor(BasicBlock *BB) { Predecessors.push_back(BB); }

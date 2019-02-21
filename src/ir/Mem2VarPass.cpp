@@ -38,8 +38,7 @@ BasicBlock *Mem2VarPass::run(BasicBlock *BB) {
       if (KnownVar != KnownVars.end()) {
         LocalVariable *KnownVarPtr = KnownVar->second;
         for_each(BB->begin() + InstrI + 1, BBEnd, [InstrPtr, KnownVarPtr](unique_ptr<Instruction> &I) {
-          replace(I->arguments().begin(), I->arguments().end(), static_cast<Value *>(InstrPtr),
-                  static_cast<Value *>(KnownVarPtr));
+          replace(I->arguments().begin(), I->arguments().end(), ValueRef(InstrPtr), ValueRef(KnownVarPtr));
         });
       } else {
         auto Local = make_unique<LocalVariable>(string("$") + Object->ident());

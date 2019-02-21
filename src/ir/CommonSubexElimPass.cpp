@@ -72,10 +72,10 @@ void CommonSubexElimPass::run(Function &F) {
   //          Add Hash to map
   //      Replace all args according to replacement map
   //
-  unordered_map<Instruction *, Instruction *, InstructionHasher, InstructionEquality> CandidateInstructions = {};
-  unordered_map<Value *, Value *> Replacements = {};
-  stack<BasicBlock *> BlocksToExplore = {};
-  unordered_set<BasicBlock *> VisitedBlocks = {};
+  unordered_map<Instruction *, Instruction *, InstructionHasher, InstructionEquality> CandidateInstructions;
+  map<ValueRef, ValueRef> Replacements;
+  stack<BasicBlock *> BlocksToExplore;
+  unordered_set<BasicBlock *> VisitedBlocks;
 
   BlocksToExplore.push(F.entryBlock());
 

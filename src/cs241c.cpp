@@ -5,6 +5,7 @@
 #include "IntegrityCheckPass.h"
 #include "Lexer.h"
 #include "Parser.h"
+#include "Phi2VarPass.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -57,16 +58,23 @@ int main(int ArgC, char **ArgV) {
   IR->allocateRegisters();
 
   if (GenerateVcg) {
-    string VcgOutput{string(InputFile) + ".vcg"};
-    removeFile(VcgOutput);
-    IR->writeToFile(VcgOutput);
-
     for (auto &F : IR->functions()) {
       string IGOutput{string(InputFile) + "." + F->toString() + ".ig.vcg"};
       removeFile(IGOutput);
       AnnotatedIG AIG(F->interferenceGraph(), F->registerColoring());
       AIG.writeToFile(IGOutput);
     }
+  }
+
+  Phi2VarPass P2V;
+  P2V.run(*IR);
+
+  ICP.run(*IR);
+
+  if (GenerateVcg) {
+    string VcgOutput{string(InputFile) + ".vcg"};
+    removeFile(VcgOutput);
+    IR->writeToFile(VcgOutput);
   }
 
   return 0;
