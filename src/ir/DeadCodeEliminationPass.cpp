@@ -33,7 +33,9 @@ unordered_set<Value *> mark(Function &F) {
 
   for (auto &BB : F.basicBlocks()) {
     for (auto &I : BB->instructions()) {
-      if (find(PreLive.begin(), PreLive.end(), I->InstrT) != PreLive.end()) {
+      // Mark all terminators live for now so we don't remove stuff needed for Phi2Var.
+      if (find(PreLive.begin(), PreLive.end(), I->InstrT) != PreLive.end() ||
+          dynamic_cast<BasicBlockTerminator *>(I.get())) {
         LiveSet.insert(I.get());
         WorkList.push_back(I.get());
       }
@@ -100,7 +102,7 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveVal
     if (auto Branch = dynamic_cast<BraInstruction *>(BB->terminator())) {
       if (BB->instructions().size() == 1 && BB->predecessors().size() <= 1) {
         // Disable removal of empty blocks for Phi2Var.
-        //BB = Followers.front();
+        // BB = Followers.front();
       } else {
         BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
         break;
@@ -108,7 +110,7 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveVal
     } else if (BB->fallthoughSuccessor() != nullptr) {
       if (BB->instructions().size() == 0 && BB->predecessors().size() <= 1) {
         // Disable removal of empty blocks for Phi2Var.
-        //BB = Followers.front();
+        // BB = Followers.front();
       } else {
         BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
         break;
