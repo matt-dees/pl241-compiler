@@ -18,9 +18,7 @@ vector<unique_ptr<LocalVariable>> &Function::locals() { return Locals; }
 BasicBlock *Function::entryBlock() const { return BasicBlocks.front().get(); }
 
 vector<unique_ptr<BasicBlock>> &Function::basicBlocks() { return BasicBlocks; }
-const vector<unique_ptr<BasicBlock>> &Function::basicBlocks() const {
-  return BasicBlocks;
-}
+const vector<unique_ptr<BasicBlock>> &Function::basicBlocks() const { return BasicBlocks; }
 
 string Function::toString() const { return Name; }
 
@@ -39,8 +37,7 @@ void Function::toSSA(IrGenContext &GenCtx) {
   recursiveNodeToSSA(entryBlock(), SSACtx);
 }
 
-SSAContext Function::recursiveNodeToSSA(BasicBlock *CurrentBB,
-                                        SSAContext SSACtx) {
+SSAContext Function::recursiveNodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx) {
   static unordered_set<BasicBlock *> Visited = {};
   if (Visited.find(CurrentBB) != Visited.end()) {
     // Already visited this node. Skip.
@@ -60,19 +57,16 @@ SSAContext Function::recursiveNodeToSSA(BasicBlock *CurrentBB,
   return SSACtx;
 }
 
-void Function::propagateChangeToPhis(cs241c::BasicBlock *SourceBB,
-                                     cs241c::Variable *ChangedVar,
+void Function::propagateChangeToPhis(cs241c::BasicBlock *SourceBB, cs241c::Variable *ChangedVar,
                                      cs241c::Value *NewVal) {
   for (auto BB : DT.dominanceFrontier(SourceBB)) {
-    if (find(BB->predecessors().begin(), BB->predecessors().end(), SourceBB) !=
-        BB->predecessors().end()) {
+    if (find(BB->predecessors().begin(), BB->predecessors().end(), SourceBB) != BB->predecessors().end()) {
       BB->updatePhiInst(SourceBB, ChangedVar, NewVal);
     }
   }
 }
 
-void Function::recursiveGenAllPhis(BasicBlock *CurrentBB,
-                                   IrGenContext &PhiGenCtx) {
+void Function::recursiveGenAllPhis(BasicBlock *CurrentBB, IrGenContext &PhiGenCtx) {
   static unordered_set<BasicBlock *> Visited;
   if (Visited.find(CurrentBB) != Visited.end()) {
     return;
@@ -80,7 +74,7 @@ void Function::recursiveGenAllPhis(BasicBlock *CurrentBB,
   auto MoveTargets = CurrentBB->getMoveTargets();
   Visited.insert(CurrentBB);
   for (auto DFEntry : dominatorTree().dominanceFrontier(CurrentBB)) {
-    for (auto &Target : MoveTargets) {
+    for (auto Target : MoveTargets) {
       PhiGenCtx.currentBlock() = DFEntry;
       PhiGenCtx.makePhiInstruction(Target, Target, Target);
       Visited.erase(DFEntry);
@@ -121,18 +115,15 @@ std::vector<BasicBlock *> Function::postOrderCfg() {
 }
 
 void Function::buildInterferenceGraph() {
-  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>>
-      PredecessorLiveSetMap;
-  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>>
-      PredecessorPhiSets;
+  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>> PredecessorLiveSetMap;
+  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>> PredecessorPhiSets;
   for (auto BB : postOrderCfg()) {
     std::unordered_set<RegAllocValue *> CurrentLiveSet = {};
     if (PredecessorLiveSetMap.find(BB) != PredecessorLiveSetMap.end()) {
       CurrentLiveSet = PredecessorLiveSetMap.at(BB);
     }
     // Iterate through instructions backwards.
-    for (auto ReverseInstructionIt = BB->instructions().rbegin();
-         ReverseInstructionIt != BB->instructions().rend();
+    for (auto ReverseInstructionIt = BB->instructions().rbegin(); ReverseInstructionIt != BB->instructions().rend();
          ReverseInstructionIt++) {
 
       // Erase the current instruction from the live set.
@@ -150,7 +141,7 @@ void Function::buildInterferenceGraph() {
           continue;
         }
         IG.addEdges(CurrentLiveSet, RegAlArg);
-        if (dynamic_cast<PhiInstruction *>(ReverseInstructionIt->get())) {
+        if (ReverseInstructionIt->get()->InstrT == InstructionType::Phi) {
           for (auto Pred : BB->predecessors()) {
             if (PredecessorPhiSets.find(Pred) != PredecessorPhiSets.end()) {
               IG.addEdges(PredecessorPhiSets[Pred], RegAlArg);
@@ -167,9 +158,8 @@ void Function::buildInterferenceGraph() {
 
     for (auto Pred : BB->predecessors()) {
       if (PredecessorPhiSets.find(Pred) != PredecessorPhiSets.end()) {
-        copy(
-            CurrentLiveSet.begin(), CurrentLiveSet.end(),
-            inserter(PredecessorPhiSets[Pred], PredecessorPhiSets[Pred].end()));
+        copy(CurrentLiveSet.begin(), CurrentLiveSet.end(),
+             inserter(PredecessorPhiSets[Pred], PredecessorPhiSets[Pred].end()));
         PredecessorLiveSetMap[Pred] = PredecessorPhiSets[Pred];
         PredecessorPhiSets[Pred].clear();
       }

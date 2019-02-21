@@ -149,9 +149,6 @@ Value *MoveInstruction::source() const { return arguments()[0]; }
 
 Value *MoveInstruction::target() const { return arguments()[1]; }
 
-PhiInstruction::PhiInstruction(int Id, Variable *Target, Value *X1, Value *X2)
-    : Instruction(T::Phi, Id, X1, X2), Target(Target) {}
-
 BraInstruction::BraInstruction(int Id, BasicBlock *Y) : BasicBlockTerminator(T::Bra, Id, Y) {}
 
 BasicBlock *BraInstruction::target() {

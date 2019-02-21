@@ -86,13 +86,6 @@ public:
   Value *target() const;
 };
 
-class PhiInstruction : public Instruction {
-public:
-  PhiInstruction(int Id, Variable *Target, Value *X1, Value *X2);
-
-  Variable *Target;
-};
-
 class BraInstruction : public BasicBlockTerminator {
   BasicBlock *target() override;
 

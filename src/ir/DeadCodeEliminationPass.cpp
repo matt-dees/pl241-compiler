@@ -68,8 +68,10 @@ void erase(Function &F, const unordered_set<Value *> &LiveValues) {
     auto &Instructions = BB->instructions();
     Instructions.erase(remove_if(Instructions.begin(), Instructions.end(),
                                  [&LiveValues](const auto &Instruction) {
-                                   return LiveValues.find(Instruction.get()) == LiveValues.end() &&
-                                          dynamic_cast<BasicBlockTerminator *>(Instruction.get()) == nullptr;
+                                   bool IsDead = LiveValues.find(Instruction.get()) == LiveValues.end();
+                                   bool IsNotTerminator =
+                                       dynamic_cast<BasicBlockTerminator *>(Instruction.get()) == nullptr;
+                                   return IsDead && IsNotTerminator;
                                  }),
                        Instructions.end());
   }

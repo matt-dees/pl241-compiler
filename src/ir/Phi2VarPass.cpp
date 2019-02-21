@@ -13,9 +13,6 @@ void process(Function &F) {
     for (auto &Instr : BB->instructions()) {
       if (Instr->InstrT != InstructionType::Phi)
         break;
-
-      auto Phi = dynamic_cast<PhiInstruction *>(Instr.get());
-      auto ResultReg = Registers[Phi];
     }
   }
 }

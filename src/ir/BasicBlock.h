@@ -12,7 +12,6 @@
 namespace cs241c {
 class BasicBlockTerminator;
 class Instruction;
-class PhiInstruction;
 class SSAContext;
 class Variable;
 
@@ -34,7 +33,7 @@ public:
 
 private:
   std::string Name;
-  std::unordered_map<Variable *, PhiInstruction *> PhiInstrMap;
+  std::unordered_map<Variable *, Instruction *> PhiInstrMap;
 
   std::vector<BasicBlock *> Predecessors;
   BasicBlock *FallthroughSuccessor = nullptr;
@@ -60,7 +59,7 @@ public:
   std::unique_ptr<BasicBlockTerminator> releaseTerminator();
   void toSSA(SSAContext &SSACtx);
 
-  void insertPhiInstruction(std::unique_ptr<PhiInstruction> Phi);
+  void insertPhiInstruction(std::unique_ptr<Instruction> Phi);
   void updatePhiInst(BasicBlock *From, Variable *VarToChange, Value *NewVal);
 
   std::vector<BasicBlock *>::difference_type getPredecessorIndex(BasicBlock *Predecessor);

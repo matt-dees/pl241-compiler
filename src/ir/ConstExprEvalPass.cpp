@@ -18,9 +18,10 @@ array<InstructionType, 5> ArithmethicInstrs{InstructionType::Neg, InstructionTyp
 
 bool canEvaluate(const Instruction *I) {
   auto Arguments = I->arguments();
-  bool ConstArgs = all_of(Arguments.begin(), Arguments.end(),
-                          [](Value *Arg) { return dynamic_cast<ConstantValue *>(Arg) != nullptr; });
-  if (!ConstArgs) {
+
+  bool OnlyConstArgs =
+      all_of(Arguments.begin(), Arguments.end(), [](Value *Arg) { return Arg->ValTy == ValueType::Constant; });
+  if (!OnlyConstArgs) {
     return false;
   }
 
@@ -76,7 +77,7 @@ void process(Function &F) {
   transform(Constants.begin(), Constants.end(), inserter(ConstantsMap, ConstantsMap.end()),
             [](unique_ptr<ConstantValue> &Constant) { return make_pair(Constant->Val, Constant.get()); });
 
-  unordered_map<Value *, Value *> Substitions;
+  unordered_map<Value *, Value *> Substitutions;
 
   vector<BasicBlock *> WorkingSet{F.entryBlock()};
   unordered_set<BasicBlock *> MarkedBlocks;
@@ -88,7 +89,7 @@ void process(Function &F) {
 
     for (auto &InstructionPtr : BB->instructions()) {
       Instruction *I = InstructionPtr.get();
-      I->updateArgs(Substitions);
+      I->updateArgs(Substitutions);
 
       if (canEvaluate(I)) {
         int InstructionResult = evaluate(I);
@@ -100,7 +101,7 @@ void process(Function &F) {
           F.constants().push_back(move(NewConstant));
         }
 
-        Substitions[I] = ConstantsMap[InstructionResult];
+        Substitutions[I] = ConstantsMap[InstructionResult];
       }
     }
 
