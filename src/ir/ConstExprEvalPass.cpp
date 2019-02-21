@@ -26,13 +26,13 @@ bool canEvaluate(const Instruction *I) {
   }
 
   if (find(ArithmethicInstrs.begin(), ArithmethicInstrs.end(), I->InstrT) != ArithmethicInstrs.end()) {
-    if (I->InstrT != InstructionType::Div || dynamic_cast<ConstantValue *>(Arguments[1])->Val != 0) {
+    if (I->InstrT != InstructionType::Div || dynamic_cast<ConstantValue *>(&*Arguments[1])->Val != 0) {
       return true;
     }
   }
 
   if (I->InstrT == InstructionType::Phi) {
-    if (dynamic_cast<ConstantValue *>(Arguments[0])->Val == dynamic_cast<ConstantValue *>(Arguments[1])->Val) {
+    if (dynamic_cast<ConstantValue *>(&*Arguments[0])->Val == dynamic_cast<ConstantValue *>(&*Arguments[1])->Val) {
       return true;
     }
   }
@@ -43,13 +43,13 @@ bool canEvaluate(const Instruction *I) {
 int evaluate(Instruction *I) {
   auto Arguments = I->arguments();
 
-  int Arg0 = dynamic_cast<ConstantValue *>(Arguments[0])->Val;
+  int Arg0 = dynamic_cast<ConstantValue *>(&*Arguments[0])->Val;
 
   if (I->InstrT == InstructionType::Neg) {
     return -Arg0;
   }
 
-  int Arg1 = dynamic_cast<ConstantValue *>(Arguments[1])->Val;
+  int Arg1 = dynamic_cast<ConstantValue *>(&*Arguments[1])->Val;
   if (I->InstrT == InstructionType::Add) {
     return Arg0 + Arg1;
   }

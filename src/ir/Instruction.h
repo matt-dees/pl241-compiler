@@ -16,18 +16,20 @@ class SSAContext;
 class Variable;
 
 class ValueRef {
-  ValueType Ty;
+public:
+  ValueType ValTy;
 
   union {
     Value *Ptr;
     int Id;
-  } R;
+  } R{};
 
-public:
-  ValueRef(Value *Ptr) : Ty(ValueType::Value) { R.Ptr = Ptr; }
-  ValueRef(ValueType Ty, int Id) : Ty(Ty) { R.Id = Id; }
+  ValueRef();
+  ValueRef(Value *Ptr);
+  ValueRef(ValueType Ty, int Id);
 
-  operator Value *() const { return R.Ptr; }
+  operator Value *() const;
+  Value *operator->() const;
 };
 
 class Instruction : public Value {
@@ -49,7 +51,7 @@ public:
 
   BasicBlock *getOwner() const;
   Variable *&storage();
-  std::vector<Value *> arguments() const;
+  std::vector<ValueRef> arguments() const;
   bool updateArgs(const std::unordered_map<Value *, Value *> &UpdateCtx);
   bool updateArgs(const SSAContext &SSAVarCtx);
 
