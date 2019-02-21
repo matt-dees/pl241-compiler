@@ -179,7 +179,7 @@ void BasicBlock::updatePhiInst(cs241c::BasicBlock *From, cs241c::Variable *VarTo
   if (Index == -1) {
     throw logic_error("Invalid PHI update from block: " + string(From->toString()));
   }
-  Phi->updateArg(Index, NewVal);
+  Phi->updateArg(static_cast<int>(Index), NewVal);
 }
 
 vector<BasicBlock *>::difference_type BasicBlock::getPredecessorIndex(cs241c::BasicBlock *Predecessor) {

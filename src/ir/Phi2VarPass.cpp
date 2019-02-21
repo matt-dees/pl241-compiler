@@ -13,6 +13,9 @@ void process(Function &F) {
     for (auto &Instr : BB->instructions()) {
       if (Instr->InstrT != InstructionType::Phi)
         break;
+
+	  auto TargetRegister = Registers[Instr.get()];
+      
     }
   }
 }

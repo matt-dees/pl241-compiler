@@ -15,6 +15,21 @@ class Function;
 class SSAContext;
 class Variable;
 
+class ValueRef {
+  ValueType Ty;
+
+  union {
+    Value *Ptr;
+    int Id;
+  } R;
+
+public:
+  ValueRef(Value *Ptr) : Ty(ValueType::Value) { R.Ptr = Ptr; }
+  ValueRef(ValueType Ty, int Id) : Ty(Ty) { R.Id = Id; }
+
+  operator Value *() const { return R.Ptr; }
+};
+
 class Instruction : public Value {
 public:
   const InstructionType InstrT;
@@ -23,7 +38,7 @@ private:
   int Id;
   BasicBlock *Owner{};
   Variable *Storage{};
-  std::array<Value *, 2> Args;
+  std::array<ValueRef, 2> Args;
 
 protected:
   virtual void updateArg(int Index, Value *NewVal);
