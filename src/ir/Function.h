@@ -2,7 +2,6 @@
 #define CS241C_IR_FUNCTION_H
 
 #include "BasicBlock.h"
-#include "DominatorTree.h"
 #include "IrGenContext.h"
 #include "RegisterAllocator.h"
 #include "SSAContext.h"
@@ -20,11 +19,6 @@ class Function : public Value {
   std::vector<std::unique_ptr<ConstantValue>> Constants;
   std::vector<std::unique_ptr<LocalVariable>> Locals;
   std::vector<std::unique_ptr<BasicBlock>> BasicBlocks;
-
-  std::unordered_map<Value *, std::unique_ptr<RegAllocValue>>
-      ValueToRegAllocVal;
-  DominatorTree DT;
-  InterferenceGraph IG;
   RegisterAllocator::Coloring RAColoring;
 
 private:
@@ -32,7 +26,6 @@ private:
   void recursiveGenAllPhis(BasicBlock *CurrentBB, IrGenContext &GenCtx);
   void propagateChangeToPhis(BasicBlock *SourceBB, Variable *ChangedVar,
                              Value *NewVal);
-  RegAllocValue *lookupRegAllocVal(Value *);
 
 public:
   Function() = default;
@@ -45,14 +38,14 @@ public:
   void assignRegisters();
 
   RegisterAllocator::Coloring &registerColoring() { return RAColoring; }
-  DominatorTree &dominatorTree();
-  InterferenceGraph &interferenceGraph() { return IG; }
   std::vector<std::unique_ptr<ConstantValue>> &constants();
   std::vector<std::unique_ptr<LocalVariable>> &locals();
   BasicBlock *entryBlock() const;
   std::vector<std::unique_ptr<BasicBlock>> &basicBlocks();
   const std::vector<std::unique_ptr<BasicBlock>> &basicBlocks() const;
   std::string toString() const override;
+  bool isLoopHdrBlock(BasicBlock *BB);
+  bool isJoinBlock(BasicBlock *BB);
 
   std::vector<BasicBlock *> postOrderCfg();
 };

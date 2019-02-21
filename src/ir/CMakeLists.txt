@@ -11,12 +11,16 @@ add_library(cs241c-ir
   DominatorTree.h
   Function.cpp
   Function.h
+  FunctionAnalyzer.cpp
+  FunctionAnalyzer.h
   Instruction.cpp
   Instruction.h
   InstructionType.cpp
   InstructionType.h
   IntegrityCheckPass.cpp
   IntegrityCheckPass.h
+  InterferenceGraph.cpp
+  InterferenceGraph.h
   IrGenContext.cpp
   IrGenContext.h
   Mem2VarPass.cpp

@@ -120,72 +120,35 @@ std::vector<BasicBlock *> Function::postOrderCfg() {
   return PostOrdering;
 }
 
-void Function::buildInterferenceGraph() {
-  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>>
-      PredecessorLiveSetMap;
-  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>>
-      PredecessorPhiSets;
-  for (auto BB : postOrderCfg()) {
-    std::unordered_set<RegAllocValue *> CurrentLiveSet = {};
-    if (PredecessorLiveSetMap.find(BB) != PredecessorLiveSetMap.end()) {
-      CurrentLiveSet = PredecessorLiveSetMap.at(BB);
-    }
-    // Iterate through instructions backwards.
-    for (auto ReverseInstructionIt = BB->instructions().rbegin();
-         ReverseInstructionIt != BB->instructions().rend();
-         ReverseInstructionIt++) {
-
-      // Erase the current instruction from the live set.
-      CurrentLiveSet.erase(lookupRegAllocVal(ReverseInstructionIt->get()));
-
-      // Loop through arguments and:
-      //    Create edges in interference graph
-      //    Update live set
-      for (auto Arg : ReverseInstructionIt->get()->arguments()) {
-        RegAllocValue *RegAlArg = lookupRegAllocVal(Arg);
-        // If Phi instruction, update the set that will get propagated to the
-        // predecessor.
-        RegAlArg->visit();
-        if (dynamic_cast<Instruction *>(RegAlArg->value()) == nullptr) {
-          continue;
-        }
-        IG.addEdges(CurrentLiveSet, RegAlArg);
-        if (dynamic_cast<PhiInstruction *>(ReverseInstructionIt->get())) {
-          for (auto Pred : BB->predecessors()) {
-            if (PredecessorPhiSets.find(Pred) != PredecessorPhiSets.end()) {
-              IG.addEdges(PredecessorPhiSets[Pred], RegAlArg);
-              PredecessorPhiSets[Pred].insert(RegAlArg);
-            } else {
-              PredecessorPhiSets[Pred] = {RegAlArg};
-            }
-          }
-        } else {
-          CurrentLiveSet.insert(RegAlArg);
-        }
-      }
-    }
-
-    for (auto Pred : BB->predecessors()) {
-      if (PredecessorPhiSets.find(Pred) != PredecessorPhiSets.end()) {
-        copy(
-            CurrentLiveSet.begin(), CurrentLiveSet.end(),
-            inserter(PredecessorPhiSets[Pred], PredecessorPhiSets[Pred].end()));
-        PredecessorLiveSetMap[Pred] = PredecessorPhiSets[Pred];
-        PredecessorPhiSets[Pred].clear();
-      }
+bool Function::isLoopHdrBlock(BasicBlock *BB) {
+  for (auto Pred : BB->predecessors()) {
+    // Loop header blocks dominate one of their predecessors.
+    if (DT.doesBlockDominate(BB, Pred)) {
+      return true;
     }
   }
 }
 
-RegAllocValue *Function::lookupRegAllocVal(Value *Val) {
-  if (ValueToRegAllocVal.find(Val) == ValueToRegAllocVal.end()) {
-    ValueToRegAllocVal[Val] = std::make_unique<RegAllocValue>(Val);
+bool Function::isJoinBlock(BasicBlock *BB) {
+  if (BB->predecessors().size() != 2) {
+    return false;
   }
-
-  return ValueToRegAllocVal[Val].get();
+  for (auto Pred : BB->predecessors()) {
+    // Join blocks do not dominate their predecessors.
+    if (DT.doesBlockDominate(BB, Pred)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void Function::assignRegisters() {
   RegisterAllocator RA;
   RAColoring = RA.color(IG);
+}
+
+void Function::buildInterferenceGraph() {
+  IGBuilder IGB(this);
+  IGB.buildInterferenceGraph();
+  IG = IGB.interferenceGraph();
 }

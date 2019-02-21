@@ -1,39 +1,15 @@
 #ifndef CS241C_REGISTERALLOCATION_H
 #define CS241C_REGISTERALLOCATION_H
 
+#include "Function.h"
+#include "InterferenceGraph.h"
 #include "RegAllocValue.h"
 #include "Vcg.h"
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 
 namespace cs241c {
-
-class InterferenceGraph : public Vcg {
-  // Map node to edges
-  using Graph =
-      std::unordered_map<RegAllocValue *, std::unordered_set<RegAllocValue *>>;
-  Graph IG;
-
-private:
-  void writeNodes(std::ofstream &OutFileStream);
-
-  std::unordered_map<RegAllocValue *, std::unordered_set<RegAllocValue *>>
-      WrittenEdges;
-
-public:
-  void writeEdge(std::ofstream &OutFileStream, RegAllocValue *From,
-                 RegAllocValue *To);
-  void reset() { WrittenEdges = {}; }
-  void addNode(RegAllocValue *Node);
-  std::unordered_set<RegAllocValue *> removeNode(RegAllocValue *);
-  std::unordered_set<RegAllocValue *> neighbors(RegAllocValue *);
-  bool hasNode(RegAllocValue *Node);
-  void addEdge(RegAllocValue *From, RegAllocValue *To);
-  void addEdges(const std::unordered_set<RegAllocValue *> &FromSet,
-                RegAllocValue *To);
-  virtual void writeGraph(std::ofstream &OutFileStream) override;
-  const Graph &graph() const { return IG; }
-};
 
 class RegisterAllocator {
 public:
