@@ -48,6 +48,7 @@ public:
   DominatorTree &dominatorTree();
   InterferenceGraph &interferenceGraph() { return IG; }
   std::vector<std::unique_ptr<ConstantValue>> &constants();
+  ConstantValue* constant(int Value);
   std::vector<std::unique_ptr<LocalVariable>> &locals();
   BasicBlock *entryBlock() const;
   std::vector<std::unique_ptr<BasicBlock>> &basicBlocks();

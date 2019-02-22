@@ -13,11 +13,20 @@ Function::Function(string Name, vector<unique_ptr<LocalVariable>> &&Locals)
 
 vector<unique_ptr<ConstantValue>> &Function::constants() { return Constants; }
 
+ConstantValue *Function::constant(int Value) {
+  auto ConstantIt = find_if(Constants.begin(), Constants.end(), [Value](auto &C) { return C->Val == Value; });
+  if (ConstantIt == Constants.end()) {
+    return Constants.emplace_back(make_unique<ConstantValue>(Value)).get();
+  } else {
+    return ConstantIt->get();
+  }
+}
+
 vector<unique_ptr<LocalVariable>> &Function::locals() { return Locals; }
 
 BasicBlock *Function::entryBlock() const { return BasicBlocks.front().get(); }
-
 vector<unique_ptr<BasicBlock>> &Function::basicBlocks() { return BasicBlocks; }
+
 const vector<unique_ptr<BasicBlock>> &Function::basicBlocks() const { return BasicBlocks; }
 
 string Function::toString() const { return Name; }
@@ -174,7 +183,6 @@ RegAllocValue *Function::lookupRegAllocVal(Value *Val) {
 
   return ValueToRegAllocVal[Val].get();
 }
-
 void Function::assignRegisters() {
   RegisterAllocator RA;
   RAColoring = RA.color(IG);

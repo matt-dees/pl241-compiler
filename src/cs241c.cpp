@@ -67,7 +67,7 @@ int main(int ArgC, char **ArgV) {
   }
 
   Phi2VarPass P2V;
-  P2V.run(*IR);
+  //P2V.run(*IR);
 
   ICP.run(*IR);
 

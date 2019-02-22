@@ -55,7 +55,7 @@ unordered_set<Value *> mark(Function &F) {
       }
     }
 
-    auto &ControlDependencies = ControlDependence.DominanceFrontier[I->getOwner()];
+    auto &ControlDependencies = ControlDependence.DominanceFrontier[I->owner()];
     transform(ControlDependencies.begin(), ControlDependencies.end(), inserter(LiveSet, LiveSet.end()),
               [](BasicBlock *CD) { return CD->terminator(); });
     transform(ControlDependencies.begin(), ControlDependencies.end(), back_inserter(WorkList),

@@ -52,7 +52,9 @@ bool Instruction::operator==(const Instruction &other) const {
   return (typeid(this).hash_code() == typeid(other).hash_code()) && other.arguments() == this->arguments();
 }
 
-BasicBlock *Instruction::getOwner() const { return Owner; }
+BasicBlock *Instruction::owner() const { return Owner; }
+
+BasicBlock *&Instruction::owner() { return Owner; }
 
 Variable *&Instruction::storage() { return Storage; }
 

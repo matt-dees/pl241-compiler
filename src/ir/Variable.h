@@ -35,6 +35,7 @@ class LocalVariable : public Variable {
 public:
   LocalVariable(std::string Name);
   LocalVariable(std::string Name, const std::vector<int> &ArrayDimensions);
+  LocalVariable(std::string Name, int WordCount);
 
   bool isMoveable() const override;
 };

@@ -54,7 +54,8 @@ public:
   Instruction(InstructionType, int Id, ValueRef Arg1);
   Instruction(InstructionType, int Id, ValueRef Arg1, ValueRef Arg2);
 
-  BasicBlock *getOwner() const;
+  BasicBlock *owner() const;
+  BasicBlock *&owner();
   Variable *&storage();
   std::vector<ValueRef> arguments() const;
   bool updateArgs(const std::map<ValueRef, ValueRef> &UpdateCtx);

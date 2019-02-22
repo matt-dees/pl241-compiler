@@ -4,7 +4,8 @@
 using namespace cs241c;
 using namespace std;
 
-Variable::Variable(string Ident, int WordCount) : Value(ValueType::Variable), Ident(move(Ident)), WordCount(WordCount) {}
+Variable::Variable(string Ident, int WordCount)
+    : Value(ValueType::Variable), Ident(move(Ident)), WordCount(WordCount) {}
 
 string Variable::ident() { return Ident; }
 
@@ -31,6 +32,9 @@ bool GlobalVariable::isMoveable() const { return false; }
 LocalVariable::LocalVariable(string Name) : Variable(move(Name), 1), IsArray(false) {}
 
 LocalVariable::LocalVariable(string Name, const vector<int> &ArrayDimensions)
-    : Variable(move(Name), calculateArrayWordSize(ArrayDimensions)), IsArray(true) {}
+    : Variable(move(Name), calculateArrayWordSize(ArrayDimensions)), IsArray(WordCount != 1) {}
+
+LocalVariable::LocalVariable(std::string Name, int WordCount)
+    : Variable(move(Name), WordCount), IsArray(WordCount != 1) {}
 
 bool LocalVariable::isMoveable() const { return !IsArray; }

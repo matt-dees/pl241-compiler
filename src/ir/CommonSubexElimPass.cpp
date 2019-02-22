@@ -110,7 +110,7 @@ void CommonSubexElimPass::run(Function &F) {
       // Rehash instruction because arguments may have changed
       HasMatch = CandidateInstructions.find(InstIter->get()) != CandidateInstructions.end();
       bool DominatedByMatch = HasMatch && F.dominatorTree().doesBlockDominate(
-                                              CandidateInstructions.at(InstIter->get())->getOwner(), Runner);
+          CandidateInstructions.at(InstIter->get())->owner(), Runner);
 
       if (DominatedByMatch) {
         // If this instruction is dominated by its match, update the
