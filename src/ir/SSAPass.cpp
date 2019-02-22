@@ -27,7 +27,7 @@ SSAContext SSAPass::recursiveNodeToSSA(BasicBlock *CurrentBB,
     return SSACtx;
   }
 
-  CurrentBB->toSSA(SSACtx);
+  basicBlockToSSA(*CurrentBB, SSACtx);
   Visited.insert(CurrentBB);
 
   for (auto VarChange : SSACtx.ssaVariableMap()) {
@@ -72,5 +72,24 @@ void SSAPass::recursiveGenAllPhis(BasicBlock *CurrentBB) {
   }
   for (auto BB : CurrentBB->successors()) {
     recursiveGenAllPhis(BB);
+  }
+}
+
+void SSAPass::basicBlockToSSA(BasicBlock &BB, SSAContext &SSACtx) {
+  // Remove MOVE instructions and update SSA context accordingly.
+  for (auto InstIter = BB.instructions().begin();
+       InstIter != BB.instructions().end();) {
+    if (auto MovInst = dynamic_cast<MoveInstruction *>(InstIter->get())) {
+      if (auto Target = dynamic_cast<Variable *>(MovInst->target())) {
+        SSACtx.updateVariable(Target, MovInst->source());
+      }
+      InstIter = BB.instructions().erase(InstIter);
+      continue;
+    }
+    (*InstIter)->updateArgs(SSACtx);
+    if (InstIter->get()->InstrT == InstructionType::Phi) {
+      SSACtx.updateVariable((*InstIter)->storage(), InstIter->get());
+    }
+    InstIter++;
   }
 }

@@ -1,5 +1,4 @@
 #include "BasicBlock.h"
-#include "SSAContext.h"
 #include "Variable.h"
 #include <algorithm>
 #include <array>
@@ -9,21 +8,30 @@
 using namespace cs241c;
 using namespace std;
 
-BasicBlock::FallthroughSuccessorProxy::FallthroughSuccessorProxy(BasicBlock *BB) : BB(BB) {}
+BasicBlock::FallthroughSuccessorProxy::FallthroughSuccessorProxy(BasicBlock *BB)
+    : BB(BB) {}
 
-BasicBlock::FallthroughSuccessorProxy::operator BasicBlock *() const { return BB->FallthroughSuccessor; }
+BasicBlock::FallthroughSuccessorProxy::operator BasicBlock *() const {
+  return BB->FallthroughSuccessor;
+}
 
-BasicBlock::FallthroughSuccessorProxy &BasicBlock::FallthroughSuccessorProxy::operator=(BasicBlock *Other) {
+BasicBlock::FallthroughSuccessorProxy &BasicBlock::FallthroughSuccessorProxy::
+operator=(BasicBlock *Other) {
   BB->updateSuccessor(BB->FallthroughSuccessor, Other);
   return *this;
 }
 
 BasicBlock::BasicBlock(string Name, deque<unique_ptr<Instruction>> Instructions)
-    : Value(ValueType::BasicBlock), Name(move(Name)), Predecessors({}), Instructions(move(Instructions)) {}
+    : Value(ValueType::BasicBlock), Name(move(Name)), Predecessors({}),
+      Instructions(move(Instructions)) {}
 
-const vector<BasicBlock *> &BasicBlock::predecessors() const { return Predecessors; }
+const vector<BasicBlock *> &BasicBlock::predecessors() const {
+  return Predecessors;
+}
 
-BasicBlock::FallthroughSuccessorProxy BasicBlock::fallthoughSuccessor() { return {this}; }
+BasicBlock::FallthroughSuccessorProxy BasicBlock::fallthoughSuccessor() {
+  return {this};
+}
 
 vector<BasicBlock *> BasicBlock::successors() const {
   vector<BasicBlock *> Result;
@@ -45,7 +53,8 @@ vector<BasicBlock *> BasicBlock::successors() const {
 void BasicBlock::updateSuccessor(BasicBlock *From, BasicBlock *To) {
   if (From != nullptr) {
     auto &FromPreds = From->Predecessors;
-    FromPreds.erase(remove(FromPreds.begin(), FromPreds.end(), this), FromPreds.end());
+    FromPreds.erase(remove(FromPreds.begin(), FromPreds.end(), this),
+                    FromPreds.end());
   }
 
   if (From == FallthroughSuccessor) {
@@ -65,7 +74,9 @@ void BasicBlock::updateSuccessor(BasicBlock *From, BasicBlock *To) {
   }
 }
 
-deque<unique_ptr<Instruction>> &BasicBlock::instructions() { return Instructions; }
+deque<unique_ptr<Instruction>> &BasicBlock::instructions() {
+  return Instructions;
+}
 
 BasicBlockTerminator *BasicBlock::terminator() const {
   if (Instructions.empty())
@@ -76,21 +87,26 @@ BasicBlockTerminator *BasicBlock::terminator() const {
 void BasicBlock::appendInstruction(unique_ptr<Instruction> I) {
   I->Owner = this;
   auto Pos = Instructions.end();
-  if (!Instructions.empty() && dynamic_cast<BasicBlockTerminator *>(Instructions.back().get()))
+  if (!Instructions.empty() &&
+      dynamic_cast<BasicBlockTerminator *>(Instructions.back().get()))
     --Pos;
   Instructions.insert(Pos, move(I));
 }
 
-void BasicBlock::appendPredecessor(BasicBlock *BB) { Predecessors.push_back(BB); }
+void BasicBlock::appendPredecessor(BasicBlock *BB) {
+  Predecessors.push_back(BB);
+}
 bool BasicBlock::isTerminated() {
-  return !Instructions.empty() && dynamic_cast<BasicBlockTerminator *>(Instructions.back().get());
+  return !Instructions.empty() &&
+         dynamic_cast<BasicBlockTerminator *>(Instructions.back().get());
 }
 
 void BasicBlock::terminate(unique_ptr<BasicBlockTerminator> T) {
-  static const array<InstructionType, 6> ConditionalBranches{InstructionType::Bne, InstructionType::Beq,
-                                                             InstructionType::Ble, InstructionType::Blt,
-                                                             InstructionType::Bge, InstructionType::Bgt};
-  if (find(ConditionalBranches.begin(), ConditionalBranches.end(), T->InstrT) == ConditionalBranches.end()) {
+  static const array<InstructionType, 6> ConditionalBranches{
+      InstructionType::Bne, InstructionType::Beq, InstructionType::Ble,
+      InstructionType::Blt, InstructionType::Bge, InstructionType::Bgt};
+  if (find(ConditionalBranches.begin(), ConditionalBranches.end(), T->InstrT) ==
+      ConditionalBranches.end()) {
     fallthoughSuccessor() = nullptr;
   }
 
@@ -120,29 +136,12 @@ unique_ptr<BasicBlockTerminator> BasicBlock::releaseTerminator() {
   auto Successor = Terminator->target();
   if (Successor != nullptr) {
     auto &FollowerPredecessors = Terminator->target()->Predecessors;
-    FollowerPredecessors.erase(remove(FollowerPredecessors.begin(), FollowerPredecessors.end(), this),
-                               FollowerPredecessors.end());
+    FollowerPredecessors.erase(
+        remove(FollowerPredecessors.begin(), FollowerPredecessors.end(), this),
+        FollowerPredecessors.end());
   }
 
   return TerminatorPtr;
-}
-
-void BasicBlock::toSSA(SSAContext &SSACtx) {
-  // Remove MOVE instructions and update SSA context accordingly.
-  for (auto InstIter = Instructions.begin(); InstIter != Instructions.end();) {
-    if (auto MovInst = dynamic_cast<MoveInstruction *>(InstIter->get())) {
-      if (auto Target = dynamic_cast<Variable *>(MovInst->target())) {
-        SSACtx.updateVariable(Target, MovInst->source());
-      }
-      InstIter = Instructions.erase(InstIter);
-      continue;
-    }
-    (*InstIter)->updateArgs(SSACtx);
-    if (InstIter->get()->InstrT == InstructionType::Phi) {
-      SSACtx.updateVariable((*InstIter)->storage(), InstIter->get());
-    }
-    InstIter++;
-  }
 }
 
 void BasicBlock::insertPhiInstruction(unique_ptr<Instruction> Phi) {
@@ -173,19 +172,23 @@ vector<Variable *> BasicBlock::getMoveTargets() {
   return TargetsForPhis;
 }
 
-void BasicBlock::updatePhiInst(cs241c::BasicBlock *From, cs241c::Variable *VarToChange, cs241c::Value *NewVal) {
+void BasicBlock::updatePhiInst(cs241c::BasicBlock *From,
+                               cs241c::Variable *VarToChange,
+                               cs241c::Value *NewVal) {
   if (PhiInstrMap.find(VarToChange) == PhiInstrMap.end()) {
     return;
   }
   Instruction *Phi = PhiInstrMap.at(VarToChange);
   auto Index = getPredecessorIndex(From);
   if (Index == -1) {
-    throw logic_error("Invalid PHI update from block: " + string(From->toString()));
+    throw logic_error("Invalid PHI update from block: " +
+                      string(From->toString()));
   }
   Phi->updateArg(static_cast<int>(Index), NewVal);
 }
 
-vector<BasicBlock *>::difference_type BasicBlock::getPredecessorIndex(cs241c::BasicBlock *Predecessor) {
+vector<BasicBlock *>::difference_type
+BasicBlock::getPredecessorIndex(cs241c::BasicBlock *Predecessor) {
   auto It = find(Predecessors.begin(), Predecessors.end(), Predecessor);
   if (It == Predecessors.end()) {
     return -1;

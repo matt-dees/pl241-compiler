@@ -22,6 +22,7 @@ private:
   void recursiveGenAllPhis(BasicBlock *CurrentBB);
   void propagateChangeToPhis(BasicBlock *SourceBB, Variable *ChangedVar,
                              Value *NewVal);
+  void basicBlockToSSA(BasicBlock &BB, SSAContext &SSCtx);
 };
 } // namespace cs241c
 

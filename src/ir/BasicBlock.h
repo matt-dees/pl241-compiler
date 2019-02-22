@@ -40,7 +40,8 @@ private:
   std::deque<std::unique_ptr<Instruction>> Instructions;
 
 public:
-  BasicBlock(std::string Name, std::deque<std::unique_ptr<Instruction>> Instructions = {});
+  BasicBlock(std::string Name,
+             std::deque<std::unique_ptr<Instruction>> Instructions = {});
 
   const std::vector<BasicBlock *> &predecessors() const;
 
@@ -57,12 +58,12 @@ public:
   bool isTerminated();
   void terminate(std::unique_ptr<BasicBlockTerminator> T);
   std::unique_ptr<BasicBlockTerminator> releaseTerminator();
-  void toSSA(SSAContext &SSACtx);
 
   void insertPhiInstruction(std::unique_ptr<Instruction> Phi);
   void updatePhiInst(BasicBlock *From, Variable *VarToChange, Value *NewVal);
 
-  std::vector<BasicBlock *>::difference_type getPredecessorIndex(BasicBlock *Predecessor);
+  std::vector<BasicBlock *>::difference_type
+  getPredecessorIndex(BasicBlock *Predecessor);
 
   std::vector<Variable *> getMoveTargets();
 

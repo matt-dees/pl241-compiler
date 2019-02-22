@@ -63,14 +63,6 @@ public:
     return InstrP;
   }
 
-  template <typename... Params> Instruction *makePhiInstruction(Variable *Storage, Params... Args) {
-    auto Instr = std::make_unique<Instruction>(InstructionType::Phi, genInstructionId(), Args...);
-    Instr->storage() = Storage;
-    Instruction *InstrP = Instr.get();
-    CurrentBlock->insertPhiInstruction(move(Instr));
-    return InstrP;
-  }
-
   BasicBlock *makeBasicBlock();
 };
 } // namespace cs241c
