@@ -68,17 +68,17 @@ int main(int ArgC, char **ArgV) {
 
   ICP.run(*IR);
 
-  FA.runRegisterAllocation(IR.get());
+  // FA.runRegisterAllocation(IR.get());
 
-  if (GenerateVcg) {
-    for (auto &F : IR->functions()) {
-      string IGOutput{string(InputFile) + "." + F->toString() + ".ig.vcg"};
-      removeFile(IGOutput);
-      AnnotatedIG AIG(*(FA.interferenceGraph(F.get())),
-                      *(FA.coloring(F.get())));
-      AIG.writeToFile(IGOutput);
-    }
-  }
+  // if (GenerateVcg) {
+  //   for (auto &F : IR->functions()) {
+  //     string IGOutput{string(InputFile) + "." + F->toString() + ".ig.vcg"};
+  //     removeFile(IGOutput);
+  //     AnnotatedIG AIG(*(FA.interferenceGraph(F.get())),
+  //                     *(FA.coloring(F.get())));
+  //     AIG.writeToFile(IGOutput);
+  //   }
+  // }
 
   // Phi2VarPass P2V;
   // P2V.run(*IR);
