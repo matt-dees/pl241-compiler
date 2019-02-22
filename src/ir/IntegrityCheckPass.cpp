@@ -63,7 +63,7 @@ void IntegrityCheckPass::run(Module &M) {
       for (auto &Instr : BB->instructions()) {
         int ArgIndex = 0;
         for (auto Arg : Instr->arguments()) {
-          if (Values.find(Arg) == Values.end()) {
+          if (Arg.ValTy != ValueType::Register && Values.find(Arg) == Values.end()) {
             stringstream ErrorMessage;
             ErrorMessage << "Instruction [" << Instr->name() << ": " << mnemonic(Instr->InstrT) << "] argument "
                          << ArgIndex << " in block " << BB->name() << " is deleted.";

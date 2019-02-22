@@ -1,5 +1,6 @@
 #include "Computation.h"
 #include "IrGenContext.h"
+#include "Mem2VarPass.h"
 #include <algorithm>
 
 using namespace cs241c;

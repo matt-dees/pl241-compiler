@@ -33,7 +33,10 @@ unordered_set<Value *> mark(Function &F) {
 
   for (auto &BB : F.basicBlocks()) {
     for (auto &I : BB->instructions()) {
-      if (find(PreLive.begin(), PreLive.end(), I->InstrT) != PreLive.end()) {
+      // Mark all terminators live for now so we don't remove stuff needed for
+      // Phi2Var.
+      if (find(PreLive.begin(), PreLive.end(), I->InstrT) != PreLive.end() ||
+          dynamic_cast<BasicBlockTerminator *>(I.get())) {
         LiveSet.insert(I.get());
         WorkList.push_back(I.get());
       }
@@ -52,9 +55,7 @@ unordered_set<Value *> mark(Function &F) {
         }
       }
     }
-
-    auto &ControlDependencies =
-        ControlDependence.DominanceFrontier[I->getOwner()];
+    auto &ControlDependencies = ControlDependence.DominanceFrontier[I->owner()];
     transform(ControlDependencies.begin(), ControlDependencies.end(),
               inserter(LiveSet, LiveSet.end()),
               [](BasicBlock *CD) { return CD->terminator(); });
@@ -69,14 +70,16 @@ unordered_set<Value *> mark(Function &F) {
 void erase(Function &F, const unordered_set<Value *> &LiveValues) {
   for (auto &BB : F.basicBlocks()) {
     auto &Instructions = BB->instructions();
-    Instructions.erase(remove_if(Instructions.begin(), Instructions.end(),
-                                 [&LiveValues](const auto &Instruction) {
-                                   return LiveValues.find(Instruction.get()) ==
-                                              LiveValues.end() &&
-                                          dynamic_cast<BasicBlockTerminator *>(
-                                              Instruction.get()) == nullptr;
-                                 }),
-                       Instructions.end());
+    Instructions.erase(
+        remove_if(Instructions.begin(), Instructions.end(),
+                  [&LiveValues](const auto &Instruction) {
+                    bool IsDead =
+                        LiveValues.find(Instruction.get()) == LiveValues.end();
+                    bool IsNotTerminator = dynamic_cast<BasicBlockTerminator *>(
+                                               Instruction.get()) == nullptr;
+                    return IsDead && IsNotTerminator;
+                  }),
+        Instructions.end());
   }
 }
 
@@ -105,7 +108,8 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB,
 
     if (auto Branch = dynamic_cast<BraInstruction *>(BB->terminator())) {
       if (BB->instructions().size() == 1 && BB->predecessors().size() <= 1) {
-        BB = Followers.front();
+        // Disable removal of empty blocks for Phi2Var.
+        // BB = Followers.front();
       } else {
         BB->updateSuccessor(
             Followers.front(),
@@ -114,7 +118,8 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB,
       }
     } else if (BB->fallthoughSuccessor() != nullptr) {
       if (BB->instructions().size() == 0 && BB->predecessors().size() <= 1) {
-        BB = Followers.front();
+        // Disable removal of empty blocks for Phi2Var.
+        // BB = Followers.front();
       } else {
         BB->updateSuccessor(
             Followers.front(),

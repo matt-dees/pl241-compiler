@@ -1,4 +1,5 @@
 #include "SSAPass.h"
+#include "Instruction.h"
 #include "NameGen.h"
 #include <algorithm>
 #include <unordered_set>
@@ -61,9 +62,10 @@ void SSAPass::recursiveGenAllPhis(BasicBlock *CurrentBB) {
   for (auto DFEntry :
        FA.dominatorTree(CurrentFunction)->dominanceFrontier(CurrentBB)) {
     for (auto &Target : MoveTargets) {
-      auto Phi = std::make_unique<PhiInstruction>(NameGen::genInstructionId(),
-                                                  Target, Target, Target);
-      DFEntry->appendInstruction(move(Phi));
+      auto Phi = std::make_unique<Instruction>(
+          InstructionType::Phi, NameGen::genInstructionId(), Target, Target);
+      Phi->storage() = Target;
+      DFEntry->insertPhiInstruction(move(Phi));
       Visited.erase(DFEntry);
       recursiveGenAllPhis(DFEntry);
     }

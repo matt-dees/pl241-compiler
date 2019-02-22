@@ -75,7 +75,10 @@ BasicBlockTerminator *BasicBlock::terminator() const {
 
 void BasicBlock::appendInstruction(unique_ptr<Instruction> I) {
   I->Owner = this;
-  Instructions.push_back(move(I));
+  auto Pos = Instructions.end();
+  if (!Instructions.empty() && dynamic_cast<BasicBlockTerminator *>(Instructions.back().get()))
+    --Pos;
+  Instructions.insert(Pos, move(I));
 }
 
 void BasicBlock::appendPredecessor(BasicBlock *BB) { Predecessors.push_back(BB); }
@@ -135,20 +138,20 @@ void BasicBlock::toSSA(SSAContext &SSACtx) {
       continue;
     }
     (*InstIter)->updateArgs(SSACtx);
-    if (auto PhiInst = dynamic_cast<PhiInstruction *>(InstIter->get())) {
-      SSACtx.updateVariable(PhiInst->Target, PhiInst);
+    if (InstIter->get()->InstrT == InstructionType::Phi) {
+      SSACtx.updateVariable((*InstIter)->storage(), InstIter->get());
     }
     InstIter++;
   }
 }
 
-void BasicBlock::insertPhiInstruction(unique_ptr<PhiInstruction> Phi) {
+void BasicBlock::insertPhiInstruction(unique_ptr<Instruction> Phi) {
   Phi->Owner = this;
-  auto PhiMapEntry = PhiInstrMap.find(Phi->Target);
+  auto PhiMapEntry = PhiInstrMap.find(Phi->storage());
   if (PhiMapEntry == PhiInstrMap.end()) {
     // Basic Block does not contain a Phi node for this variable.
     // Create one and add it to the front of the instruction double ended queue.
-    PhiInstrMap[Phi->Target] = Phi.get();
+    PhiInstrMap[Phi->storage()] = Phi.get();
     Instructions.push_front(move(Phi));
     return;
   }
@@ -162,8 +165,8 @@ vector<Variable *> BasicBlock::getMoveTargets() {
       if (auto Target = dynamic_cast<Variable *>(MovInst->target())) {
         TargetsForPhis.push_back(Target);
       }
-    } else if (auto PhiInst = dynamic_cast<PhiInstruction *>(I.get())) {
-      TargetsForPhis.push_back(PhiInst->Target);
+    } else if (I->InstrT == InstructionType::Phi) {
+      TargetsForPhis.push_back(I->storage());
     }
   }
 
@@ -174,12 +177,12 @@ void BasicBlock::updatePhiInst(cs241c::BasicBlock *From, cs241c::Variable *VarTo
   if (PhiInstrMap.find(VarToChange) == PhiInstrMap.end()) {
     return;
   }
-  PhiInstruction *Phi = PhiInstrMap.at(VarToChange);
+  Instruction *Phi = PhiInstrMap.at(VarToChange);
   auto Index = getPredecessorIndex(From);
   if (Index == -1) {
-    throw runtime_error("Invalid PHI update from block: " + string(From->toString()));
+    throw logic_error("Invalid PHI update from block: " + string(From->toString()));
   }
-  Phi->updateArg(static_cast<unsigned long>(Index), NewVal);
+  Phi->updateArg(static_cast<int>(Index), NewVal);
 }
 
 vector<BasicBlock *>::difference_type BasicBlock::getPredecessorIndex(cs241c::BasicBlock *Predecessor) {

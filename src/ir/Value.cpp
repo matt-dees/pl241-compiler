@@ -12,12 +12,13 @@ struct ValTyInfo {
   const string_view Name;
 };
 
-static array<ValTyInfo, 10> SuperTypes{{{ValTyT::Undef, "Undef"},
+static array<ValTyInfo, 11> SuperTypes{{{ValTyT::Undef, "Undef"},
                                         {ValTyT::Any, "Any"},
                                         {ValTyT::Any, "Unit"},
                                         {ValTyT::Any, "Value"},
                                         {ValTyT::Value, "Constant"},
                                         {ValTyT::Value, "Variable"},
+                                        {ValTyT::Variable, "Register"},
                                         {ValTyT::Value, "Cmp"},
                                         {ValTyT::Value, "Adda"},
                                         {ValTyT::Any, "BasicBlock"},

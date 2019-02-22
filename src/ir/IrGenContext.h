@@ -28,17 +28,13 @@ class IrGenContext {
   std::unordered_map<std::string, Symbol> LocalsTable;
 
   BasicBlock *CurrentBlock;
-  Variable *CurrentVariable;
 
 public:
-  bool DisableStorageAssignment = false;
-
   IrGenContext(Module *CompilationUnit);
 
   Value *globalBase();
 
   BasicBlock *&currentBlock();
-  Variable *&currentVariable();
 
   const std::unordered_map<std::string, Symbol> &localsTable() const;
 
@@ -62,17 +58,15 @@ public:
 
   template <typename T, typename... Params> T *makeInstruction(Params... Args) {
     auto Instr = std::make_unique<T>(genInstructionId(), Args...);
-    if (!DisableStorageAssignment && isSubtype(Instr->ValTy, ValueType::Value)) {
-      Instr->storage() = CurrentVariable;
-    }
     T *InstrP = Instr.get();
     CurrentBlock->appendInstruction(move(Instr));
     return InstrP;
   }
 
-  template <typename... Params> PhiInstruction *makePhiInstruction(Params... Args) {
-    auto Instr = std::make_unique<PhiInstruction>(genInstructionId(), Args...);
-    PhiInstruction *InstrP = Instr.get();
+  template <typename... Params> Instruction *makePhiInstruction(Variable *Storage, Params... Args) {
+    auto Instr = std::make_unique<Instruction>(InstructionType::Phi, genInstructionId(), Args...);
+    Instr->storage() = Storage;
+    Instruction *InstrP = Instr.get();
     CurrentBlock->insertPhiInstruction(move(Instr));
     return InstrP;
   }

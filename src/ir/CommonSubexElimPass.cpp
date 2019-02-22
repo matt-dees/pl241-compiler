@@ -43,9 +43,10 @@ struct InstructionEquality {
 
 namespace {
 bool shouldIgnore(Instruction *I) {
-  static const array<InstructionType, 6> IgnoredInstructions{
-      InstructionType::Store, InstructionType::Param, InstructionType::Call,
-      InstructionType::Read,  InstructionType::Write, InstructionType::WriteNL};
+  static const array<InstructionType, 7> IgnoredInstructions{
+      InstructionType::Load,   InstructionType::Store, InstructionType::Param,
+      InstructionType::Call,   InstructionType::Read,  InstructionType::Write,
+      InstructionType::WriteNL};
   return dynamic_cast<BasicBlockTerminator *>(I) != nullptr ||
          find(IgnoredInstructions.begin(), IgnoredInstructions.end(),
               I->InstrT) != IgnoredInstructions.end();
@@ -77,10 +78,10 @@ void CommonSubexElimPass::run(Function &F) {
   //
   unordered_map<Instruction *, Instruction *, InstructionHasher,
                 InstructionEquality>
-      CandidateInstructions = {};
-  unordered_map<Value *, Value *> Replacements = {};
-  stack<BasicBlock *> BlocksToExplore = {};
-  unordered_set<BasicBlock *> VisitedBlocks = {};
+      CandidateInstructions;
+  map<ValueRef, ValueRef> Replacements;
+  stack<BasicBlock *> BlocksToExplore;
+  unordered_set<BasicBlock *> VisitedBlocks;
 
   BlocksToExplore.push(F.entryBlock());
 
@@ -121,7 +122,7 @@ void CommonSubexElimPass::run(Function &F) {
       bool DominatedByMatch =
           HasMatch &&
           FA.dominatorTree(&F)->doesBlockDominate(
-              CandidateInstructions.at(InstIter->get())->getOwner(), Runner);
+              CandidateInstructions.at(InstIter->get())->owner(), Runner);
 
       if (DominatedByMatch) {
         // If this instruction is dominated by its match, update the

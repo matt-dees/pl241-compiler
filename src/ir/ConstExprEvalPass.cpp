@@ -18,20 +18,21 @@ array<InstructionType, 5> ArithmethicInstrs{InstructionType::Neg, InstructionTyp
 
 bool canEvaluate(const Instruction *I) {
   auto Arguments = I->arguments();
-  bool ConstArgs = all_of(Arguments.begin(), Arguments.end(),
-                          [](Value *Arg) { return dynamic_cast<ConstantValue *>(Arg) != nullptr; });
-  if (!ConstArgs) {
+
+  bool OnlyConstArgs =
+      all_of(Arguments.begin(), Arguments.end(), [](Value *Arg) { return Arg->ValTy == ValueType::Constant; });
+  if (!OnlyConstArgs) {
     return false;
   }
 
   if (find(ArithmethicInstrs.begin(), ArithmethicInstrs.end(), I->InstrT) != ArithmethicInstrs.end()) {
-    if (I->InstrT != InstructionType::Div || dynamic_cast<ConstantValue *>(Arguments[1])->Val != 0) {
+    if (I->InstrT != InstructionType::Div || dynamic_cast<ConstantValue *>(&*Arguments[1])->Val != 0) {
       return true;
     }
   }
 
   if (I->InstrT == InstructionType::Phi) {
-    if (dynamic_cast<ConstantValue *>(Arguments[0])->Val == dynamic_cast<ConstantValue *>(Arguments[1])->Val) {
+    if (dynamic_cast<ConstantValue *>(&*Arguments[0])->Val == dynamic_cast<ConstantValue *>(&*Arguments[1])->Val) {
       return true;
     }
   }
@@ -42,13 +43,13 @@ bool canEvaluate(const Instruction *I) {
 int evaluate(Instruction *I) {
   auto Arguments = I->arguments();
 
-  int Arg0 = dynamic_cast<ConstantValue *>(Arguments[0])->Val;
+  int Arg0 = dynamic_cast<ConstantValue *>(&*Arguments[0])->Val;
 
   if (I->InstrT == InstructionType::Neg) {
     return -Arg0;
   }
 
-  int Arg1 = dynamic_cast<ConstantValue *>(Arguments[1])->Val;
+  int Arg1 = dynamic_cast<ConstantValue *>(&*Arguments[1])->Val;
   if (I->InstrT == InstructionType::Add) {
     return Arg0 + Arg1;
   }
@@ -76,19 +77,15 @@ void process(Function &F) {
   transform(Constants.begin(), Constants.end(), inserter(ConstantsMap, ConstantsMap.end()),
             [](unique_ptr<ConstantValue> &Constant) { return make_pair(Constant->Val, Constant.get()); });
 
-  unordered_map<Value *, Value *> Substitions;
+  map<ValueRef, ValueRef> Substitutions;
 
-  vector<BasicBlock *> WorkingSet{F.entryBlock()};
-  unordered_set<BasicBlock *> MarkedBlocks;
+  auto BlockOrder = F.postOrderCfg();
+  reverse(BlockOrder.begin(), BlockOrder.end());
 
-  while (!WorkingSet.empty()) {
-    BasicBlock *BB = WorkingSet.back();
-    WorkingSet.pop_back();
-    MarkedBlocks.insert(BB);
-
+  for (auto BB : BlockOrder) {
     for (auto &InstructionPtr : BB->instructions()) {
       Instruction *I = InstructionPtr.get();
-      I->updateArgs(Substitions);
+      I->updateArgs(Substitutions);
 
       if (canEvaluate(I)) {
         int InstructionResult = evaluate(I);
@@ -100,15 +97,7 @@ void process(Function &F) {
           F.constants().push_back(move(NewConstant));
         }
 
-        Substitions[I] = ConstantsMap[InstructionResult];
-      }
-    }
-
-    for (auto Follower : BB->successors()) {
-      auto &Predecessors = Follower->predecessors();
-      if (all_of(Predecessors.begin(), Predecessors.end(),
-                 [MarkedBlocks](auto &Pred) { return MarkedBlocks.find(Pred) != MarkedBlocks.end(); })) {
-        WorkingSet.push_back(Follower);
+        Substitutions[I] = ConstantsMap[InstructionResult];
       }
     }
   }

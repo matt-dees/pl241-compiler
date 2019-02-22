@@ -4,7 +4,9 @@
 #include "Filesystem.h"
 #include "IntegrityCheckPass.h"
 #include "Lexer.h"
+#include "Mem2VarPass.h"
 #include "Parser.h"
+#include "Phi2VarPass.h"
 #include "SSAPass.h"
 #include <algorithm>
 #include <fstream>
@@ -41,6 +43,9 @@ int main(int ArgC, char **ArgV) {
 
   FA.runDominanceAnalytics(IR.get());
 
+  Mem2VarPass M2V(FA);
+  M2V.run(*IR);
+
   SSAPass SSAP(FA);
   SSAP.run(*IR);
 
@@ -66,10 +71,6 @@ int main(int ArgC, char **ArgV) {
   FA.runRegisterAllocation(IR.get());
 
   if (GenerateVcg) {
-    string VcgOutput{string(InputFile) + ".vcg"};
-    removeFile(VcgOutput);
-    IR->writeToFile(VcgOutput);
-
     for (auto &F : IR->functions()) {
       string IGOutput{string(InputFile) + "." + F->toString() + ".ig.vcg"};
       removeFile(IGOutput);
@@ -77,6 +78,17 @@ int main(int ArgC, char **ArgV) {
                       *(FA.coloring(F.get())));
       AIG.writeToFile(IGOutput);
     }
+  }
+
+  // Phi2VarPass P2V;
+  // P2V.run(*IR);
+
+  ICP.run(*IR);
+
+  if (GenerateVcg) {
+    string VcgOutput{string(InputFile) + ".vcg"};
+    removeFile(VcgOutput);
+    IR->writeToFile(VcgOutput);
   }
 
   return 0;

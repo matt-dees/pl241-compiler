@@ -7,21 +7,22 @@ using namespace std;
 Assignment::Assignment(unique_ptr<Designator> Lhs, unique_ptr<Expr> Rhs) : Lhs(move(Lhs)), Rhs(move(Rhs)) {}
 
 void Assignment::genIr(IrGenContext &Ctx) const {
-  Ctx.currentVariable() = Ctx.lookupVariable(Lhs->ident()).Var;
-  Lhs->genStore(Ctx, Rhs->genIr(Ctx));
-  Ctx.currentVariable() = nullptr;
+  auto Storage = Ctx.lookupVariable(Lhs->ident());
+  auto Value = Rhs->genIr(Ctx, Storage.Var);
+  Lhs->genStore(Ctx, Value);
 }
 
 ReturnStmt::ReturnStmt(unique_ptr<Expr> E) : E(move(E)) {}
 
 void ReturnStmt::genIr(IrGenContext &Ctx) const {
+  auto Value = E->genIr(Ctx, nullptr);
   Ctx.currentBlock()->terminate(
-      make_unique<BasicBlockTerminator>(InstructionType::Ret, Ctx.genInstructionId(), E->genIr(Ctx)));
+      make_unique<BasicBlockTerminator>(InstructionType::Ret, Ctx.genInstructionId(), Value));
 }
 
 FunctionCallStmt::FunctionCallStmt(FunctionCall CallExpr) : CallExpr(move(CallExpr)) {}
 
-void FunctionCallStmt::genIr(IrGenContext &Ctx) const { CallExpr.genIr(Ctx); }
+void FunctionCallStmt::genIr(IrGenContext &Ctx) const { CallExpr.genIr(Ctx, nullptr); }
 
 IfStmt::IfStmt(Relation Rel, vector<unique_ptr<Stmt>> Then, vector<unique_ptr<Stmt>> Else)
     : Rel(move(Rel)), Then(move(Then)), Else(move(Else)) {}

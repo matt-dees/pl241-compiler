@@ -2,56 +2,96 @@
 #include "Module.h"
 #include "NameGen.h"
 #include <algorithm>
+#include <map>
+#include <stack>
+#include <unordered_set>
 
 using namespace cs241c;
 using namespace std;
 
 void Mem2VarPass::run(Module &M) {
+  unordered_set<GlobalVariable *> ActuallyGlobal;
+
   for (auto &F : M.functions()) {
-    run(F.get());
-  }
-}
+    if (F->name() == "main") {
+      map<Variable *, LocalVariable *> LocalSubstitutions;
 
-void Mem2VarPass::run(Function *F) {
-  CurrentFunction = F;
-  CurrentFunctionLoads.clear();
-  CurrentFunctionStores.clear();
-  KnownVars.clear();
+      auto InitConst = F->constant(0);
 
-  BasicBlock *NextBB = F->entryBlock();
-  while (NextBB) {
-    NextBB = run(NextBB);
-  }
-}
+      for (auto &Global : M.globals()) {
+        if (ActuallyGlobal.find(Global.get()) == ActuallyGlobal.end()) {
+          auto Local = make_unique<LocalVariable>(string("_") + (Global->name().data() + 1), Global->wordCount());
+          LocalSubstitutions[Global.get()] = Local.get();
 
-BasicBlock *Mem2VarPass::run(BasicBlock *BB) {
-  const auto BBEnd = BB->end();
-  for (size_t InstrI = 0; InstrI < BB->instructions().size(); ++InstrI) {
-    Instruction *InstrPtr = BB->instructions()[InstrI].get();
-    if (InstrPtr->InstrT == InstructionType::Load) {
-      auto Load = dynamic_cast<MemoryInstruction *>(InstrPtr);
-      auto Object = Load->object();
-      CurrentFunctionLoads.insert(Object);
-      if (!Object->isSingleWord())
-        continue;
-      auto KnownVar = KnownVars.find(Object);
-      if (KnownVar != KnownVars.end()) {
-        LocalVariable *KnownVarPtr = KnownVar->second;
-        for_each(BB->begin() + InstrI + 1, BBEnd, [InstrPtr, KnownVarPtr](unique_ptr<Instruction> &I) {
-          replace(I->arguments().begin(), I->arguments().end(), static_cast<Value *>(InstrPtr),
-                  static_cast<Value *>(KnownVarPtr));
-        });
-      } else {
-        auto Local = make_unique<LocalVariable>(string("$") + Object->ident());
-        auto LocalPtr = Local.get();
-        auto Move = make_unique<MoveInstruction>(NameGen::genInstructionId(), Load, Local.get());
-        CurrentFunction->locals().push_back(move(Local));
-        BB->instructions().insert(BB->begin() + InstrI + 1, move(Move));
-        KnownVars[Object] = LocalPtr;
+          auto InitLocalMove = make_unique<MoveInstruction>(NameGen::genInstructionId(), InitConst, Local.get());
+          InitLocalMove->owner() = F->entryBlock();
+          F->entryBlock()->instructions().push_front(move(InitLocalMove));
+
+          F->locals().push_back(move(Local));
+        }
       }
-    } else if (InstrPtr->InstrT == InstructionType::Store) {
-    } else if (InstrPtr->InstrT == InstructionType::Call) {
+
+      map<ValueRef, ValueRef> ArgSubstitutions;
+
+      unordered_set<BasicBlock *> MarkedBlocks;
+      stack<BasicBlock *> WorkingSet{{F->entryBlock()}};
+      while (!WorkingSet.empty()) {
+        BasicBlock *BB = WorkingSet.top();
+        WorkingSet.pop();
+
+        if (MarkedBlocks.find(BB) != MarkedBlocks.end()) {
+          bool Change = false;
+          for (auto &Instr : BB->instructions()) {
+            Change |= Instr->updateArgs(ArgSubstitutions);
+          }
+
+          if (Change) {
+            for (auto Successor : BB->successors()) {
+              WorkingSet.push(Successor);
+            }
+          }
+        } else {
+          MarkedBlocks.insert(BB);
+
+          auto &Instructions = BB->instructions();
+
+          for (auto InstrIt = Instructions.begin(); InstrIt != Instructions.end(); ++InstrIt) {
+            if (auto MemInstr = dynamic_cast<MemoryInstruction *>(InstrIt->get())) {
+              if (LocalSubstitutions.find(MemInstr->object()) != LocalSubstitutions.end()) {
+                if (MemInstr->InstrT == InstructionType::Load) {
+                  ArgSubstitutions[MemInstr] = LocalSubstitutions[MemInstr->object()];
+                } else if (MemInstr->InstrT == InstructionType::Store) {
+                  auto Move = make_unique<MoveInstruction>(NameGen::genInstructionId(), MemInstr->arguments()[0],
+                                                           LocalSubstitutions[MemInstr->object()]);
+                  Move->owner() = BB;
+                  InstrIt = Instructions.erase(InstrIt);
+                  Instructions.insert(InstrIt, move(Move));
+                }
+              }
+            }
+
+            auto &Instr = *InstrIt;
+            Instr->updateArgs(ArgSubstitutions);
+            if (LocalSubstitutions.find(Instr->storage()) != LocalSubstitutions.end()) {
+              Instr->storage() = LocalSubstitutions[Instr->storage()];
+            }
+          }
+
+          for (auto Successor : BB->successors()) {
+            WorkingSet.push(Successor);
+          }
+        }
+      }
+    } else {
+      for (auto &BB : F->basicBlocks()) {
+        for (auto &I : BB->instructions()) {
+          for (ValueRef Arg : I->arguments()) {
+            if (auto Global = dynamic_cast<GlobalVariable *>(Arg.R.Ptr)) {
+              ActuallyGlobal.insert(Global);
+            }
+          }
+        }
+      }
     }
   }
-  return nullptr;
 }

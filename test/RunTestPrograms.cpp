@@ -4,7 +4,9 @@
 #include "Filesystem.h"
 #include "IntegrityCheckPass.h"
 #include "Lexer.h"
+#include "Mem2VarPass.h"
 #include "Parser.h"
+#include "SSAPass.h"
 #include <algorithm>
 #include <catch.hpp>
 #include <fstream>
@@ -25,20 +27,29 @@ TEST_CASE("Compile and run test programs") {
       vector<Token> Tokens = lex(Text);
       Computation AST = parse(Tokens);
       auto IR = AST.genIr();
+      FunctionAnalyzer FA;
 
-      ConstExprEvalPass CEE;
+      FA.runDominanceAnalytics(IR.get());
+
+      Mem2VarPass M2V(FA);
+      M2V.run(*IR);
+
+      SSAPass SSAP(FA);
+      SSAP.run(*IR);
+
+      ConstExprEvalPass CEE(FA);
       CEE.run(*IR);
 
-      CommonSubexElimPass CSE;
+      CommonSubexElimPass CSE(FA);
       CSE.run(*IR);
 
-      DeadCodeEliminationPass DCEP;
+      DeadCodeEliminationPass DCEP(FA);
       DCEP.run(*IR);
 
-      IntegrityCheckPass ICP;
+      IntegrityCheckPass ICP(FA);
       ICP.run(*IR);
 
-      IR->allocateRegisters();
+      FA.runRegisterAllocation(IR.get());
 
       CHECK(true);
     }

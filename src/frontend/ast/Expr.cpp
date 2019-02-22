@@ -15,7 +15,7 @@ using T = InstructionType;
 
 ConstantExpr::ConstantExpr(int32_t Val) : Val(Val) {}
 
-Value *ConstantExpr::genIr(IrGenContext &Ctx) const { return Ctx.makeConstant(Val); }
+Value *ConstantExpr::genIr(IrGenContext &Ctx, Variable *Storage) const { return Ctx.makeConstant(Val); }
 
 Designator::Designator(string Ident) : Ident(move(Ident)) {}
 
@@ -23,13 +23,15 @@ const string &Designator::ident() const { return Ident; }
 
 VarDesignator::VarDesignator(string Ident) : Designator(move(Ident)) {}
 
-Value *VarDesignator::genIr(IrGenContext &Ctx) const {
+Value *VarDesignator::genIr(IrGenContext &Ctx, Variable *Storage) const {
   auto Var = Ctx.lookupVariable(Ident).Var;
   if (Var->isMoveable()) {
     return Var;
   } else {
     auto BaseAddress = Ctx.makeInstruction(T::Adda, Ctx.globalBase(), Var);
-    return Ctx.makeInstruction<MemoryInstruction>(T::Load, Var, BaseAddress);
+    auto Load = Ctx.makeInstruction<MemoryInstruction>(T::Load, Var, BaseAddress);
+    Load->storage() = Storage;
+    return Load;
   }
 }
 
@@ -44,18 +46,20 @@ void VarDesignator::genStore(IrGenContext &Ctx, Value *V) {
 }
 
 Value *ArrayDesignator::calculateMemoryOffset(IrGenContext &Ctx) const {
-  Value *Offset = Dim.front()->genIr(Ctx);
+  Value *Offset = Dim.front()->genIr(Ctx, nullptr);
 
   auto Sym = Ctx.lookupVariable(Ident);
   auto DimensionsEnd = Sym.Dimensions.end() - 1;
   for (auto Dimension = Sym.Dimensions.begin(); Dimension != DimensionsEnd; ++Dimension) {
-    Offset = Ctx.makeInstruction(T::Mul, Offset, Ctx.makeConstant(*Dimension));
-    Offset = Ctx.makeInstruction(T::Add, Offset, Dim.at(Dimension - Sym.Dimensions.begin() + 1)->genIr(Ctx));
+    auto Mul = Ctx.makeInstruction(T::Mul, Offset, Ctx.makeConstant(*Dimension));
+    auto DimOffset = Dim.at(Dimension - Sym.Dimensions.begin() + 1)->genIr(Ctx, nullptr);
+    auto NewOffset = Ctx.makeInstruction(T::Add, Mul, DimOffset);
+    Offset = NewOffset;
   }
 
-  Offset = Ctx.makeInstruction(T::Mul, Offset, Ctx.makeConstant(4));
+  auto ScaledOffset = Ctx.makeInstruction(T::Mul, Offset, Ctx.makeConstant(4));
 
-  return Offset;
+  return ScaledOffset;
 }
 
 ArrayDesignator::ArrayDesignator(string Ident, vector<unique_ptr<Expr>> Dim) : Designator(move(Ident)), Dim(move(Dim)) {
@@ -73,68 +77,87 @@ Value *genBaseAddress(IrGenContext &Ctx, Variable *Var) {
 }
 } // namespace
 
-Value *ArrayDesignator::genIr(IrGenContext &Ctx) const {
+Value *ArrayDesignator::genIr(IrGenContext &Ctx, Variable *Storage) const {
   auto Var = Ctx.lookupVariable(Ident).Var;
+
   Value *BaseAddress = genBaseAddress(Ctx, Var);
   Value *Offset = calculateMemoryOffset(Ctx);
   auto TargetAddress = Ctx.makeInstruction(T::Adda, BaseAddress, Offset);
-  return Ctx.makeInstruction<MemoryInstruction>(T::Load, Var, TargetAddress);
+
+  auto Load = Ctx.makeInstruction<MemoryInstruction>(T::Load, Var, TargetAddress);
+  Load->storage() = Storage;
+  return Load;
 }
 
 void ArrayDesignator::genStore(IrGenContext &Ctx, Value *V) {
   auto Var = Ctx.lookupVariable(Ident).Var;
+
   Value *BaseAddress = genBaseAddress(Ctx, Var);
   Value *Offset = calculateMemoryOffset(Ctx);
   auto TargetAddress = Ctx.makeInstruction(T::Adda, BaseAddress, Offset);
+
   Ctx.makeInstruction<MemoryInstruction>(T::Store, Var, V, TargetAddress);
 }
 
 FunctionCall::FunctionCall(string Ident, vector<unique_ptr<Expr>> Args) : Ident(move(Ident)), Args(move(Args)) {}
 
-Value *FunctionCall::genIr(IrGenContext &Ctx) const {
+Value *FunctionCall::genIr(IrGenContext &Ctx, Variable *Storage) const {
   if (Ident == "InputNum") {
-    return Ctx.makeInstruction(InstructionType::Read);
+    auto InputInstr = Ctx.makeInstruction(InstructionType::Read);
+    InputInstr->storage() = Storage;
+    return InputInstr;
   }
   if (Ident == "OutputNum") {
-    return Ctx.makeInstruction(InstructionType::Write, Args.front()->genIr(Ctx));
+    auto ArgVal = Args.front()->genIr(Ctx, nullptr);
+    return Ctx.makeInstruction(InstructionType::Write, ArgVal);
   }
   if (Ident == "OutputNewLine") {
     return Ctx.makeInstruction(InstructionType::WriteNL);
   }
 
   for (const auto &Arg : Args) {
-    Ctx.makeInstruction(InstructionType::Param, Arg->genIr(Ctx));
+    auto ArgVal = Arg->genIr(Ctx, nullptr);
+    Ctx.makeInstruction(InstructionType::Param, ArgVal);
   }
 
   Function *Target = Ctx.lookupFuncion(Ident);
-  return Ctx.makeInstruction(InstructionType::Call, Target, Ctx.makeConstant(static_cast<int>(Args.size())));
+  auto Call = Ctx.makeInstruction(InstructionType::Call, Target, Ctx.makeConstant(static_cast<int>(Args.size())));
+  Call->storage() = Storage;
+  return Call;
 }
 
 MathExpr::MathExpr(MathExpr::Operation Op, unique_ptr<Expr> Left, unique_ptr<Expr> Right)
     : Op(Op), Left(move(Left)), Right(move(Right)) {}
 
-Value *MathExpr::genIr(IrGenContext &Ctx) const {
-  Value *X = Left->genIr(Ctx);
-  Value *Y = Right->genIr(Ctx);
+Value *MathExpr::genIr(IrGenContext &Ctx, Variable *Storage) const {
+  Value *X = Left->genIr(Ctx, nullptr);
+  Value *Y = Right->genIr(Ctx, nullptr);
+
+  Instruction *Result;
   switch (Op) {
   case Operation::Add:
-    return Ctx.makeInstruction(T::Add, X, Y);
+    Result = Ctx.makeInstruction(T::Add, X, Y);
+    break;
   case Operation::Sub:
-    return Ctx.makeInstruction(T::Sub, X, Y);
+    Result = Ctx.makeInstruction(T::Sub, X, Y);
+    break;
   case Operation::Mul:
-    return Ctx.makeInstruction(T::Mul, X, Y);
+    Result = Ctx.makeInstruction(T::Mul, X, Y);
+    break;
   case Operation::Div:
-    return Ctx.makeInstruction(T::Div, X, Y);
+    Result = Ctx.makeInstruction(T::Div, X, Y);
+    break;
   }
-  throw logic_error("Invalid value for Op.");
+  Result->storage() = Storage;
+  return Result;
 }
 
 Relation::Relation(Relation::Type T, unique_ptr<Expr> Left, unique_ptr<Expr> Right)
     : T(T), Left(move(Left)), Right(move(Right)) {}
 
 Instruction *Relation::genCmp(IrGenContext &Ctx) const {
-  Value *X = Left->genIr(Ctx);
-  Value *Y = Right->genIr(Ctx);
+  Value *X = Left->genIr(Ctx, nullptr);
+  Value *Y = Right->genIr(Ctx, nullptr);
   return Ctx.makeInstruction(T::Cmp, X, Y);
 }
 
