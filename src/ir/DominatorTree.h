@@ -17,10 +17,13 @@ class DominatorTree {
 public:
   DominatorTree(bool Reverse = false);
 
+  bool isJoinBlock(BasicBlock *BB);
+  bool isLoopHdrBlock(BasicBlock *BB);
   std::unordered_set<BasicBlock *> dominanceFrontier(BasicBlock *BB);
   void buildDominatorTree(Function &F);
   bool doesBlockDominate(BasicBlock *Dominator, BasicBlock *Candidate) const;
-  std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>> DominanceFrontier;
+  std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>>
+      DominanceFrontier;
 };
 
 } // namespace cs241c

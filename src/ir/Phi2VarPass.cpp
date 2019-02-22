@@ -3,9 +3,8 @@
 
 using namespace cs241c;
 
-namespace {
-void process(Function &F) {
-  auto &Registers = F.registerColoring();
+void Phi2VarPass::process(Function &F) {
+  auto Registers = FA.coloring(&F);
 
   for (auto &BB : F.basicBlocks()) {
     auto &Predecessors = BB->predecessors();
@@ -15,11 +14,10 @@ void process(Function &F) {
         break;
 
       auto Phi = dynamic_cast<PhiInstruction *>(Instr.get());
-      auto ResultReg = Registers[Phi];
+      auto ResultReg = Registers->at(Phi);
     }
   }
 }
-} // namespace
 
 void Phi2VarPass::run(Module &M) {
   for (auto &F : M.functions()) {

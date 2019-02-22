@@ -7,6 +7,7 @@
 namespace cs241c {
 class CommonSubexElimPass : public Pass {
 public:
+  CommonSubexElimPass(FunctionAnalyzer &FA) : Pass(FA) {}
   bool PrintDebug = false;
   void run(Module &) override;
 

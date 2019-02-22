@@ -113,9 +113,9 @@ RegAllocValue *IGBuilder::lookupRegAllocVal(Value *Val) {
 }
 
 IGBuilder::IgBuildCtx IGBuilder::igBuild(IGBuilder::IgBuildCtx CurrentCtx) {
-  if (F->isJoinBlock(CurrentCtx.NextNode)) {
+  if (DT->isJoinBlock(CurrentCtx.NextNode)) {
     return igBuildIfStmt(CurrentCtx);
-  } else if (F->isLoopHdrBlock(CurrentCtx.NextNode)) {
+  } else if (DT->isLoopHdrBlock(CurrentCtx.NextNode)) {
     return igBuildLoop(CurrentCtx);
   }
   return igBuildNormal(CurrentCtx);
@@ -189,7 +189,7 @@ IGBuilder::IgBuildCtx IGBuilder::igBuildLoop(IGBuilder::IgBuildCtx CurrentCtx) {
   BasicBlock *LoopPredecessor = nullptr;
   BasicBlock *ContinuePredecessor = nullptr;
   for (auto P : CurrentCtx.NextNode->predecessors()) {
-    if (F->dominatorTree().doesBlockDominate(CurrentCtx.NextNode, P)) {
+    if (DT->doesBlockDominate(CurrentCtx.NextNode, P)) {
       LoopPredecessor = P;
     } else {
       ContinuePredecessor = P;

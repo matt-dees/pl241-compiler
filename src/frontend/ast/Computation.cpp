@@ -10,17 +10,15 @@ Computation::Computation(vector<unique_ptr<Decl>> Vars, vector<Func> Funcs)
 
 unique_ptr<Module> Computation::genIr() {
   auto CompilationUnit = make_unique<Module>("program");
-  IrGenContext Ctx(CompilationUnit.get());
+  IrGenContext IrCtx(CompilationUnit.get());
 
   for (auto &Var : Vars) {
-    Var->declareGlobal(Ctx);
+    Var->declareGlobal(IrCtx);
   }
 
   for (auto &Function : Funcs) {
-    Function.genIr(Ctx);
+    Function.genIr(IrCtx);
   }
 
-  CompilationUnit->buildDominatorTree();
-  CompilationUnit->toSSA(Ctx);
   return CompilationUnit;
 }

@@ -14,3 +14,37 @@ InterferenceGraph *FunctionAnalyzer::interferenceGraph(Function *F) {
   }
   return IGMap.at(F).get();
 }
+
+RegisterAllocator::Coloring *FunctionAnalyzer::coloring(Function *F) {
+  if (RAColoring.find(F) == RAColoring.end()) {
+    return nullptr;
+  }
+  return RAColoring.at(F).get();
+}
+
+void FunctionAnalyzer::buildDominatorTree(Function *F) {
+  std::unique_ptr<DominatorTree> DT = std::make_unique<DominatorTree>();
+  DT->buildDominatorTree(*F);
+  DTMap[F] = std::move(DT);
+}
+
+void FunctionAnalyzer::buildInterferenceGraph(Function *F) {
+  IGBuilder IGB(F, dominatorTree(F));
+  IGB.buildInterferenceGraph();
+  IGMap[F] = std::make_unique<InterferenceGraph>(IGB.interferenceGraph());
+}
+
+void FunctionAnalyzer::runDominanceAnalytics(Module *M) {
+  for (auto &F : M->functions()) {
+    buildDominatorTree(F.get());
+  }
+}
+
+void FunctionAnalyzer::runRegisterAllocation(Module *M) {
+  for (auto &F : M->functions()) {
+    buildInterferenceGraph(F.get());
+    RegisterAllocator RA;
+    RAColoring[F.get()] = std::make_unique<RegisterAllocator::Coloring>(
+        RA.color(*interferenceGraph(F.get())));
+  }
+}

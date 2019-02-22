@@ -53,10 +53,13 @@ unordered_set<Value *> mark(Function &F) {
       }
     }
 
-    auto &ControlDependencies = ControlDependence.DominanceFrontier[I->getOwner()];
-    transform(ControlDependencies.begin(), ControlDependencies.end(), inserter(LiveSet, LiveSet.end()),
+    auto &ControlDependencies =
+        ControlDependence.DominanceFrontier[I->getOwner()];
+    transform(ControlDependencies.begin(), ControlDependencies.end(),
+              inserter(LiveSet, LiveSet.end()),
               [](BasicBlock *CD) { return CD->terminator(); });
-    transform(ControlDependencies.begin(), ControlDependencies.end(), back_inserter(WorkList),
+    transform(ControlDependencies.begin(), ControlDependencies.end(),
+              back_inserter(WorkList),
               [](BasicBlock *CD) { return CD->terminator(); });
   }
 
@@ -68,28 +71,33 @@ void erase(Function &F, const unordered_set<Value *> &LiveValues) {
     auto &Instructions = BB->instructions();
     Instructions.erase(remove_if(Instructions.begin(), Instructions.end(),
                                  [&LiveValues](const auto &Instruction) {
-                                   return LiveValues.find(Instruction.get()) == LiveValues.end() &&
-                                          dynamic_cast<BasicBlockTerminator *>(Instruction.get()) == nullptr;
+                                   return LiveValues.find(Instruction.get()) ==
+                                              LiveValues.end() &&
+                                          dynamic_cast<BasicBlockTerminator *>(
+                                              Instruction.get()) == nullptr;
                                  }),
                        Instructions.end());
   }
 }
 
-BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveValues,
+BasicBlock *skipDeadBlocks(BasicBlock *BB,
+                           const unordered_set<Value *> &LiveValues,
                            unordered_set<BasicBlock *> &VisitedBlocks) {
   auto Followers = BB->successors();
 
   while (!Followers.empty() && VisitedBlocks.find(BB) == VisitedBlocks.end()) {
     VisitedBlocks.insert(BB);
 
-    if (auto ConditionalBranch = dynamic_cast<ConditionalBlockTerminator *>(BB->terminator())) {
+    if (auto ConditionalBranch =
+            dynamic_cast<ConditionalBlockTerminator *>(BB->terminator())) {
       if (LiveValues.find(ConditionalBranch) == LiveValues.end()) {
         BB->fallthoughSuccessor() = ConditionalBranch->target();
         BB->releaseTerminator();
         Followers = BB->successors();
       } else {
         for (BasicBlock *Follower : Followers) {
-          BB->updateSuccessor(Follower, skipDeadBlocks(Follower, LiveValues, VisitedBlocks));
+          BB->updateSuccessor(
+              Follower, skipDeadBlocks(Follower, LiveValues, VisitedBlocks));
         }
         break;
       }
@@ -99,14 +107,18 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveVal
       if (BB->instructions().size() == 1 && BB->predecessors().size() <= 1) {
         BB = Followers.front();
       } else {
-        BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
+        BB->updateSuccessor(
+            Followers.front(),
+            skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
         break;
       }
     } else if (BB->fallthoughSuccessor() != nullptr) {
       if (BB->instructions().size() == 0 && BB->predecessors().size() <= 1) {
         BB = Followers.front();
       } else {
-        BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
+        BB->updateSuccessor(
+            Followers.front(),
+            skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
         break;
       }
     }
@@ -136,25 +148,30 @@ void removeDeadBlocks(Function &F, BasicBlock *NewEntry) {
   }
 
   auto &BasicBlocks = F.basicBlocks();
-  for_each(BasicBlocks.begin(), BasicBlocks.end(), [&MarkedBlocks](auto &Block) {
-    if (MarkedBlocks.find(Block.get()) == MarkedBlocks.end()) {
-      Block->releaseTerminator();
-      Block->fallthoughSuccessor() = nullptr;
-    }
-  });
-  BasicBlocks.erase(
-      remove_if(BasicBlocks.begin(), BasicBlocks.end(),
-                [&MarkedBlocks](auto &Block) { return MarkedBlocks.find(Block.get()) == MarkedBlocks.end(); }),
-      BasicBlocks.end());
+  for_each(BasicBlocks.begin(), BasicBlocks.end(),
+           [&MarkedBlocks](auto &Block) {
+             if (MarkedBlocks.find(Block.get()) == MarkedBlocks.end()) {
+               Block->releaseTerminator();
+               Block->fallthoughSuccessor() = nullptr;
+             }
+           });
+  BasicBlocks.erase(remove_if(BasicBlocks.begin(), BasicBlocks.end(),
+                              [&MarkedBlocks](auto &Block) {
+                                return MarkedBlocks.find(Block.get()) ==
+                                       MarkedBlocks.end();
+                              }),
+                    BasicBlocks.end());
 }
 
 void trim(Function &F, const unordered_set<Value *> &LiveValues) {
   for (int I = 1; I <= 2; ++I) {
     unordered_set<BasicBlock *> VisitedBlocks;
-    BasicBlock *NewEntry = skipDeadBlocks(F.entryBlock(), LiveValues, VisitedBlocks);
+    BasicBlock *NewEntry =
+        skipDeadBlocks(F.entryBlock(), LiveValues, VisitedBlocks);
     removeDeadBlocks(F, NewEntry);
-    auto NewEntryIt = find_if(F.basicBlocks().begin(), F.basicBlocks().end(),
-                              [NewEntry](auto &Block) { return Block.get() == NewEntry; });
+    auto NewEntryIt =
+        find_if(F.basicBlocks().begin(), F.basicBlocks().end(),
+                [NewEntry](auto &Block) { return Block.get() == NewEntry; });
     NewEntryIt->swap(F.basicBlocks().front());
   }
 }

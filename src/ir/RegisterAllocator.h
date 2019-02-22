@@ -3,12 +3,12 @@
 
 #include "Function.h"
 #include "InterferenceGraph.h"
+#include "Pass.h"
 #include "RegAllocValue.h"
 #include "Vcg.h"
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
-
 namespace cs241c {
 
 class RegisterAllocator {

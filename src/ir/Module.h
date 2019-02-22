@@ -2,6 +2,7 @@
 #define CS241C_IR_MODULE_H
 
 #include "Function.h"
+#include "FunctionAnalyzer.h"
 #include "IrGenContext.h"
 #include "Value.h"
 #include "Variable.h"
@@ -22,10 +23,6 @@ public:
   Module(std::string ModuleName);
   Value *globalBase();
   std::string getIdentifier() const;
-
-  void toSSA(IrGenContext &Ctx);
-  void buildDominatorTree();
-  void allocateRegisters();
 
   std::vector<std::unique_ptr<GlobalVariable>> &globals();
   const std::vector<std::unique_ptr<GlobalVariable>> &globals() const;

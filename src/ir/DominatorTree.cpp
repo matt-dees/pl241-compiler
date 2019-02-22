@@ -14,13 +14,11 @@ class DominatorTreeBuilder {
   bool Reversed;
 
   vector<BasicBlock *> predecessors(BasicBlock &Block) {
-    return !Reversed ? Block.predecessors()
-                     : Block.successors();
+    return !Reversed ? Block.predecessors() : Block.successors();
   }
 
   vector<BasicBlock *> followers(BasicBlock &Block) {
-    return !Reversed ? Block.successors()
-                     : Block.predecessors();
+    return !Reversed ? Block.successors() : Block.predecessors();
   }
 
 public:
@@ -252,4 +250,25 @@ bool DominatorTree::doesBlockDominate(BasicBlock *Dominator,
     Runner = IDomMap.at(Runner);
   }
   return false;
+}
+
+bool DominatorTree::isLoopHdrBlock(BasicBlock *BB) {
+  for (auto Pred : BB->predecessors()) {
+    if (doesBlockDominate(BB, Pred)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool DominatorTree::isJoinBlock(BasicBlock *BB) {
+  if (BB->predecessors().size() != 2) {
+    return false;
+  }
+  for (auto Pred : BB->predecessors()) {
+    if (doesBlockDominate(BB, Pred)) {
+      return false;
+    }
+  }
+  return true;
 }

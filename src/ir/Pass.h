@@ -3,11 +3,16 @@
 
 namespace cs241c {
 class Module;
+class FunctionAnalyzer;
 
 class Pass {
 public:
   virtual ~Pass() = default;
+  Pass(FunctionAnalyzer &FA) : FA(FA) {}
   virtual void run(Module &) = 0;
+
+protected:
+  FunctionAnalyzer &FA;
 };
 } // namespace cs241c
 

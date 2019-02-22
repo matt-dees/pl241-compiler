@@ -6,6 +6,7 @@
 namespace cs241c {
 class ConstExprEvalPass : public Pass {
 public:
+  ConstExprEvalPass(FunctionAnalyzer &FA) : Pass(FA) {}
   void run(Module &) override;
 };
 

@@ -5,6 +5,7 @@
 #include "IntegrityCheckPass.h"
 #include "Lexer.h"
 #include "Parser.h"
+#include "SSAPass.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -14,7 +15,9 @@
 using namespace cs241c;
 using namespace std;
 
-static void printUsage(const string_view &Executable) { cout << "Usage: " << Executable << " [--vcg] <source>\n"; }
+static void printUsage(const string_view &Executable) {
+  cout << "Usage: " << Executable << " [--vcg] <source>\n";
+}
 
 int main(int ArgC, char **ArgV) {
   string_view Executable = ArgV[0];
@@ -30,31 +33,37 @@ int main(int ArgC, char **ArgV) {
   string_view &InputFile = Args.back();
   ifstream FS(InputFile.data());
   string Text(istreambuf_iterator<char>{FS}, {});
+  FunctionAnalyzer FA;
 
   auto Tokens = lex(Text);
   auto AST = parse(Tokens);
   auto IR = AST.genIr();
 
-  IntegrityCheckPass ICP;
+  FA.runDominanceAnalytics(IR.get());
+
+  SSAPass SSAP(FA);
+  SSAP.run(*IR);
+
+  IntegrityCheckPass ICP(FA);
   ICP.run(*IR);
 
-  ConstExprEvalPass CEE;
+  ConstExprEvalPass CEE(FA);
   CEE.run(*IR);
 
   ICP.run(*IR);
 
-  CommonSubexElimPass CSE;
+  CommonSubexElimPass CSE(FA);
   CSE.PrintDebug = true;
   CSE.run(*IR);
 
   ICP.run(*IR);
 
-  DeadCodeEliminationPass DCEP;
+  DeadCodeEliminationPass DCEP(FA);
   DCEP.run(*IR);
 
   ICP.run(*IR);
 
-  IR->allocateRegisters();
+  FA.runRegisterAllocation(IR.get());
 
   if (GenerateVcg) {
     string VcgOutput{string(InputFile) + ".vcg"};
@@ -64,7 +73,8 @@ int main(int ArgC, char **ArgV) {
     for (auto &F : IR->functions()) {
       string IGOutput{string(InputFile) + "." + F->toString() + ".ig.vcg"};
       removeFile(IGOutput);
-      AnnotatedIG AIG(F->interferenceGraph(), F->registerColoring());
+      AnnotatedIG AIG(*(FA.interferenceGraph(F.get())),
+                      *(FA.coloring(F.get())));
       AIG.writeToFile(IGOutput);
     }
   }

@@ -9,6 +9,7 @@ class Module;
 
 class DeadCodeEliminationPass : public Pass {
 public:
+  DeadCodeEliminationPass(FunctionAnalyzer &FA) : Pass(FA) {}
   void run(Module &) override;
 
 private:

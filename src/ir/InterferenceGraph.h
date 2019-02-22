@@ -1,6 +1,7 @@
 #ifndef CS241C_IR_INTERFERENCEGRAPH_H
 #define CS241C_IR_INTERFERENCEGRAPH_H
 
+#include "DominatorTree.h"
 #include "Function.h"
 #include "RegAllocValue.h"
 #include "Vcg.h"
@@ -38,7 +39,7 @@ public:
 
 class IGBuilder {
 public:
-  IGBuilder(Function *F);
+  IGBuilder(Function *F, DominatorTree *DT) : F(F), DT(DT){};
   void buildInterferenceGraph();
   InterferenceGraph interferenceGraph() { return IG; }
 
@@ -64,6 +65,7 @@ private:
   RegAllocValue *lookupRegAllocVal(Value *);
 
   Function *F;
+  DominatorTree *DT;
 };
 }; // namespace cs241c
 #endif

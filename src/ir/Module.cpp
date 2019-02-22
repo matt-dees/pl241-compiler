@@ -21,25 +21,6 @@ const vector<unique_ptr<Function>> &Module::functions() const {
   return Functions;
 }
 
-void Module::buildDominatorTree() {
-  for (auto &F : functions()) {
-    F->buildDominatorTree();
-  }
-}
-
-void Module::toSSA(IrGenContext &Ctx) {
-  for (auto &F : functions()) {
-    F->toSSA(Ctx);
-  }
-}
-
-void Module::allocateRegisters() {
-  for (auto &F : functions()) {
-    F->buildInterferenceGraph();
-    F->assignRegisters();
-  }
-}
-
 void Module::writeFunction(ofstream &OutFileStream, Function *F) {
   const string FunctionName = F->name();
   for (auto &BB : F->basicBlocks()) {
