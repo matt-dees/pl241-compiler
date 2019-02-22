@@ -16,8 +16,8 @@ RegisterAllocator::Coloring RegisterAllocator::color(InterferenceGraph IG) {
 }
 
 namespace {
-void addNodeBack(InterferenceGraph &IG, RegAllocValue *Node,
-                 std::unordered_set<RegAllocValue *> &Neighbors) {
+void addNodeBack(InterferenceGraph &IG, Value *Node,
+                 std::unordered_set<Value *> &Neighbors) {
   IG.addNode(Node);
   for (auto Neighbor : Neighbors) {
     if (IG.hasNode(Neighbor)) {
@@ -33,22 +33,20 @@ void RegisterAllocator::colorRecur(
     assignColor(IG, CurrentColoring, IG.graph().begin()->first);
     return;
   }
-  RegAllocValue *NextNode = chooseNextNodeToColor(IG);
-  std::unordered_set<RegAllocValue *> NeighborsOfRemoved =
-      IG.removeNode(NextNode);
+  Value *NextNode = chooseNextNodeToColor(IG);
+  std::unordered_set<Value *> NeighborsOfRemoved = IG.removeNode(NextNode);
   colorRecur(IG, CurrentColoring);
   addNodeBack(IG, NextNode, NeighborsOfRemoved);
   assignColor(IG, CurrentColoring, NextNode);
 }
 
-RegAllocValue *
-RegisterAllocator::getValWithLowestSpillCost(InterferenceGraph &IG) {
+Value *RegisterAllocator::getValWithLowestSpillCost(InterferenceGraph &IG) {
   // TODO: Change implementation of this function
   // to use priority queue data structure.
-  RegAllocValue *ToReturn = nullptr;
+  Value *ToReturn = nullptr;
   int32_t CurrentMinSpillCost = std::numeric_limits<int32_t>::max();
   for (auto RAVPair : IG.graph()) {
-    int32_t const RAVSpillCost = RAVPair.first->costToSpill();
+    int32_t const RAVSpillCost = IG.heuristicData(RAVPair.first).spillCost();
     if (RAVSpillCost < CurrentMinSpillCost) {
       CurrentMinSpillCost = RAVSpillCost;
       ToReturn = RAVPair.first;
@@ -57,8 +55,8 @@ RegisterAllocator::getValWithLowestSpillCost(InterferenceGraph &IG) {
   return ToReturn;
 }
 
-RegAllocValue *RegisterAllocator::chooseNextNodeToColor(InterferenceGraph &IG) {
-  RegAllocValue *NextNode = nullptr;
+Value *RegisterAllocator::chooseNextNodeToColor(InterferenceGraph &IG) {
+  Value *NextNode = nullptr;
   for (auto RAVPair : IG.graph()) {
     if (IG.neighbors(RAVPair.first).size() < NUM_REGISTERS) {
       NextNode = RAVPair.first;
@@ -74,18 +72,18 @@ RegAllocValue *RegisterAllocator::chooseNextNodeToColor(InterferenceGraph &IG) {
 
 void RegisterAllocator::assignColor(
     InterferenceGraph &IG, RegisterAllocator::Coloring &CurrentColoring,
-    RegAllocValue *NodeToColor) {
+    Value *NodeToColor) {
   std::unordered_set<RA_REGISTER> RemainingColors = {R1, R2, R3, R4,
                                                      R5, R6, R7, R8};
   for (auto Neighbor : IG.neighbors(NodeToColor)) {
-    RemainingColors.erase(CurrentColoring[Neighbor->value()]);
+    RemainingColors.erase(CurrentColoring[Neighbor]);
   }
-  CurrentColoring[NodeToColor->value()] =
+  CurrentColoring[NodeToColor] =
       RemainingColors.empty() ? RA_REGISTER::SPILL : *(RemainingColors.begin());
 }
 
 void AnnotatedIG::writeGraph(std::ofstream &OutFileStream) {
-  IG.reset();
+  IG->reset();
   OutFileStream << "layoutalgorithm: circular\n";
   OutFileStream << "title: "
                 << "\""
@@ -94,11 +92,11 @@ void AnnotatedIG::writeGraph(std::ofstream &OutFileStream) {
   writeNodes(OutFileStream);
 }
 
-std::string AnnotatedIG::lookupColor(RegAllocValue *RAV) {
-  if (C.find(RAV->value()) == C.end()) {
+std::string AnnotatedIG::lookupColor(Value *RAV) {
+  if (C->find(RAV) == C->end()) {
     return "white";
   }
-  switch (C.at(RAV->value())) {
+  switch (C->at(RAV)) {
   case RegisterAllocator::RA_REGISTER::SPILL:
     return "darkgrey";
   case RegisterAllocator::RA_REGISTER::R1:
@@ -122,7 +120,7 @@ std::string AnnotatedIG::lookupColor(RegAllocValue *RAV) {
 }
 
 void AnnotatedIG::writeNodes(std::ofstream &OutFileStream) {
-  for (auto &VertexEdgePair : IG.graph()) {
+  for (auto &VertexEdgePair : IG->graph()) {
     OutFileStream << "node: {\n";
     OutFileStream << "title: "
                   << "\"" << VertexEdgePair.first->toString() << "\"\n";
@@ -130,7 +128,7 @@ void AnnotatedIG::writeNodes(std::ofstream &OutFileStream) {
     OutFileStream << "color:" + lookupColor(VertexEdgePair.first) << "\n";
     OutFileStream << "}\n";
     for (auto Destination : VertexEdgePair.second) {
-      IG.writeEdge(OutFileStream, VertexEdgePair.first, Destination);
+      IG->writeEdge(OutFileStream, VertexEdgePair.first, Destination);
     }
   }
 }

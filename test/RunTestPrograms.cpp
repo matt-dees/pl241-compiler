@@ -49,7 +49,7 @@ TEST_CASE("Compile and run test programs") {
       IntegrityCheckPass ICP(FA);
       ICP.run(*IR);
 
-      // FA.runRegisterAllocation(IR.get());
+      FA.runRegisterAllocation(IR.get());
 
       CHECK(true);
     }

@@ -23,7 +23,7 @@ public:
            std::vector<std::unique_ptr<LocalVariable>> &&Locals);
 
   std::vector<std::unique_ptr<ConstantValue>> &constants();
-  ConstantValue* constant(int Value);
+  ConstantValue *constant(int Value);
   std::vector<std::unique_ptr<LocalVariable>> &locals();
   BasicBlock *entryBlock() const;
   std::vector<std::unique_ptr<BasicBlock>> &basicBlocks();
@@ -31,6 +31,7 @@ public:
   std::string toString() const override;
 
   std::vector<BasicBlock *> postOrderCfg();
+  std::vector<BasicBlock *> exitBlocks();
 };
 } // namespace cs241c
 

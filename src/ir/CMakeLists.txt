@@ -32,8 +32,7 @@ add_library(cs241c-ir
   Phi2VarPass.h
   RegisterAllocator.cpp
   RegisterAllocator.h
-  RegAllocValue.cpp
-  RegAllocValue.h
+  RAHeuristicInfo.h
   SSAPass.cpp
   SSAPass.h
   SSAContext.cpp

@@ -4,7 +4,6 @@
 #include "Function.h"
 #include "InterferenceGraph.h"
 #include "Pass.h"
-#include "RegAllocValue.h"
 #include "Vcg.h"
 #include <stdexcept>
 #include <unordered_map>
@@ -21,25 +20,25 @@ public:
   Coloring color(InterferenceGraph IG);
 
 private:
-  RegAllocValue *getValWithLowestSpillCost(InterferenceGraph &);
+  Value *getValWithLowestSpillCost(InterferenceGraph &);
 
   void colorRecur(InterferenceGraph &IG, Coloring &CurrentColoring);
 
   void assignColor(InterferenceGraph &IG, Coloring &CurrentColoring,
-                   RegAllocValue *NodeToColor);
-  RegAllocValue *chooseNextNodeToColor(InterferenceGraph &IG);
+                   Value *NodeToColor);
+  Value *chooseNextNodeToColor(InterferenceGraph &IG);
 };
 
 class AnnotatedIG : public Vcg {
-  InterferenceGraph &IG;
-  const RegisterAllocator::Coloring &C;
+  InterferenceGraph *IG;
+  RegisterAllocator::Coloring *C;
 
 private:
   void writeNodes(std::ofstream &OutFileStream);
-  std::string lookupColor(RegAllocValue *);
+  std::string lookupColor(Value *);
 
 public:
-  AnnotatedIG(InterferenceGraph &IG, const RegisterAllocator::Coloring &C)
+  AnnotatedIG(InterferenceGraph *IG, RegisterAllocator::Coloring *C)
       : IG(IG), C(C){};
 
   virtual void writeGraph(std::ofstream &OutFileStream) override;

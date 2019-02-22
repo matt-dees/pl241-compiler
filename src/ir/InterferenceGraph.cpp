@@ -13,14 +13,14 @@ void InterferenceGraph::writeGraph(ofstream &OutStream) {
   writeNodes(OutStream);
 }
 
-void InterferenceGraph::addEdges(
-    const std::unordered_set<RegAllocValue *> &FromSet, RegAllocValue *To) {
+void InterferenceGraph::addEdges(const std::unordered_set<Value *> &FromSet,
+                                 Value *To) {
   for (auto Node : FromSet) {
     addEdge(Node, To);
   }
 }
 
-void InterferenceGraph::addEdge(RegAllocValue *From, RegAllocValue *To) {
+void InterferenceGraph::addEdge(Value *From, Value *To) {
   if (From == To) {
     return;
   }
@@ -52,8 +52,7 @@ void InterferenceGraph::writeNodes(ofstream &OutStream) {
   }
 }
 
-void InterferenceGraph::writeEdge(ofstream &OutStream, RegAllocValue *From,
-                                  RegAllocValue *To) {
+void InterferenceGraph::writeEdge(ofstream &OutStream, Value *From, Value *To) {
   if (WrittenEdges.find(To) != WrittenEdges.end()) {
     if (WrittenEdges.at(To).find(From) != WrittenEdges.at(To).end()) {
       return;
@@ -74,17 +73,15 @@ void InterferenceGraph::writeEdge(ofstream &OutStream, RegAllocValue *From,
   OutStream << "}\n";
 }
 
-std::unordered_set<RegAllocValue *>
-InterferenceGraph::neighbors(RegAllocValue *RAV) {
+std::unordered_set<Value *> InterferenceGraph::neighbors(Value *RAV) {
   if (IG.find(RAV) == IG.end()) {
     throw logic_error("Value " + RAV->toString() + " not in graph.");
   }
   return IG.at(RAV);
 }
 
-std::unordered_set<RegAllocValue *>
-InterferenceGraph::removeNode(RegAllocValue *RAV) {
-  std::unordered_set<RegAllocValue *> Neighbors = neighbors(RAV);
+std::unordered_set<Value *> InterferenceGraph::removeNode(Value *RAV) {
+  std::unordered_set<Value *> Neighbors = neighbors(RAV);
   IG.erase(RAV);
   for (auto Neighbor : Neighbors) {
     IG[Neighbor].erase(RAV);
@@ -92,24 +89,26 @@ InterferenceGraph::removeNode(RegAllocValue *RAV) {
   return Neighbors;
 }
 
-bool InterferenceGraph::hasNode(RegAllocValue *Node) {
+bool InterferenceGraph::hasNode(Value *Node) {
   return IG.find(Node) != IG.end();
 }
 
-void InterferenceGraph::addNode(RegAllocValue *Node) { IG[Node] = {}; }
+void InterferenceGraph::addNode(Value *Node) { IG[Node] = {}; }
 
-void IGBuilder::buildInterferenceGraph() {
-  std::unordered_set<RegAllocValue *> LiveSet = {};
-  BasicBlock *Start = F->entryBlock();
-  igBuild({Start, LiveSet});
-}
-
-RegAllocValue *IGBuilder::lookupRegAllocVal(Value *Val) {
-  if (ValueToRegAllocVal.find(Val) == ValueToRegAllocVal.end()) {
-    ValueToRegAllocVal[Val] = std::make_unique<RegAllocValue>(Val);
+RAHeuristicInfo &InterferenceGraph::heuristicData(Value *Val) {
+  if (HeuristicDataMap.find(Val) == HeuristicDataMap.end()) {
+    HeuristicDataMap[Val] = RAHeuristicInfo();
   }
-
-  return ValueToRegAllocVal[Val].get();
+  return HeuristicDataMap[Val];
+}
+void IGBuilder::buildInterferenceGraph() {
+  std::unordered_set<Value *> LiveSet = {};
+  for (auto ExitBB : F->exitBlocks()) {
+    BasicBlock *BB = ExitBB;
+    while (BB != nullptr) {
+      BB = igBuild({BB, LiveSet}).NextNode;
+    }
+  }
 }
 
 IGBuilder::IgBuildCtx IGBuilder::igBuild(IGBuilder::IgBuildCtx CurrentCtx) {
@@ -123,67 +122,81 @@ IGBuilder::IgBuildCtx IGBuilder::igBuild(IGBuilder::IgBuildCtx CurrentCtx) {
 
 IGBuilder::IgBuildCtx
 IGBuilder::igBuildNormal(IGBuilder::IgBuildCtx CurrentCtx) {
-  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>>
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
       PredecessorSets = processBlock(CurrentCtx.NextNode, CurrentCtx.LiveSet);
-  return {PredecessorSets.empty() ? nullptr : PredecessorSets.begin()->first,
-          PredecessorSets.begin()->second};
+
+  IgBuildCtx NextCtx = {nullptr, {}};
+  if (PredecessorSets.size() > 1) {
+    throw logic_error("igBuildNormal() incorrectly called on basic block with "
+                      "more than one predecessor: " +
+                      CurrentCtx.NextNode->toString());
+  }
+  if (PredecessorSets.size() == 1) {
+    NextCtx = {PredecessorSets.begin()->first, PredecessorSets.begin()->second};
+  }
+  return NextCtx;
 }
 
-std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>>
-IGBuilder::processBlock(BasicBlock *BB,
-                        std::unordered_set<RegAllocValue *> LiveSet) {
-  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>>
-      PredecessorPhiSets;
+std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
+IGBuilder::processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet) {
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
+      PredecessorLiveSets;
   for (auto ReverseInstructionIt = BB->instructions().rbegin();
        ReverseInstructionIt != BB->instructions().rend();
        ReverseInstructionIt++) {
 
-    LiveSet.erase(lookupRegAllocVal(ReverseInstructionIt->get()));
+    LiveSet.erase(ReverseInstructionIt->get());
     for (auto Arg : ReverseInstructionIt->get()->arguments()) {
-      RegAllocValue *RegAlArg = lookupRegAllocVal(Arg);
-      RegAlArg->visit();
-      if (dynamic_cast<Instruction *>(RegAlArg->value()) == nullptr) {
+      IG.heuristicData(Arg).NumUses++;
+      if (dynamic_cast<Instruction *>((Value *)Arg) == nullptr) {
         continue;
       }
-      IG.addEdges(LiveSet, RegAlArg);
+      IG.addEdges(LiveSet, Arg);
       if (ReverseInstructionIt->get()->InstrT == InstructionType::Phi) {
         for (auto Pred : BB->predecessors()) {
-          if (PredecessorPhiSets.find(Pred) != PredecessorPhiSets.end()) {
-            IG.addEdges(PredecessorPhiSets[Pred], RegAlArg);
-            PredecessorPhiSets[Pred].insert(RegAlArg);
+          if (PredecessorLiveSets.find(Pred) != PredecessorLiveSets.end()) {
+            IG.addEdges(PredecessorLiveSets[Pred], Arg);
+            PredecessorLiveSets[Pred].insert(Arg);
           } else {
-            PredecessorPhiSets[Pred] = {RegAlArg};
+            PredecessorLiveSets[Pred] = {Arg};
           }
         }
       } else {
-        LiveSet.insert(RegAlArg);
+        LiveSet.insert(Arg);
       }
     }
   }
-  return PredecessorPhiSets;
+  for (auto Pred : BB->predecessors()) {
+    std::unordered_set<Value *> LiveSetToPropagate = {};
+    if (PredecessorLiveSets.find(Pred) != PredecessorLiveSets.end()) {
+      LiveSetToPropagate = PredecessorLiveSets[Pred];
+    }
+    copy(LiveSet.begin(), LiveSet.end(),
+         inserter(LiveSetToPropagate, LiveSetToPropagate.end()));
+    PredecessorLiveSets[Pred] = LiveSetToPropagate;
+  }
+  return PredecessorLiveSets;
 }
 
 IGBuilder::IgBuildCtx
 IGBuilder::igBuildIfStmt(IGBuilder::IgBuildCtx CurrentCtx) {
-  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>>
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
       PredecessorPhiSets =
           processBlock(CurrentCtx.NextNode, CurrentCtx.LiveSet);
 
-  IgBuildCtx Ctx;
+  IgBuildCtx IfHeaderCtx = {nullptr, {}};
   for (auto Pred : CurrentCtx.NextNode->predecessors()) {
-    std::unordered_set<RegAllocValue *> PhiSetToPropagate = {};
-    if (PredecessorPhiSets.find(Pred) != PredecessorPhiSets.end()) {
-      PhiSetToPropagate = PredecessorPhiSets[Pred];
+    IgBuildCtx BranchCtx = igBuild({Pred, PredecessorPhiSets[Pred]});
+    while (!DT->isIfHdrBlock(BranchCtx.NextNode)) {
+      BranchCtx = igBuild(BranchCtx);
     }
-    copy(CurrentCtx.LiveSet.begin(), CurrentCtx.LiveSet.end(),
-         inserter(PhiSetToPropagate, PhiSetToPropagate.end()));
-    Ctx.merge(igBuild({Pred, PhiSetToPropagate}));
+    IfHeaderCtx.merge(BranchCtx);
   }
-  return igBuild(Ctx);
+  return igBuild(IfHeaderCtx);
 }
 
 IGBuilder::IgBuildCtx IGBuilder::igBuildLoop(IGBuilder::IgBuildCtx CurrentCtx) {
-  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>>
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
       PredecessorPhiSets =
           processBlock(CurrentCtx.NextNode, CurrentCtx.LiveSet);
   BasicBlock *LoopPredecessor = nullptr;
@@ -218,4 +231,5 @@ void IGBuilder::IgBuildCtx::merge(IGBuilder::IgBuildCtx Other) {
     throw logic_error("Context merge failure in IGBuilder.");
   }
   LiveSet.insert(Other.LiveSet.begin(), Other.LiveSet.end());
+  NextNode = Other.NextNode;
 }

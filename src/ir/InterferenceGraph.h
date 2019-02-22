@@ -3,36 +3,34 @@
 
 #include "DominatorTree.h"
 #include "Function.h"
-#include "RegAllocValue.h"
+#include "RAHeuristicInfo.h"
 #include "Vcg.h"
-
 #include <unordered_map>
 #include <unordered_set>
 
 namespace cs241c {
 class InterferenceGraph : public Vcg {
   // Map node to edges
-  using Graph =
-      std::unordered_map<RegAllocValue *, std::unordered_set<RegAllocValue *>>;
+  using Graph = std::unordered_map<Value *, std::unordered_set<Value *>>;
   Graph IG;
 
 private:
   void writeNodes(std::ofstream &OutFileStream);
-
-  std::unordered_map<RegAllocValue *, std::unordered_set<RegAllocValue *>>
-      WrittenEdges;
+  std::unordered_map<Value *, RAHeuristicInfo> HeuristicDataMap;
+  std::unordered_map<Value *, std::unordered_set<Value *>> WrittenEdges;
 
 public:
-  void writeEdge(std::ofstream &OutFileStream, RegAllocValue *From,
-                 RegAllocValue *To);
+  InterferenceGraph() = default;
+
+  RAHeuristicInfo &heuristicData(Value *);
+  void writeEdge(std::ofstream &OutFileStream, Value *From, Value *To);
   void reset() { WrittenEdges = {}; }
-  void addNode(RegAllocValue *Node);
-  std::unordered_set<RegAllocValue *> removeNode(RegAllocValue *);
-  std::unordered_set<RegAllocValue *> neighbors(RegAllocValue *);
-  bool hasNode(RegAllocValue *Node);
-  void addEdge(RegAllocValue *From, RegAllocValue *To);
-  void addEdges(const std::unordered_set<RegAllocValue *> &FromSet,
-                RegAllocValue *To);
+  void addNode(Value *Node);
+  std::unordered_set<Value *> removeNode(Value *);
+  std::unordered_set<Value *> neighbors(Value *);
+  bool hasNode(Value *Node);
+  void addEdge(Value *From, Value *To);
+  void addEdges(const std::unordered_set<Value *> &FromSet, Value *To);
   virtual void writeGraph(std::ofstream &OutFileStream) override;
   const Graph &graph() const { return IG; }
 };
@@ -45,13 +43,17 @@ public:
 
 private:
   struct IgBuildCtx {
+  public:
     BasicBlock *NextNode;
-    std::unordered_set<RegAllocValue *> LiveSet;
+    std::unordered_set<Value *> LiveSet;
     void merge(IgBuildCtx Other);
+    IgBuildCtx &operator=(const IgBuildCtx &Other) {
+      NextNode = Other.NextNode;
+      LiveSet = Other.LiveSet;
+      return *this;
+    }
   };
 
-  std::unordered_map<Value *, std::unique_ptr<RegAllocValue>>
-      ValueToRegAllocVal;
   InterferenceGraph IG;
 
   IgBuildCtx igBuild(IgBuildCtx CurrentCtx);
@@ -59,10 +61,8 @@ private:
   IgBuildCtx igBuildLoop(IgBuildCtx CurrentCtx);
   IgBuildCtx igBuildNormal(IgBuildCtx CurrentCtx);
 
-  std::unordered_map<BasicBlock *, std::unordered_set<RegAllocValue *>>
-  processBlock(BasicBlock *BB, std::unordered_set<RegAllocValue *> LiveSet);
-
-  RegAllocValue *lookupRegAllocVal(Value *);
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
+  processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet);
 
   Function *F;
   DominatorTree *DT;

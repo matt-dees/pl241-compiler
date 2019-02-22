@@ -272,3 +272,14 @@ bool DominatorTree::isJoinBlock(BasicBlock *BB) {
   }
   return true;
 }
+
+bool DominatorTree::isIfHdrBlock(BasicBlock *BB) {
+  if (BB->successors().size() != 2)
+    return false;
+  for (auto Pred : BB->predecessors()) {
+    if (doesBlockDominate(BB, Pred)) {
+      return false;
+    }
+  }
+  return true;
+}

@@ -61,3 +61,13 @@ std::vector<BasicBlock *> Function::postOrderCfg() {
   }
   return PostOrdering;
 }
+
+std::vector<BasicBlock *> Function::exitBlocks() {
+  std::vector<BasicBlock *> ExitBlocks = {};
+  for (auto &BB : basicBlocks()) {
+    if (BB->successors().empty()) {
+      ExitBlocks.push_back(BB.get());
+    }
+  }
+  return ExitBlocks;
+}
