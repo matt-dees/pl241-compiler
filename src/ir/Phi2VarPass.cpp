@@ -36,13 +36,11 @@ void Phi2VarPass::process(Function &F) {
       auto Args = Instr->arguments();
       for (int I = 0; I < 2; ++I) {
         auto Arg = Args[I];
-        auto ArgRegister = Registers->at(Arg);
+        auto ArgRegister = Registers->find(Arg) != Registers->end() ? Registers->at(Arg) : RegisterAllocator::SPILL;
         if (ArgRegister != TargetRegister) {
-          ValueRef Source = ArgRegister != RegisterAllocator::RA_REGISTER::SPILL
-                                ? ValueRef(ValueType::Register, ArgRegister)
-                                : Arg;
-          auto Move = make_unique<MoveInstruction>(NameGen::genInstructionId(),
-                                                   Source, Target);
+          ValueRef Source =
+              ArgRegister != RegisterAllocator::RA_REGISTER::SPILL ? ValueRef(ValueType::Register, ArgRegister) : Arg;
+          auto Move = make_unique<MoveInstruction>(NameGen::genInstructionId(), Source, Target);
           Move->storage() = Instr->storage();
           Predecessors[I]->appendInstruction(move(Move));
         }
