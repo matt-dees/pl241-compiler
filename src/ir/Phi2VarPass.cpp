@@ -1,6 +1,8 @@
 #include "Phi2VarPass.h"
+#include "FunctionAnalyzer.h"
 #include "Module.h"
 #include "NameGen.h"
+#include "RegisterAllocator.h"
 #include <algorithm>
 #include <map>
 

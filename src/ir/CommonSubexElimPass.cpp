@@ -1,9 +1,12 @@
 #include "CommonSubexElimPass.h"
+#include "DominatorTree.h"
+#include "FunctionAnalyzer.h"
 #include <algorithm>
 #include <array>
 #include <iostream>
 #include <stack>
 #include <type_traits>
+#include <unordered_set>
 
 using namespace cs241c;
 using namespace std;

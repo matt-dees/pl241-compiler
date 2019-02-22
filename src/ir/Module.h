@@ -2,10 +2,6 @@
 #define CS241C_IR_MODULE_H
 
 #include "Function.h"
-#include "FunctionAnalyzer.h"
-#include "IrGenContext.h"
-#include "Value.h"
-#include "Variable.h"
 #include "Vcg.h"
 #include <memory>
 #include <vector>
