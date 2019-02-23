@@ -34,7 +34,15 @@ void InterferenceGraph::writeNodes(ofstream &OutStream) {
     OutStream << "title: "
               << "\"" << VertexEdgePair.first->toString() << "\"\n";
     OutStream << "label: \"" + VertexEdgePair.first->toString() << "\"\n";
-    OutStream << "color:red"
+
+    OutStream << "label: \"" + VertexEdgePair.first->toString() << "\n";
+    for (auto Val : coalescedNodes()) {
+      if (Val.second == VertexEdgePair.first) {
+        OutStream << Val.first->toString() << "\n";
+      }
+    }
+    OutStream << "\"";
+    OutStream << "color:white"
               << "\n";
     OutStream << "}\n";
     for (auto Destination : VertexEdgePair.second) {
@@ -84,7 +92,12 @@ bool InterferenceGraph::hasNode(Value *Node) {
   return IG.find(Node) != IG.end();
 }
 
-void InterferenceGraph::addNode(Value *Node) { IG[Node] = {}; }
+void InterferenceGraph::addNode(Value *Node) {
+  if (hasNode(Node)) {
+    return;
+  }
+  IG[Node] = {};
+}
 
 RAHeuristicInfo &InterferenceGraph::heuristicData(Value *Val) {
   if (HeuristicDataMap.find(Val) == HeuristicDataMap.end()) {
@@ -96,21 +109,29 @@ RAHeuristicInfo &InterferenceGraph::heuristicData(Value *Val) {
 void InterferenceGraph::coalesce() {
   for (auto NodeEdgePair : graph()) {
     if (auto Instr = dynamic_cast<Instruction *>(NodeEdgePair.first)) {
+      auto GraphInstr = getValueInGraph(Instr);
       if (Instr->InstrT == InstructionType::Phi) {
         bool CanCoalesce = true;
         std::unordered_set<Value *> Cluster;
         for (auto Arg : Instr->arguments()) {
-          if (!hasNode(Arg) || interferes({Instr, Arg}, Cluster)) {
+          auto GraphArg = getValueInGraph(Arg);
+          if (!hasNode(getValueInGraph(GraphArg)) ||
+              interferes({GraphInstr, GraphArg}, Cluster)) {
             CanCoalesce = false;
             break;
           }
-          Cluster.insert(Arg);
+          Cluster.insert(GraphArg);
         }
         if (CanCoalesce) {
           for (auto Node : Cluster) {
-            addEdges(neighbors(Node), Instr);
+            addEdges(neighbors(Node), GraphInstr);
             removeNode(Node);
-            CoalesceMap[Node] = Instr;
+            CoalesceMap[Node] = GraphInstr;
+            for (auto CoalesceMapping : CoalesceMap) {
+              if (CoalesceMapping.second == Node) {
+                CoalesceMap[CoalesceMapping.first] = GraphInstr;
+              }
+            }
           }
         }
       }
@@ -132,8 +153,15 @@ bool InterferenceGraph::interferes(
   return false;
 }
 
+Value *InterferenceGraph::getValueInGraph(Value *V) {
+  if (CoalesceMap.find(V) == CoalesceMap.end()) {
+    return V;
+  }
+  return CoalesceMap[V];
+}
+
 void IGBuilder::buildInterferenceGraph() {
-  std::unordered_set<Value *> LiveSet = {};
+  std::unordered_set<Value *> LiveSet;
   for (auto ExitBB : F->exitBlocks()) {
     BasicBlock *BB = ExitBB;
     while (BB != nullptr) {
@@ -144,10 +172,10 @@ void IGBuilder::buildInterferenceGraph() {
 }
 
 IGBuilder::IgBuildCtx IGBuilder::igBuild(IGBuilder::IgBuildCtx CurrentCtx) {
-  if (DT->isIfJoinBlock(CurrentCtx.NextNode)) {
-    return igBuildIfStmt(CurrentCtx);
-  } else if (DT->isLoopHdrBlock(CurrentCtx.NextNode)) {
+  if (CurrentCtx.NextNode->hasAttribute(BasicBlockAttr::While)) {
     return igBuildLoop(CurrentCtx);
+  } else if (CurrentCtx.NextNode->hasAttribute(BasicBlockAttr::Join)) {
+    return igBuildIfStmt(CurrentCtx);
   }
   return igBuildNormal(CurrentCtx);
 }
@@ -223,8 +251,8 @@ IGBuilder::igBuildIfStmt(IGBuilder::IgBuildCtx CurrentCtx) {
 
   IgBuildCtx IfHeaderCtx = {nullptr, {}};
   for (auto Pred : CurrentCtx.NextNode->predecessors()) {
-    IgBuildCtx BranchCtx = igBuild({Pred, PredecessorPhiSets[Pred]});
-    while (!DT->isIfHdrBlock(BranchCtx.NextNode)) {
+    IgBuildCtx BranchCtx = {Pred, PredecessorPhiSets[Pred]};
+    while (!BranchCtx.NextNode->hasAttribute(BasicBlockAttr::If)) {
       BranchCtx = igBuild(BranchCtx);
     }
     IfHeaderCtx.merge(BranchCtx);

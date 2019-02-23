@@ -4,7 +4,6 @@
 #include "Instruction.h"
 #include "Value.h"
 #include <cstdint>
-#include <deque>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -15,9 +14,11 @@ class Instruction;
 class SSAContext;
 class Variable;
 
+enum class BasicBlockAttr : uint8_t {Join = 0x1, If = 0x2, While = 0x4};
+
 class BasicBlock : public Value {
 public:
-  using iterator = std::deque<std::unique_ptr<Instruction>>::iterator;
+  using iterator = std::vector<std::unique_ptr<Instruction>>::iterator;
 
   class FallthroughSuccessorProxy {
     BasicBlock *BB;
@@ -33,15 +34,20 @@ public:
 
 private:
   std::string Name;
-  std::unordered_map<Variable *, Instruction *> PhiInstrMap;
+  BasicBlockAttr Attributes{};
 
   std::vector<BasicBlock *> Predecessors;
   BasicBlock *FallthroughSuccessor = nullptr;
-  std::deque<std::unique_ptr<Instruction>> Instructions;
+  std::vector<std::unique_ptr<Instruction>> Instructions;
 
+  std::unordered_map<Variable *, Instruction *> PhiInstrMap;
 public:
   BasicBlock(std::string Name,
-             std::deque<std::unique_ptr<Instruction>> Instructions = {});
+             std::vector<std::unique_ptr<Instruction>> Instructions = {});
+
+  void addAttribute(BasicBlockAttr Attr);
+  bool hasAttribute(BasicBlockAttr Attr);
+  void removeAttribute(BasicBlockAttr Attr);
 
   const std::vector<BasicBlock *> &predecessors() const;
 
@@ -49,7 +55,7 @@ public:
   std::vector<BasicBlock *> successors() const;
   void updateSuccessor(BasicBlock *From, BasicBlock *To);
 
-  std::deque<std::unique_ptr<Instruction>> &instructions();
+  std::vector<std::unique_ptr<Instruction>> &instructions();
   BasicBlockTerminator *terminator() const;
 
   void appendPredecessor(BasicBlock *BB);

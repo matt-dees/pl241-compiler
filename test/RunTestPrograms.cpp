@@ -6,6 +6,7 @@
 #include "Lexer.h"
 #include "Mem2VarPass.h"
 #include "Parser.h"
+#include "Phi2VarPass.h"
 #include "SSAPass.h"
 #include <algorithm>
 #include <catch.hpp>
@@ -46,10 +47,13 @@ TEST_CASE("Compile and run test programs") {
       DeadCodeEliminationPass DCEP(FA);
       DCEP.run(*IR);
 
+      FA.runRegisterAllocation(IR.get());
+
+      Phi2VarPass P2V(FA);
+      P2V.run(*IR);
+
       IntegrityCheckPass ICP(FA);
       ICP.run(*IR);
-
-      FA.runRegisterAllocation(IR.get());
 
       CHECK(true);
     }

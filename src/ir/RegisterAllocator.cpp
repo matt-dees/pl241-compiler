@@ -127,7 +127,14 @@ void AnnotatedIG::writeNodes(std::ofstream &OutFileStream) {
     OutFileStream << "node: {\n";
     OutFileStream << "title: "
                   << "\"" << VertexEdgePair.first->toString() << "\"\n";
-    OutFileStream << "label: \"" + VertexEdgePair.first->toString() << "\"\n";
+    OutFileStream << "label: \"" + VertexEdgePair.first->toString() << "\n";
+    for (auto Val : IG->coalescedNodes()) {
+      if (Val.second == VertexEdgePair.first) {
+        OutFileStream << Val.first->toString() << "\n";
+      }
+    }
+    OutFileStream << "\"";
+
     OutFileStream << "color:" + lookupColor(VertexEdgePair.first) << "\n";
     OutFileStream << "}\n";
     for (auto Destination : VertexEdgePair.second) {

@@ -27,7 +27,8 @@ void Phi2VarPass::process(Function &F) {
       if (Instr->InstrT != InstructionType::Phi)
         break;
 
-      auto TargetRegister = Registers->at(Instr.get());
+      auto TargetRegister =
+          Registers->find(Instr.get()) != Registers->end() ? Registers->at(Instr.get()) : RegisterAllocator::SPILL;
       ValueRef Target = TargetRegister != RegisterAllocator::RA_REGISTER::SPILL
                             ? ValueRef(ValueType::Register, TargetRegister)
                             : Instr->storage();
@@ -42,6 +43,16 @@ void Phi2VarPass::process(Function &F) {
               ArgRegister != RegisterAllocator::RA_REGISTER::SPILL ? ValueRef(ValueType::Register, ArgRegister) : Arg;
           auto Move = make_unique<MoveInstruction>(NameGen::genInstructionId(), Source, Target);
           Move->storage() = Instr->storage();
+
+          auto TargetPredecessor = Predecessors[I];
+          if (TargetPredecessor->successors().size() > 1) {
+            auto IntermediateBB = make_unique<BasicBlock>(NameGen::genBasicBlockName());
+            TargetPredecessor->updateSuccessor(BB, IntermediateBB.get());
+            IntermediateBB->fallthoughSuccessor() = BB;
+            TargetPredecessor = IntermediateBB.get();
+            F.basicBlocks().push_back(move(IntermediateBB));
+          }
+
           Predecessors[I]->appendInstruction(move(Move));
         }
       }

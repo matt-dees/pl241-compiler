@@ -12,22 +12,16 @@ class Function;
 class DominatorTree {
   bool Reverse;
   std::unordered_multimap<BasicBlock *, BasicBlock *> DomTree;
-  std::unordered_map<BasicBlock *, BasicBlock *> IDomMap;
 
 public:
+  std::unordered_map<BasicBlock *, BasicBlock *> IDomMap;
+  std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>> DominanceFrontier;
+
   DominatorTree(bool Reverse = false);
-
-  bool isLoopHdrBlock(BasicBlock *BB);
-  
-  bool isIfHdrBlock(BasicBlock *BB);
-  bool isIfJoinBlock(BasicBlock *BB);
-
   std::unordered_set<BasicBlock *> dominanceFrontier(BasicBlock *BB);
   void buildDominatorTree(Function &F);
   bool doesBlockDominate(BasicBlock *Dominator, BasicBlock *Candidate) const;
-  std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *>>
-      DominanceFrontier;
 };
-
 } // namespace cs241c
+
 #endif

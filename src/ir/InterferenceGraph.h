@@ -19,6 +19,7 @@ private:
   bool interferes(const std::unordered_set<Value *> &NodeSet1,
                   const std::unordered_set<Value *> &NodeSet2);
 
+  Value *getValueInGraph(Value *);
   std::unordered_map<Value *, RAHeuristicInfo> HeuristicDataMap;
   std::unordered_map<Value *, std::unordered_set<Value *>> WrittenEdges;
   std::unordered_map<Value *, Value *> CoalesceMap;
@@ -53,11 +54,7 @@ private:
     BasicBlock *NextNode;
     std::unordered_set<Value *> LiveSet;
     void merge(IgBuildCtx Other);
-    IgBuildCtx &operator=(const IgBuildCtx &Other) {
-      NextNode = Other.NextNode;
-      LiveSet = Other.LiveSet;
-      return *this;
-    }
+    IgBuildCtx &operator=(const IgBuildCtx &Other) = default;
   };
 
   InterferenceGraph IG;
@@ -73,5 +70,6 @@ private:
   Function *F;
   DominatorTree *DT;
 };
-}; // namespace cs241c
+} // namespace cs241c
+
 #endif

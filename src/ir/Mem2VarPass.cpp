@@ -25,7 +25,9 @@ void Mem2VarPass::run(Module &M) {
 
           auto InitLocalMove = make_unique<MoveInstruction>(NameGen::genInstructionId(), InitConst, Local.get());
           InitLocalMove->owner() = F->entryBlock();
-          F->entryBlock()->instructions().push_front(move(InitLocalMove));
+
+          auto &EntryInstructions = F->entryBlock()->instructions();
+          EntryInstructions.insert(EntryInstructions.begin(), move(InitLocalMove));
 
           F->locals().push_back(move(Local));
         }

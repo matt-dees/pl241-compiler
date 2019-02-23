@@ -13,13 +13,9 @@ namespace {
 class DominatorTreeBuilder {
   bool Reversed;
 
-  vector<BasicBlock *> predecessors(BasicBlock &Block) {
-    return !Reversed ? Block.predecessors() : Block.successors();
-  }
+  vector<BasicBlock *> predecessors(BasicBlock &Block) { return !Reversed ? Block.predecessors() : Block.successors(); }
 
-  vector<BasicBlock *> followers(BasicBlock &Block) {
-    return !Reversed ? Block.successors() : Block.predecessors();
-  }
+  vector<BasicBlock *> followers(BasicBlock &Block) { return !Reversed ? Block.successors() : Block.predecessors(); }
 
 public:
   DominatorTreeBuilder(bool Reversed) : Reversed(Reversed) {}
@@ -55,8 +51,7 @@ public:
     return Result;
   }
 
-  vector<BasicBlock *>
-  reversePostOrder(const vector<BasicBlock *> &EntryBlocks) {
+  vector<BasicBlock *> reversePostOrder(const vector<BasicBlock *> &EntryBlocks) {
     vector<BasicBlock *> Cfg = postOrder(EntryBlocks);
     reverse(Cfg.begin(), Cfg.end());
     return Cfg;
@@ -74,8 +69,7 @@ public:
     return LocalDomTree;
   }
 
-  unordered_map<BasicBlock *, uint32_t>
-  createNodePositionMap(const vector<BasicBlock *> &ReversePostOrderNodes) {
+  unordered_map<BasicBlock *, uint32_t> createNodePositionMap(const vector<BasicBlock *> &ReversePostOrderNodes) {
     unordered_map<BasicBlock *, uint32_t> NodePositionMap;
     for (uint32_t i = 0; i < ReversePostOrderNodes.size(); ++i) {
       NodePositionMap[ReversePostOrderNodes.at(i)] = i;
@@ -83,10 +77,9 @@ public:
     return NodePositionMap;
   }
 
-  BasicBlock *
-  intersect(BasicBlock *Predecessor, BasicBlock *CandidateIDom,
-            const unordered_map<BasicBlock *, BasicBlock *> &IDoms,
-            const unordered_map<BasicBlock *, uint32_t> &NodePositionMap) {
+  BasicBlock *intersect(BasicBlock *Predecessor, BasicBlock *CandidateIDom,
+                        const unordered_map<BasicBlock *, BasicBlock *> &IDoms,
+                        const unordered_map<BasicBlock *, uint32_t> &NodePositionMap) {
     // Read page 7 of reference paper for description of intersect algorithm
     BasicBlock *Finger1 = Predecessor;
     BasicBlock *Finger2 = CandidateIDom;
@@ -94,8 +87,7 @@ public:
     bool Changed;
     while (Finger1 != Finger2) {
       Changed = false;
-      while (NodePositionMap.at(Finger1) > NodePositionMap.at(Finger2) &&
-             NodePositionMap.at(Finger1) != 0) {
+      while (NodePositionMap.at(Finger1) > NodePositionMap.at(Finger2) && NodePositionMap.at(Finger1) != 0) {
         BasicBlock *Finger1Dom = IDoms.at(Finger1);
         if (Finger1Dom != Finger1) {
           Finger1 = IDoms.at(Finger1);
@@ -105,8 +97,7 @@ public:
         }
       }
 
-      while (NodePositionMap.at(Finger2) > NodePositionMap.at(Finger1) &&
-             NodePositionMap.at(Finger2) != 0) {
+      while (NodePositionMap.at(Finger2) > NodePositionMap.at(Finger1) && NodePositionMap.at(Finger2) != 0) {
         BasicBlock *Finger2Dom = IDoms.at(Finger2);
         if (Finger2Dom != Finger2) {
           Finger2 = IDoms.at(Finger2);
@@ -123,12 +114,10 @@ public:
     return Finger1;
   }
 
-  unordered_map<BasicBlock *, BasicBlock *>
-  createImmediateDomMap(const vector<BasicBlock *> &ReversePostOrderNodes,
-                        const vector<BasicBlock *> &EntryBlocks) {
+  unordered_map<BasicBlock *, BasicBlock *> createImmediateDomMap(const vector<BasicBlock *> &ReversePostOrderNodes,
+                                                                  const vector<BasicBlock *> &EntryBlocks) {
     unordered_map<BasicBlock *, BasicBlock *> IDoms;
-    unordered_map<BasicBlock *, uint32_t> NodePositionMap =
-        createNodePositionMap(ReversePostOrderNodes);
+    unordered_map<BasicBlock *, uint32_t> NodePositionMap = createNodePositionMap(ReversePostOrderNodes);
 
     bool Changed = true;
     for (auto Entry : EntryBlocks) {
@@ -143,19 +132,14 @@ public:
           // Unreachable Node or start node. Will not include in dominator tree.
           continue;
         }
-        BasicBlock *CandidateIDom =
-            *find_if(Predecessors.begin(), Predecessors.end(),
-                     [&IDoms](BasicBlock *Block) {
-                       return IDoms.find(Block) != IDoms.end();
-                     });
+        BasicBlock *CandidateIDom = *find_if(Predecessors.begin(), Predecessors.end(),
+                                             [&IDoms](BasicBlock *Block) { return IDoms.find(Block) != IDoms.end(); });
         auto PredecessorsEnd = Predecessors.end();
-        for (auto PredecessorIt = Predecessors.begin();
-             PredecessorIt != PredecessorsEnd; ++PredecessorIt) {
+        for (auto PredecessorIt = Predecessors.begin(); PredecessorIt != PredecessorsEnd; ++PredecessorIt) {
           if (*PredecessorIt == CandidateIDom)
             continue;
           if (IDoms.find(*PredecessorIt) != IDoms.end()) {
-            CandidateIDom = intersect(*PredecessorIt, CandidateIDom, IDoms,
-                                      NodePositionMap);
+            CandidateIDom = intersect(*PredecessorIt, CandidateIDom, IDoms, NodePositionMap);
             if (CandidateIDom == nullptr) {
               CandidateIDom = Node;
               break;
@@ -172,8 +156,7 @@ public:
   }
 
   unordered_map<BasicBlock *, unordered_set<BasicBlock *>>
-  createDominanceFrontier(
-      Function &F, const unordered_map<BasicBlock *, BasicBlock *> &IDomMap) {
+  createDominanceFrontier(Function &F, const unordered_map<BasicBlock *, BasicBlock *> &IDomMap) {
     unordered_map<BasicBlock *, unordered_set<BasicBlock *>> DF;
 
     for (auto &Block : F.basicBlocks()) {
@@ -236,50 +219,16 @@ unordered_set<BasicBlock *> DominatorTree::dominanceFrontier(BasicBlock *BB) {
   return DominanceFrontier.at(BB);
 }
 
-bool DominatorTree::doesBlockDominate(BasicBlock *Dominator,
-                                      BasicBlock *Candidate) const {
+bool DominatorTree::doesBlockDominate(BasicBlock *Dominator, BasicBlock *Candidate) const {
   if (Dominator == Candidate) {
     return true;
   }
   BasicBlock *Runner = Candidate;
-  while (IDomMap.find(Runner) != IDomMap.end() &&
-         IDomMap.at(Runner) != Runner) {
+  while (IDomMap.find(Runner) != IDomMap.end() && IDomMap.at(Runner) != Runner) {
     if (IDomMap.at(Runner) == Dominator) {
       return true;
     }
     Runner = IDomMap.at(Runner);
   }
   return false;
-}
-
-bool DominatorTree::isLoopHdrBlock(BasicBlock *BB) {
-  for (auto Pred : BB->predecessors()) {
-    if (doesBlockDominate(BB, Pred)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool DominatorTree::isIfJoinBlock(BasicBlock *BB) {
-  if (BB->predecessors().size() != 2) {
-    return false;
-  }
-  for (auto Pred : BB->predecessors()) {
-    if (doesBlockDominate(BB, Pred)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool DominatorTree::isIfHdrBlock(BasicBlock *BB) {
-  if (BB->successors().size() != 2)
-    return false;
-  for (auto Pred : BB->predecessors()) {
-    if (doesBlockDominate(BB, Pred)) {
-      return false;
-    }
-  }
-  return true;
 }
