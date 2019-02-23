@@ -16,12 +16,17 @@ class InterferenceGraph : public Vcg {
 
 private:
   void writeNodes(std::ofstream &OutFileStream);
+  bool interferes(const std::unordered_set<Value *> &NodeSet1,
+                  const std::unordered_set<Value *> &NodeSet2);
+
   std::unordered_map<Value *, RAHeuristicInfo> HeuristicDataMap;
   std::unordered_map<Value *, std::unordered_set<Value *>> WrittenEdges;
+  std::unordered_map<Value *, Value *> CoalesceMap;
 
 public:
   InterferenceGraph() = default;
 
+  std::unordered_map<Value *, Value *> &coalescedNodes() { return CoalesceMap; }
   RAHeuristicInfo &heuristicData(Value *);
   void writeEdge(std::ofstream &OutFileStream, Value *From, Value *To);
   void reset() { WrittenEdges = {}; }
@@ -33,6 +38,7 @@ public:
   void addEdges(const std::unordered_set<Value *> &FromSet, Value *To);
   virtual void writeGraph(std::ofstream &OutFileStream) override;
   const Graph &graph() const { return IG; }
+  void coalesce();
 };
 
 class IGBuilder {

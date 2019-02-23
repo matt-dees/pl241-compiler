@@ -24,17 +24,8 @@ void InterferenceGraph::addEdge(Value *From, Value *To) {
   if (From == To) {
     return;
   }
-  if (IG.find(From) == IG.end()) {
-    IG[From] = {To};
-  } else {
-    IG[From].insert(To);
-  }
-  // Bidirectional graph
-  if (IG.find(To) == IG.end()) {
-    IG[To] = {From};
-  } else {
-    IG[To].insert(From);
-  }
+  IG[From].insert(To);
+  IG[To].insert(From);
 }
 
 void InterferenceGraph::writeNodes(ofstream &OutStream) {
@@ -101,6 +92,46 @@ RAHeuristicInfo &InterferenceGraph::heuristicData(Value *Val) {
   }
   return HeuristicDataMap[Val];
 }
+
+void InterferenceGraph::coalesce() {
+  for (auto NodeEdgePair : graph()) {
+    if (auto Instr = dynamic_cast<Instruction *>(NodeEdgePair.first)) {
+      if (Instr->InstrT == InstructionType::Phi) {
+        bool CanCoalesce = true;
+        std::unordered_set<Value *> Cluster;
+        for (auto Arg : Instr->arguments()) {
+          if (!hasNode(Arg) || interferes({Instr, Arg}, Cluster)) {
+            CanCoalesce = false;
+            break;
+          }
+          Cluster.insert(Arg);
+        }
+        if (CanCoalesce) {
+          for (auto Node : Cluster) {
+            addEdges(neighbors(Node), Instr);
+            removeNode(Node);
+            CoalesceMap[Node] = Instr;
+          }
+        }
+      }
+    }
+  }
+}
+
+bool InterferenceGraph::interferes(
+    const std::unordered_set<Value *> &NodeSet1,
+    const std::unordered_set<Value *> &NodeSet2) {
+  for (auto Node : NodeSet1) {
+    for (auto OtherNode : NodeSet2) {
+      std::unordered_set<Value *> Neighbors = neighbors(Node);
+      if (Neighbors.find(OtherNode) != Neighbors.end()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void IGBuilder::buildInterferenceGraph() {
   std::unordered_set<Value *> LiveSet = {};
   for (auto ExitBB : F->exitBlocks()) {
@@ -109,6 +140,7 @@ void IGBuilder::buildInterferenceGraph() {
       BB = igBuild({BB, LiveSet}).NextNode;
     }
   }
+  IG.coalesce();
 }
 
 IGBuilder::IgBuildCtx IGBuilder::igBuild(IGBuilder::IgBuildCtx CurrentCtx) {
@@ -141,31 +173,36 @@ std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
 IGBuilder::processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet) {
   std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
       PredecessorLiveSets;
+  for (auto Val : LiveSet) {
+    IG.addEdges(LiveSet, Val);
+  }
   for (auto ReverseInstructionIt = BB->instructions().rbegin();
        ReverseInstructionIt != BB->instructions().rend();
        ReverseInstructionIt++) {
 
     LiveSet.erase(ReverseInstructionIt->get());
-    for (auto Arg : ReverseInstructionIt->get()->arguments()) {
+    auto Args = ReverseInstructionIt->get()->arguments();
+    for (auto i = 0; i < Args.size(); i++) {
+      auto Arg = Args.at(i);
       IG.heuristicData(Arg).NumUses++;
       if (dynamic_cast<Instruction *>((Value *)Arg) == nullptr) {
         continue;
       }
+      IG.addNode(Arg);
       IG.addEdges(LiveSet, Arg);
-      if (ReverseInstructionIt->get()->InstrT == InstructionType::Phi) {
-        for (auto Pred : BB->predecessors()) {
-          if (PredecessorLiveSets.find(Pred) != PredecessorLiveSets.end()) {
-            IG.addEdges(PredecessorLiveSets[Pred], Arg);
-            PredecessorLiveSets[Pred].insert(Arg);
-          } else {
-            PredecessorLiveSets[Pred] = {Arg};
-          }
-        }
-      } else {
+      if (ReverseInstructionIt->get()->InstrT != InstructionType::Phi) {
         LiveSet.insert(Arg);
+      } else {
+        auto Pred = BB->predecessors().at(i);
+        if (PredecessorLiveSets.find(Pred) == PredecessorLiveSets.end()) {
+          PredecessorLiveSets[Pred] = {Arg};
+        } else {
+          PredecessorLiveSets[Pred].insert(Arg);
+        }
       }
     }
   }
+
   for (auto Pred : BB->predecessors()) {
     std::unordered_set<Value *> LiveSetToPropagate = {};
     if (PredecessorLiveSets.find(Pred) != PredecessorLiveSets.end()) {

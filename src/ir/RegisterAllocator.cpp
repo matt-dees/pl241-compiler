@@ -12,6 +12,9 @@ RegisterAllocator::Coloring RegisterAllocator::color(InterferenceGraph IG) {
 
   Coloring CurrentColoring = {};
   colorRecur(IG, CurrentColoring);
+  for (auto Node : IG.coalescedNodes()) {
+    CurrentColoring[Node.first] = CurrentColoring.at(Node.second);
+  }
   return CurrentColoring;
 }
 
