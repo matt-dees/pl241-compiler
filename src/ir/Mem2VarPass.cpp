@@ -67,7 +67,7 @@ void Mem2VarPass::run(Module &M) {
                                                            LocalSubstitutions[MemInstr->object()]);
                   Move->owner() = BB;
                   InstrIt = Instructions.erase(InstrIt);
-                  Instructions.insert(InstrIt, move(Move));
+                  InstrIt = Instructions.insert(InstrIt, move(Move));
                 }
               }
             }
