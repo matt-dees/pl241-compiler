@@ -13,8 +13,7 @@ void InterferenceGraph::writeGraph(ofstream &OutStream) {
   writeNodes(OutStream);
 }
 
-void InterferenceGraph::addEdges(const std::unordered_set<Value *> &FromSet,
-                                 Value *To) {
+void InterferenceGraph::addEdges(const std::unordered_set<Value *> &FromSet, Value *To) {
   for (auto Node : FromSet) {
     addEdge(Node, To);
   }
@@ -89,9 +88,7 @@ std::unordered_set<Value *> InterferenceGraph::removeNode(Value *RAV) {
   return Neighbors;
 }
 
-bool InterferenceGraph::hasNode(Value *Node) {
-  return IG.find(Node) != IG.end();
-}
+bool InterferenceGraph::hasNode(Value *Node) { return IG.find(Node) != IG.end(); }
 
 void InterferenceGraph::addNode(Value *Node) { IG[Node] = {}; }
 
@@ -101,8 +98,9 @@ RAHeuristicInfo &InterferenceGraph::heuristicData(Value *Val) {
   }
   return HeuristicDataMap[Val];
 }
+
 void IGBuilder::buildInterferenceGraph() {
-  std::unordered_set<Value *> LiveSet = {};
+  std::unordered_set<Value *> LiveSet;
   for (auto ExitBB : F->exitBlocks()) {
     BasicBlock *BB = ExitBB;
     while (BB != nullptr) {
@@ -112,18 +110,17 @@ void IGBuilder::buildInterferenceGraph() {
 }
 
 IGBuilder::IgBuildCtx IGBuilder::igBuild(IGBuilder::IgBuildCtx CurrentCtx) {
-  if (DT->isIfJoinBlock(CurrentCtx.NextNode)) {
-    return igBuildIfStmt(CurrentCtx);
-  } else if (DT->isLoopHdrBlock(CurrentCtx.NextNode)) {
+  if (CurrentCtx.NextNode->hasAttribute(BasicBlockAttr::While)) {
     return igBuildLoop(CurrentCtx);
+  } else if (CurrentCtx.NextNode->hasAttribute(BasicBlockAttr::Join)) {
+    return igBuildIfStmt(CurrentCtx);
   }
   return igBuildNormal(CurrentCtx);
 }
 
-IGBuilder::IgBuildCtx
-IGBuilder::igBuildNormal(IGBuilder::IgBuildCtx CurrentCtx) {
-  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
-      PredecessorSets = processBlock(CurrentCtx.NextNode, CurrentCtx.LiveSet);
+IGBuilder::IgBuildCtx IGBuilder::igBuildNormal(IGBuilder::IgBuildCtx CurrentCtx) {
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>> PredecessorSets =
+      processBlock(CurrentCtx.NextNode, CurrentCtx.LiveSet);
 
   IgBuildCtx NextCtx = {nullptr, {}};
   if (PredecessorSets.size() > 1) {
@@ -139,10 +136,8 @@ IGBuilder::igBuildNormal(IGBuilder::IgBuildCtx CurrentCtx) {
 
 std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
 IGBuilder::processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet) {
-  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
-      PredecessorLiveSets;
-  for (auto ReverseInstructionIt = BB->instructions().rbegin();
-       ReverseInstructionIt != BB->instructions().rend();
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>> PredecessorLiveSets;
+  for (auto ReverseInstructionIt = BB->instructions().rbegin(); ReverseInstructionIt != BB->instructions().rend();
        ReverseInstructionIt++) {
 
     LiveSet.erase(ReverseInstructionIt->get());
@@ -171,23 +166,20 @@ IGBuilder::processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet) {
     if (PredecessorLiveSets.find(Pred) != PredecessorLiveSets.end()) {
       LiveSetToPropagate = PredecessorLiveSets[Pred];
     }
-    copy(LiveSet.begin(), LiveSet.end(),
-         inserter(LiveSetToPropagate, LiveSetToPropagate.end()));
+    copy(LiveSet.begin(), LiveSet.end(), inserter(LiveSetToPropagate, LiveSetToPropagate.end()));
     PredecessorLiveSets[Pred] = LiveSetToPropagate;
   }
   return PredecessorLiveSets;
 }
 
-IGBuilder::IgBuildCtx
-IGBuilder::igBuildIfStmt(IGBuilder::IgBuildCtx CurrentCtx) {
-  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
-      PredecessorPhiSets =
-          processBlock(CurrentCtx.NextNode, CurrentCtx.LiveSet);
+IGBuilder::IgBuildCtx IGBuilder::igBuildIfStmt(IGBuilder::IgBuildCtx CurrentCtx) {
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>> PredecessorPhiSets =
+      processBlock(CurrentCtx.NextNode, CurrentCtx.LiveSet);
 
   IgBuildCtx IfHeaderCtx = {nullptr, {}};
   for (auto Pred : CurrentCtx.NextNode->predecessors()) {
-    IgBuildCtx BranchCtx = igBuild({Pred, PredecessorPhiSets[Pred]});
-    while (!DT->isIfHdrBlock(BranchCtx.NextNode)) {
+    IgBuildCtx BranchCtx = {Pred, PredecessorPhiSets[Pred]};
+    while (!BranchCtx.NextNode->hasAttribute(BasicBlockAttr::If)) {
       BranchCtx = igBuild(BranchCtx);
     }
     IfHeaderCtx.merge(BranchCtx);
@@ -196,9 +188,8 @@ IGBuilder::igBuildIfStmt(IGBuilder::IgBuildCtx CurrentCtx) {
 }
 
 IGBuilder::IgBuildCtx IGBuilder::igBuildLoop(IGBuilder::IgBuildCtx CurrentCtx) {
-  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
-      PredecessorPhiSets =
-          processBlock(CurrentCtx.NextNode, CurrentCtx.LiveSet);
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>> PredecessorPhiSets =
+      processBlock(CurrentCtx.NextNode, CurrentCtx.LiveSet);
   BasicBlock *LoopPredecessor = nullptr;
   BasicBlock *ContinuePredecessor = nullptr;
   for (auto P : CurrentCtx.NextNode->predecessors()) {
@@ -209,14 +200,12 @@ IGBuilder::IgBuildCtx IGBuilder::igBuildLoop(IGBuilder::IgBuildCtx CurrentCtx) {
     }
   }
   if (!LoopPredecessor) {
-    throw logic_error("Tried to build interference graph for loop block " +
-                      CurrentCtx.NextNode->toString() +
+    throw logic_error("Tried to build interference graph for loop block " + CurrentCtx.NextNode->toString() +
                       " but it does not have a loop predecessor.");
   }
 
   bool InSecondIteration = false;
-  IgBuildCtx LoopContext = {LoopPredecessor,
-                            PredecessorPhiSets.at(LoopPredecessor)};
+  IgBuildCtx LoopContext = {LoopPredecessor, PredecessorPhiSets.at(LoopPredecessor)};
   while (LoopContext.NextNode != CurrentCtx.NextNode && !InSecondIteration) {
     if (LoopContext.NextNode == CurrentCtx.NextNode) {
       InSecondIteration = true;

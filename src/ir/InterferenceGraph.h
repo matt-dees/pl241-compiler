@@ -47,11 +47,7 @@ private:
     BasicBlock *NextNode;
     std::unordered_set<Value *> LiveSet;
     void merge(IgBuildCtx Other);
-    IgBuildCtx &operator=(const IgBuildCtx &Other) {
-      NextNode = Other.NextNode;
-      LiveSet = Other.LiveSet;
-      return *this;
-    }
+    IgBuildCtx &operator=(const IgBuildCtx &Other) = default;
   };
 
   InterferenceGraph IG;
@@ -61,11 +57,12 @@ private:
   IgBuildCtx igBuildLoop(IgBuildCtx CurrentCtx);
   IgBuildCtx igBuildNormal(IgBuildCtx CurrentCtx);
 
-  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
-  processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet);
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>> processBlock(BasicBlock *BB,
+                                                                             std::unordered_set<Value *> LiveSet);
 
   Function *F;
   DominatorTree *DT;
 };
-}; // namespace cs241c
+} // namespace cs241c
+
 #endif

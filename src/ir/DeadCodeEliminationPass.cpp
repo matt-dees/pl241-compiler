@@ -1,5 +1,6 @@
 #include "DeadCodeEliminationPass.h"
 #include "DominatorTree.h"
+#include "FunctionAnalyzer.h"
 #include "Module.h"
 #include "NameGen.h"
 #include <algorithm>
@@ -19,7 +20,7 @@ void DeadCodeEliminationPass::run(Module &M) {
 }
 
 namespace {
-unordered_set<Value *> mark(Function &F) {
+unordered_set<Value *> mark(Function &F, FunctionAnalyzer &FA) {
   static const array<InstructionType, 9> PreLive{
       InstructionType::Store, InstructionType::Move,  InstructionType::Param,
       InstructionType::Call,  InstructionType::Ret,   InstructionType::End,
@@ -28,13 +29,13 @@ unordered_set<Value *> mark(Function &F) {
   DominatorTree ControlDependence(true);
   ControlDependence.buildDominatorTree(F);
 
+  auto &DT = *FA.dominatorTree(&F);
+
   vector<Instruction *> WorkList;
   unordered_set<Value *> LiveSet;
 
   for (auto &BB : F.basicBlocks()) {
     for (auto &I : BB->instructions()) {
-      // Mark all terminators live for now so we don't remove stuff needed for
-      // Phi2Var.
       if (find(PreLive.begin(), PreLive.end(), I->InstrT) != PreLive.end() ||
           dynamic_cast<BasicBlockTerminator *>(I.get())) {
         LiveSet.insert(I.get());
@@ -55,13 +56,29 @@ unordered_set<Value *> mark(Function &F) {
         }
       }
     }
+
     auto &ControlDependencies = ControlDependence.DominanceFrontier[I->owner()];
-    transform(ControlDependencies.begin(), ControlDependencies.end(),
-              inserter(LiveSet, LiveSet.end()),
+    transform(ControlDependencies.begin(), ControlDependencies.end(), inserter(LiveSet, LiveSet.end()),
               [](BasicBlock *CD) { return CD->terminator(); });
-    transform(ControlDependencies.begin(), ControlDependencies.end(),
-              back_inserter(WorkList),
+    transform(ControlDependencies.begin(), ControlDependencies.end(), back_inserter(WorkList),
               [](BasicBlock *CD) { return CD->terminator(); });
+
+    if (I->InstrT == InstructionType::Phi) {
+      auto CurrentBB = I->owner();
+      Instruction *Terminator;
+
+      if (CurrentBB->hasAttribute(BasicBlockAttr::While)) {
+        Terminator = CurrentBB->terminator();
+      } else {
+        auto ImmediateDominator = DT.IDomMap[CurrentBB];
+        Terminator = ImmediateDominator->terminator();
+      }
+
+      if (LiveSet.find(Terminator) == LiveSet.end()) {
+        LiveSet.insert(Terminator);
+        WorkList.push_back(Terminator);
+      }
+    }
   }
 
   return LiveSet;
@@ -70,60 +87,50 @@ unordered_set<Value *> mark(Function &F) {
 void erase(Function &F, const unordered_set<Value *> &LiveValues) {
   for (auto &BB : F.basicBlocks()) {
     auto &Instructions = BB->instructions();
-    Instructions.erase(
-        remove_if(Instructions.begin(), Instructions.end(),
-                  [&LiveValues](const auto &Instruction) {
-                    bool IsDead =
-                        LiveValues.find(Instruction.get()) == LiveValues.end();
-                    bool IsNotTerminator = dynamic_cast<BasicBlockTerminator *>(
-                                               Instruction.get()) == nullptr;
-                    return IsDead && IsNotTerminator;
-                  }),
-        Instructions.end());
+    Instructions.erase(remove_if(Instructions.begin(), Instructions.end(),
+                                 [&LiveValues](const auto &Instruction) {
+                                   bool IsDead = LiveValues.find(Instruction.get()) == LiveValues.end();
+                                   bool IsNotTerminator =
+                                       dynamic_cast<BasicBlockTerminator *>(Instruction.get()) == nullptr;
+                                   return IsDead && IsNotTerminator;
+                                 }),
+                       Instructions.end());
   }
 }
 
-BasicBlock *skipDeadBlocks(BasicBlock *BB,
-                           const unordered_set<Value *> &LiveValues,
+BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveValues,
                            unordered_set<BasicBlock *> &VisitedBlocks) {
   auto Followers = BB->successors();
 
   while (!Followers.empty() && VisitedBlocks.find(BB) == VisitedBlocks.end()) {
     VisitedBlocks.insert(BB);
 
-    if (auto ConditionalBranch =
-            dynamic_cast<ConditionalBlockTerminator *>(BB->terminator())) {
+    auto Terminator = BB->terminator();
+    if (auto ConditionalBranch = dynamic_cast<ConditionalBlockTerminator *>(Terminator)) {
       if (LiveValues.find(ConditionalBranch) == LiveValues.end()) {
         BB->fallthoughSuccessor() = ConditionalBranch->target();
         BB->releaseTerminator();
         Followers = BB->successors();
       } else {
         for (BasicBlock *Follower : Followers) {
-          BB->updateSuccessor(
-              Follower, skipDeadBlocks(Follower, LiveValues, VisitedBlocks));
+          BB->updateSuccessor(Follower, skipDeadBlocks(Follower, LiveValues, VisitedBlocks));
         }
         break;
       }
     }
 
-    if (auto Branch = dynamic_cast<BraInstruction *>(BB->terminator())) {
+    if (dynamic_cast<BraInstruction *>(BB->terminator())) {
       if (BB->instructions().size() == 1 && BB->predecessors().size() <= 1) {
-        // Disable removal of empty blocks for Phi2Var.
-        // BB = Followers.front();
+        //BB = Followers.front();
       } else {
-        BB->updateSuccessor(
-            Followers.front(),
-            skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
+        BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
         break;
       }
     } else if (BB->fallthoughSuccessor() != nullptr) {
       if (BB->instructions().size() == 0 && BB->predecessors().size() <= 1) {
-        // Disable removal of empty blocks for Phi2Var.
-        // BB = Followers.front();
+        //BB = Followers.front();
       } else {
-        BB->updateSuccessor(
-            Followers.front(),
-            skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
+        BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
         break;
       }
     }
@@ -132,7 +139,7 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB,
   }
 
   return BB;
-} // namespace
+}
 
 void removeDeadBlocks(Function &F, BasicBlock *NewEntry) {
   stack<BasicBlock *> WorkingStack;
@@ -153,37 +160,45 @@ void removeDeadBlocks(Function &F, BasicBlock *NewEntry) {
   }
 
   auto &BasicBlocks = F.basicBlocks();
-  for_each(BasicBlocks.begin(), BasicBlocks.end(),
-           [&MarkedBlocks](auto &Block) {
-             if (MarkedBlocks.find(Block.get()) == MarkedBlocks.end()) {
-               Block->releaseTerminator();
-               Block->fallthoughSuccessor() = nullptr;
-             }
-           });
-  BasicBlocks.erase(remove_if(BasicBlocks.begin(), BasicBlocks.end(),
-                              [&MarkedBlocks](auto &Block) {
-                                return MarkedBlocks.find(Block.get()) ==
-                                       MarkedBlocks.end();
-                              }),
-                    BasicBlocks.end());
+  for_each(BasicBlocks.begin(), BasicBlocks.end(), [&MarkedBlocks](auto &Block) {
+    if (MarkedBlocks.find(Block.get()) == MarkedBlocks.end()) {
+      Block->releaseTerminator();
+      Block->fallthoughSuccessor() = nullptr;
+    }
+  });
+  BasicBlocks.erase(
+      remove_if(BasicBlocks.begin(), BasicBlocks.end(),
+                [&MarkedBlocks](auto &Block) { return MarkedBlocks.find(Block.get()) == MarkedBlocks.end(); }),
+      BasicBlocks.end());
 }
 
 void trim(Function &F, const unordered_set<Value *> &LiveValues) {
   for (int I = 1; I <= 2; ++I) {
     unordered_set<BasicBlock *> VisitedBlocks;
-    BasicBlock *NewEntry =
-        skipDeadBlocks(F.entryBlock(), LiveValues, VisitedBlocks);
+    BasicBlock *NewEntry = skipDeadBlocks(F.entryBlock(), LiveValues, VisitedBlocks);
     removeDeadBlocks(F, NewEntry);
-    auto NewEntryIt =
-        find_if(F.basicBlocks().begin(), F.basicBlocks().end(),
-                [NewEntry](auto &Block) { return Block.get() == NewEntry; });
+    auto NewEntryIt = find_if(F.basicBlocks().begin(), F.basicBlocks().end(),
+                              [NewEntry](auto &Block) { return Block.get() == NewEntry; });
     NewEntryIt->swap(F.basicBlocks().front());
+  }
+}
+
+void cleanAttributes(Function &F) {
+  for (auto &BB : F.basicBlocks()) {
+    if (BB->predecessors().size() <= 1) {
+      BB->removeAttribute(BasicBlockAttr::Join);
+    }
+    if (BB->successors().size() <= 1) {
+      BB->removeAttribute(BasicBlockAttr::If);
+      BB->removeAttribute(BasicBlockAttr::While);
+    }
   }
 }
 } // namespace
 
 void DeadCodeEliminationPass::run(Function &F) {
-  auto LiveValues = mark(F);
+  auto LiveValues = mark(F, FA);
   erase(F, LiveValues);
-  trim(F, LiveValues);
+  //trim(F, LiveValues);
+  //cleanAttributes(F);
 }

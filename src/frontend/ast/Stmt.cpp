@@ -28,9 +28,12 @@ IfStmt::IfStmt(Relation Rel, vector<unique_ptr<Stmt>> Then, vector<unique_ptr<St
     : Rel(move(Rel)), Then(move(Then)), Else(move(Else)) {}
 
 void IfStmt::genIr(IrGenContext &Ctx) const {
+  Ctx.currentBlock()->addAttribute(BasicBlockAttr::If);
+
   auto TrueBB = Ctx.makeBasicBlock();
   auto FalseBB = Ctx.makeBasicBlock();
   auto FollowBB = Ctx.makeBasicBlock();
+
 
   Ctx.currentBlock()->fallthoughSuccessor() = TrueBB;
   auto Comparison = Rel.genCmp(Ctx);
@@ -56,6 +59,7 @@ void IfStmt::genIr(IrGenContext &Ctx) const {
   }
 
   Ctx.currentBlock() = FollowBB;
+  Ctx.currentBlock()->addAttribute(BasicBlockAttr::Join);
 }
 
 WhileStmt::WhileStmt(Relation Rel, vector<unique_ptr<Stmt>> Body) : Rel(move(Rel)), Body(move(Body)) {}
@@ -64,6 +68,9 @@ void WhileStmt::genIr(IrGenContext &Ctx) const {
   BasicBlock *HeaderBB = Ctx.makeBasicBlock();
   Ctx.currentBlock()->fallthoughSuccessor() = HeaderBB;
   Ctx.currentBlock() = HeaderBB;
+
+  Ctx.currentBlock()->addAttribute(BasicBlockAttr::While);
+  Ctx.currentBlock()->addAttribute(BasicBlockAttr::Join);
 
   auto Comparison = Rel.genCmp(Ctx);
   BasicBlock *BodyBB = Ctx.makeBasicBlock();
