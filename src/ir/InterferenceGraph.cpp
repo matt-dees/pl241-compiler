@@ -112,7 +112,7 @@ void IGBuilder::buildInterferenceGraph() {
 }
 
 IGBuilder::IgBuildCtx IGBuilder::igBuild(IGBuilder::IgBuildCtx CurrentCtx) {
-  if (DT->isJoinBlock(CurrentCtx.NextNode)) {
+  if (DT->isIfJoinBlock(CurrentCtx.NextNode)) {
     return igBuildIfStmt(CurrentCtx);
   } else if (DT->isLoopHdrBlock(CurrentCtx.NextNode)) {
     return igBuildLoop(CurrentCtx);

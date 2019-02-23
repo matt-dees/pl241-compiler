@@ -261,7 +261,7 @@ bool DominatorTree::isLoopHdrBlock(BasicBlock *BB) {
   return false;
 }
 
-bool DominatorTree::isJoinBlock(BasicBlock *BB) {
+bool DominatorTree::isIfJoinBlock(BasicBlock *BB) {
   if (BB->predecessors().size() != 2) {
     return false;
   }

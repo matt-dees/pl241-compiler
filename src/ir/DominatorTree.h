@@ -17,9 +17,11 @@ class DominatorTree {
 public:
   DominatorTree(bool Reverse = false);
 
-  bool isJoinBlock(BasicBlock *BB);
   bool isLoopHdrBlock(BasicBlock *BB);
+  
   bool isIfHdrBlock(BasicBlock *BB);
+  bool isIfJoinBlock(BasicBlock *BB);
+
   std::unordered_set<BasicBlock *> dominanceFrontier(BasicBlock *BB);
   void buildDominatorTree(Function &F);
   bool doesBlockDominate(BasicBlock *Dominator, BasicBlock *Candidate) const;
