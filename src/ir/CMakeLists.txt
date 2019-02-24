@@ -21,8 +21,6 @@ add_library(cs241c-ir
   IntegrityCheckPass.h
   InterferenceGraph.cpp
   InterferenceGraph.h
-  IrGenContext.cpp
-  IrGenContext.h
   Mem2VarPass.cpp
   Mem2VarPass.h
   Module.cpp
