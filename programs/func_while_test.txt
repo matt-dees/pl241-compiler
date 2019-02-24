@@ -4,8 +4,8 @@ var a, b;
 {
 	let a <- 1;
 	while a != b do
-		let b <- a + 1;
-		let a <- a * 2
+		let a <- a * 2;
+		let b <- a + 1
 	od;
 	let b <- a;
 	call OutputNum(b);

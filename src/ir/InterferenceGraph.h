@@ -51,6 +51,9 @@ public:
 private:
   struct IgBuildCtx {
   public:
+    IgBuildCtx() : NextNode(nullptr), LiveSet({}) {}
+    IgBuildCtx(BasicBlock *NextNode, std::unordered_set<Value *> LiveSet)
+        : NextNode(NextNode), LiveSet(LiveSet) {}
     BasicBlock *NextNode;
     std::unordered_set<Value *> LiveSet;
     void merge(IgBuildCtx Other);

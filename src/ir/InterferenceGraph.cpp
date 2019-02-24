@@ -185,7 +185,7 @@ IGBuilder::igBuildNormal(IGBuilder::IgBuildCtx CurrentCtx) {
   std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
       PredecessorSets = processBlock(CurrentCtx.NextNode, CurrentCtx.LiveSet);
 
-  IgBuildCtx NextCtx = {nullptr, {}};
+  IgBuildCtx NextCtx;
   if (PredecessorSets.size() > 1) {
     throw logic_error("igBuildNormal() incorrectly called on basic block with "
                       "more than one predecessor: " +
@@ -249,7 +249,7 @@ IGBuilder::igBuildIfStmt(IGBuilder::IgBuildCtx CurrentCtx) {
       PredecessorPhiSets =
           processBlock(CurrentCtx.NextNode, CurrentCtx.LiveSet);
 
-  IgBuildCtx IfHeaderCtx = {nullptr, {}};
+  IgBuildCtx IfHeaderCtx;
   for (auto Pred : CurrentCtx.NextNode->predecessors()) {
     IgBuildCtx BranchCtx = {Pred, PredecessorPhiSets[Pred]};
     while (!BranchCtx.NextNode->hasAttribute(BasicBlockAttr::If)) {
@@ -282,13 +282,15 @@ IGBuilder::IgBuildCtx IGBuilder::igBuildLoop(IGBuilder::IgBuildCtx CurrentCtx) {
   bool InSecondIteration = false;
   IgBuildCtx LoopContext = {LoopPredecessor,
                             PredecessorPhiSets.at(LoopPredecessor)};
-  while (LoopContext.NextNode != CurrentCtx.NextNode && !InSecondIteration) {
+  while (LoopContext.NextNode != CurrentCtx.NextNode || !InSecondIteration) {
     if (LoopContext.NextNode == CurrentCtx.NextNode) {
       InSecondIteration = true;
+      LoopContext = {LoopPredecessor, LoopContext.LiveSet};
     }
     LoopContext = igBuild(LoopContext);
   }
-  return {ContinuePredecessor, LoopContext.LiveSet};
+  PredecessorPhiSets = processBlock(CurrentCtx.NextNode, LoopContext.LiveSet);
+  return {ContinuePredecessor, PredecessorPhiSets.at(ContinuePredecessor)};
 }
 
 void IGBuilder::IgBuildCtx::merge(IGBuilder::IgBuildCtx Other) {
