@@ -1,4 +1,5 @@
 #include "DLXGen.h"
+#include "FunctionAnalyzer.h"
 #include "Module.h"
 #include <algorithm>
 #include <array>
@@ -117,46 +118,72 @@ struct DLXObject {
     copy(Word.begin(), Word.end(), back_inserter(CodeSegment));
   }
 
-  void addFunction(Function *F) {
+  int mapSpills(Function &F, FunctionAnalyzer &FA, unordered_map<Value *, int16_t> &ValueOffsets, int StartOffset) {
+    auto Registers = FA.coloring(&F);
+
+    int CurrentOffset = StartOffset;
+    for (auto &BB : F.basicBlocks()) {
+      for (auto &Instr : BB->instructions()) {
+        if (isSubtype(Instr->ValTy, ValueType::Value)) {
+          if (Registers->find(Instr.get()) == Registers->end()) {
+            CurrentOffset -= 4;
+            ValueOffsets[Instr.get()] = CurrentOffset;
+          }
+        }
+      }
+    }
+    return CurrentOffset;
+  }
+
+  void addFunction(Function *F, FunctionAnalyzer &FA) {
     int32_t Address = static_cast<int32_t>(CodeSegment.size());
     FunctionAddresses[F] = Address;
 
-    unordered_map<LocalVariable *, int16_t> LocalOffsets;
-
     // Prolog
-    emitF1(Op::PSH, RA, SP, -4);
     emitF1(Op::PSH, FP, SP, -4);
+    emitF1(Op::PSH, RA, SP, -4);
     emitF1(Op::ADDI, FP, SP, 4);
-    // Potentially safe registers
 
-    // Make space for locals
-    int16_t LocalOffset = 0;
-    for (auto &Local : F->locals()) {
-      LocalOffset -= Local->wordCount() * 4;
-      LocalOffsets[Local.get()] = LocalOffset;
+    // Sage registers 1-8
+    for (uint8_t R = 1; R <= 8; ++R) {
+      emitF1(Op::PSH, R, SP, -4);
     }
-    emitF1(Op::SUBI, SP, SP, -LocalOffset);
+
+	// Make space for arrays
+    unordered_map<Value *, int16_t> ValueOffsets;
+	int Offset = -4;
+
+    for (auto &Local : F->locals()) {
+      if (!Local->isSingleWord()) {
+        Offset -= 4 * Local->wordCount();
+        ValueOffsets[Local.get()] = Offset;
+	  }
+	}
+
+    // Make space for spills
+    Offset = mapSpills(*F, FA, ValueOffsets, Offset);
+    emitF1(Op::ADDI, SP, FP, Offset);
 
     // Do all the things
 
     // Epilog
-    emitF1(Op::SUBI, SP, FP, 4);
-    emitF1(Op::POP, FP, SP, 4);
+    emitF1(Op::ADDI, SP, FP, -4);
     emitF1(Op::POP, RA, SP, 4);
+    emitF1(Op::POP, FP, SP, 4);
     emitF2(Op::RET, 0, 0, RA);
   }
 
-  void addFunctions(vector<unique_ptr<Function>> &Functions) {
+  void addFunctions(vector<unique_ptr<Function>> &Functions, FunctionAnalyzer &FA) {
     for (auto &FPtr : Functions) {
-      addFunction(FPtr.get());
+      addFunction(FPtr.get(), FA);
     }
   }
 };
 } // namespace
 
-vector<uint8_t> cs241c::genDlx(Module &M) {
+vector<uint8_t> cs241c::genDlx(Module &M, FunctionAnalyzer &FA) {
   DLXObject DLXO;
   DLXO.addGlobals(M.globals());
-  DLXO.addFunctions(M.functions());
+  DLXO.addFunctions(M.functions(), FA);
   return move(DLXO.CodeSegment);
 }

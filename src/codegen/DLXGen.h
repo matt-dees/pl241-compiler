@@ -5,9 +5,10 @@
 #include <vector>
 
 namespace cs241c {
+class FunctionAnalyzer;
 class Module;
 
-std::vector<uint8_t> genDlx(Module &);
+std::vector<uint8_t> genDlx(Module &, FunctionAnalyzer &);
 } // namespace cs241c
 
 #endif
