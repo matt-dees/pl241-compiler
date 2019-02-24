@@ -19,6 +19,4 @@ void Vcg::writeToFile(const string &OutFilePath) {
   VcgFileStream.close();
 }
 
-void Vcg::writeProperties(ofstream &OutFileStream) {
-  OutFileStream << "manhattan_edges: yes\n";
-}
+void Vcg::writeProperties(ofstream &OutFileStream) {}

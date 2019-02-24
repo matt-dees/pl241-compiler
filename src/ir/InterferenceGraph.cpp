@@ -115,7 +115,7 @@ void InterferenceGraph::coalesce() {
         std::unordered_set<Value *> Cluster;
         for (auto Arg : Instr->arguments()) {
           auto GraphArg = getValueInGraph(Arg);
-          if (!hasNode(getValueInGraph(GraphArg)) ||
+          if (!hasNode(GraphArg) ||
               interferes({GraphInstr, GraphArg}, Cluster)) {
             CanCoalesce = false;
             break;

@@ -63,6 +63,7 @@ void Module::writeEdge(ofstream &OutFileStream, BasicBlock *Source,
 }
 
 void Module::writeGraph(ofstream &OutFileStream) {
+  OutFileStream << "manhattan_edges: yes\n";
   OutFileStream << "layoutalgorithm: compilergraph\n";
   OutFileStream << "title: "
                 << "\"" << getIdentifier() << "\"\n";
