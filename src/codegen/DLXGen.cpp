@@ -3,6 +3,7 @@
 #include "Module.h"
 #include <algorithm>
 #include <array>
+#include <stack>
 #include <unordered_map>
 #include <vector>
 
@@ -135,6 +136,35 @@ struct DLXObject {
     return CurrentOffset;
   }
 
+  vector<BasicBlock *> linearize(Function *F) {
+    stack<BasicBlock *> JumpBlocks;
+    vector<BasicBlock *> LinearBlockOrder;
+
+    BasicBlock *CurrentBB = F->entryBlock();
+
+    while (CurrentBB != nullptr) {
+      LinearBlockOrder.push_back(CurrentBB);
+
+      if (CurrentBB->fallthoughSuccessor() != nullptr) {
+        if (dynamic_cast<ConditionalBlockTerminator *>(CurrentBB->terminator())) {
+          JumpBlocks.push(CurrentBB);
+        }
+
+        CurrentBB = CurrentBB->fallthoughSuccessor();
+      } else {
+        if (!JumpBlocks.empty()) {
+          CurrentBB = JumpBlocks.top();
+          JumpBlocks.pop();
+          CurrentBB = CurrentBB->terminator()->target();
+        } else {
+          CurrentBB = nullptr;
+        }
+      }
+    }
+
+	return LinearBlockOrder;
+  }
+
   void addFunction(Function *F, FunctionAnalyzer &FA) {
     int32_t Address = static_cast<int32_t>(CodeSegment.size());
     FunctionAddresses[F] = Address;
@@ -149,22 +179,23 @@ struct DLXObject {
       emitF1(Op::PSH, R, SP, -4);
     }
 
-	// Make space for arrays
+    // Make space for arrays
     unordered_map<Value *, int16_t> ValueOffsets;
-	int Offset = -4;
+    int Offset = -4;
 
     for (auto &Local : F->locals()) {
       if (!Local->isSingleWord()) {
         Offset -= 4 * Local->wordCount();
         ValueOffsets[Local.get()] = Offset;
-	  }
-	}
+      }
+    }
 
     // Make space for spills
     Offset = mapSpills(*F, FA, ValueOffsets, Offset);
     emitF1(Op::ADDI, SP, FP, Offset);
 
-    // Do all the things
+    // Process all basic blocks
+    auto Blocks = linearize(F);
 
     // Epilog
     emitF1(Op::ADDI, SP, FP, -4);

@@ -84,12 +84,12 @@ public:
 };
 
 class BasicBlockTerminator : public Instruction {
-  virtual BasicBlock *target();
-
 public:
   BasicBlockTerminator(InstructionType, int Id);
   BasicBlockTerminator(InstructionType, int Id, Value *Arg1);
   BasicBlockTerminator(InstructionType, int Id, Value *Arg1, Value *Arg2);
+
+  virtual BasicBlock *target();
 
   friend class BasicBlock;
 };
