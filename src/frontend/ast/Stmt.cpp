@@ -15,8 +15,12 @@ void Assignment::genIr(IrGenContext &Ctx) const {
 ReturnStmt::ReturnStmt(unique_ptr<Expr> E) : E(move(E)) {}
 
 void ReturnStmt::genIr(IrGenContext &Ctx) const {
-  auto Value = E->genIr(Ctx, nullptr);
-  Ctx.currentBlock()->terminate(make_unique<Instruction>(InstructionType::Ret, Ctx.genInstructionId(), Value));
+  if (Ctx.IsMain) {
+    Ctx.currentBlock()->terminate(make_unique<Instruction>(InstructionType::End, Ctx.genInstructionId()));
+  } else {
+    auto Value = E != nullptr ? E->genIr(Ctx, nullptr) : nullptr;
+    Ctx.currentBlock()->terminate(make_unique<Instruction>(InstructionType::Ret, Ctx.genInstructionId(), Value));
+  }
 }
 
 FunctionCallStmt::FunctionCallStmt(FunctionCall CallExpr) : CallExpr(move(CallExpr)) {}

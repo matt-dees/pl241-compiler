@@ -31,6 +31,8 @@ class IrGenContext {
   BasicBlock *CurrentBlock;
 
 public:
+  bool IsMain = false;
+
   IrGenContext(Module *CompilationUnit);
 
   Value *globalBase();
