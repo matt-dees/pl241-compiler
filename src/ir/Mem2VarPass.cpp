@@ -59,14 +59,14 @@ void Mem2VarPass::run(Module &M) {
           auto &Instructions = BB->instructions();
 
           for (auto InstrIt = Instructions.begin(); InstrIt != Instructions.end(); ++InstrIt) {
-            if (auto MemInstr = dynamic_cast<MemoryInstruction *>(InstrIt->get())) {
-              if (LocalSubstitutions.find(MemInstr->object()) != LocalSubstitutions.end()) {
-                if (MemInstr->InstrT == InstructionType::Load) {
-                  ArgSubstitutions[MemInstr] = LocalSubstitutions[MemInstr->object()];
-                } else if (MemInstr->InstrT == InstructionType::Store) {
-                  auto Move =
-                      make_unique<Instruction>(InstructionType::Move, NameGen::genInstructionId(),
-                                               MemInstr->arguments()[0], LocalSubstitutions[MemInstr->object()]);
+            auto Instr = InstrIt->get();
+            if (isMemoryAccess(Instr->InstrT)) {
+              if (LocalSubstitutions.find(Instr->object()) != LocalSubstitutions.end()) {
+                if (Instr->InstrT == InstructionType::Load) {
+                  ArgSubstitutions[Instr] = LocalSubstitutions[Instr->object()];
+                } else if (Instr->InstrT == InstructionType::Store) {
+                  auto Move = make_unique<Instruction>(InstructionType::Move, NameGen::genInstructionId(),
+                                                       Instr->arguments()[0], LocalSubstitutions[Instr->object()]);
                   Move->owner() = BB;
                   InstrIt = Instructions.erase(InstrIt);
                   InstrIt = Instructions.insert(InstrIt, move(Move));
@@ -74,7 +74,7 @@ void Mem2VarPass::run(Module &M) {
               }
             }
 
-            auto &Instr = *InstrIt;
+			Instr = InstrIt->get();
             Instr->updateArgs(ArgSubstitutions);
             if (LocalSubstitutions.find(Instr->storage()) != LocalSubstitutions.end()) {
               Instr->storage() = LocalSubstitutions[Instr->storage()];

@@ -29,7 +29,8 @@ Value *VarDesignator::genIr(IrGenContext &Ctx, Variable *Storage) const {
     return Var;
   } else {
     auto BaseAddress = Ctx.makeInstruction(T::Adda, Ctx.globalBase(), Var);
-    auto Load = Ctx.makeInstruction<MemoryInstruction>(T::Load, Var, BaseAddress);
+    auto Load = Ctx.makeInstruction(T::Load, BaseAddress);
+    Load->object() = Var;
     Load->storage() = Storage;
     return Load;
   }
@@ -41,7 +42,8 @@ void VarDesignator::genStore(IrGenContext &Ctx, Value *V) {
     Ctx.makeInstruction(InstructionType::Move, V, Var);
   } else {
     auto BaseAddress = Ctx.makeInstruction(T::Adda, Ctx.globalBase(), Var);
-    Ctx.makeInstruction<MemoryInstruction>(T::Store, Var, V, BaseAddress);
+    auto Store = Ctx.makeInstruction(T::Store, V, BaseAddress);
+    Store->object() = Var;
   }
 }
 
@@ -84,7 +86,8 @@ Value *ArrayDesignator::genIr(IrGenContext &Ctx, Variable *Storage) const {
   Value *Offset = calculateMemoryOffset(Ctx);
   auto TargetAddress = Ctx.makeInstruction(T::Adda, BaseAddress, Offset);
 
-  auto Load = Ctx.makeInstruction<MemoryInstruction>(T::Load, Var, TargetAddress);
+  auto Load = Ctx.makeInstruction(T::Load, TargetAddress);
+  Load->object() = Var;
   Load->storage() = Storage;
   return Load;
 }
@@ -96,7 +99,8 @@ void ArrayDesignator::genStore(IrGenContext &Ctx, Value *V) {
   Value *Offset = calculateMemoryOffset(Ctx);
   auto TargetAddress = Ctx.makeInstruction(T::Adda, BaseAddress, Offset);
 
-  Ctx.makeInstruction<MemoryInstruction>(T::Store, Var, V, TargetAddress);
+  auto Store = Ctx.makeInstruction(T::Store, V, TargetAddress);
+  Store->object() = Var;
 }
 
 FunctionCall::FunctionCall(string Ident, vector<unique_ptr<Expr>> Args) : Ident(move(Ident)), Args(move(Args)) {}

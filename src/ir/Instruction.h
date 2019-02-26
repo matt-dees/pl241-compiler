@@ -45,6 +45,7 @@ private:
   BasicBlock *Owner{};
   Variable *Storage{};
   std::array<ValueRef, 2> Args;
+  Variable *Object;
 
 protected:
   virtual void updateArg(int Index, ValueRef NewVal);
@@ -59,6 +60,8 @@ public:
   Variable *&storage();
   std::vector<ValueRef> arguments() const;
   BasicBlock *target();
+  Variable *&object();
+
   bool updateArgs(const std::map<ValueRef, ValueRef> &UpdateCtx);
   bool updateArgs(const SSAContext &SSAVarCtx);
 
@@ -71,17 +74,6 @@ private:
   void checkArgs();
 
   friend class BasicBlock;
-};
-
-class MemoryInstruction : public Instruction {
-protected:
-  Variable *Object;
-
-public:
-  MemoryInstruction(int Id, InstructionType, Variable *Object, Value *Arg1);
-  MemoryInstruction(int Id, InstructionType, Variable *Object, Value *Arg1, Value *Arg2);
-
-  Variable *object() const;
 };
 } // namespace cs241c
 

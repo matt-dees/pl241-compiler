@@ -62,3 +62,8 @@ bool cs241c::isTerminator(InstructionType InsTy) {
   static const InstructionType Types[] = {InsTyT::End, InsTyT::Bra, InsTyT::Ret};
   return find(begin(Types), end(Types), InsTy) != end(Types) || isConditionalBranch(InsTy);
 }
+
+bool cs241c::isMemoryAccess(InstructionType InsTy) {
+  static const InstructionType Types[] = {InsTyT::Load, InsTyT::Store};
+  return find(begin(Types), end(Types), InsTy) != end(Types) || isConditionalBranch(InsTy);
+}

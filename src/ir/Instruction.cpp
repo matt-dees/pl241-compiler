@@ -115,6 +115,8 @@ BasicBlock *Instruction::target() {
   return dynamic_cast<BasicBlock *>(Target);
 }
 
+Variable *&Instruction::object() { return Object; }
+
 bool Instruction::updateArgs(const map<ValueRef, ValueRef> &UpdateCtx) {
   vector<ValueRef> Args = arguments();
   bool DidChange = false;
@@ -165,11 +167,3 @@ void Instruction::checkArgs() {
     }
   }
 }
-
-MemoryInstruction::MemoryInstruction(int Id, InstructionType InstrT, Variable *Object, Value *Arg1)
-    : MemoryInstruction(Id, InstrT, Object, Arg1, nullptr) {}
-
-MemoryInstruction::MemoryInstruction(int Id, InstructionType InstrT, Variable *Object, Value *Arg1, Value *Arg2)
-    : Instruction(InstrT, Id, Arg1, Arg2), Object(Object) {}
-
-Variable *MemoryInstruction::object() const { return Object; }
