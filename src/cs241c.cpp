@@ -1,5 +1,6 @@
 #include "CommonSubexElimPass.h"
 #include "ConstExprEvalPass.h"
+#include "DLXGen.h"
 #include "DeadCodeEliminationPass.h"
 #include "Filesystem.h"
 #include "IntegrityCheckPass.h"
@@ -87,6 +88,11 @@ int main(int ArgC, char **ArgV) {
     removeFile(VcgOutput);
     IR->writeToFile(VcgOutput);
   }
+
+  auto Object = genDlx(*IR, FA);
+  string ObjectFilename = string(InputFile) + ".dlxo";
+  ofstream ObjectFile(ObjectFilename, ofstream::binary);
+  ObjectFile.write(reinterpret_cast<char *>(Object.data()), Object.size());
 
   return 0;
 }

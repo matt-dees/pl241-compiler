@@ -11,7 +11,7 @@ using namespace cs241c;
 using namespace std;
 
 namespace {
-enum Reg : uint8_t { R0 = 0, FP = 28, SP = 29, GR = 30, RA = 31 };
+enum Reg : uint8_t { R0 = 0, Accu = 9, Spill1 = 10, Spill2 = 11, FP = 28, SP = 29, GR = 30, RA = 31 };
 
 enum class Op : uint8_t {
   // Arithmetic
@@ -165,6 +165,77 @@ struct DLXObject {
     return LinearBlockOrder;
   }
 
+  void emitInstruction(Instruction &Instr) {
+    switch (Instr.InstrT) {
+    case InstructionType::Neg:
+      break;
+    case InstructionType::Add:
+      break;
+    case InstructionType::Sub:
+      break;
+    case InstructionType::Mul:
+      break;
+    case InstructionType::Div:
+      break;
+    case InstructionType::Cmp:
+      break;
+    case InstructionType::Adda:
+      break;
+    case InstructionType::Load:
+      break;
+    case InstructionType::Store:
+      break;
+    case InstructionType::Move:
+      break;
+    case InstructionType::Phi:
+      break;
+    case InstructionType::End:
+      emitF2(Op::RET, 0, 0, 0);
+      break;
+    case InstructionType::Bra:
+      break;
+    case InstructionType::Bne:
+      break;
+    case InstructionType::Beq:
+      break;
+    case InstructionType::Ble:
+      break;
+    case InstructionType::Blt:
+      break;
+    case InstructionType::Bge:
+      break;
+    case InstructionType::Bgt:
+      break;
+    case InstructionType::Param:
+      break;
+    case InstructionType::Call:
+      break;
+    case InstructionType::Ret:
+      break;
+    case InstructionType::Read:
+      break;
+    case InstructionType::Write: {
+      auto Arg = Instr.arguments()[0];
+      uint8_t Rb;
+      if (Arg.ValTy == ValueType::Register) {
+        Rb = Arg.R.Id;
+      } else {
+        Value *Val = Arg;
+        if (Val->ValTy == ValueType::Constant) {
+          emitF1(Op::ADDI, Reg::Accu, Reg::R0, dynamic_cast<ConstantValue *>(Val)->Val);
+          Rb = Reg::Accu;
+        } else {
+          throw logic_error("Not implemented.");
+        }
+      }
+      emitF2(Op::WRD, 0, Rb, 0);
+      break;
+    }
+    case InstructionType::WriteNL:
+      break;
+    }
+  }
+
   void addFunction(Function *F, FunctionAnalyzer &FA) {
     int32_t Address = static_cast<int32_t>(CodeSegment.size());
     FunctionAddresses[F] = Address;
@@ -196,6 +267,12 @@ struct DLXObject {
 
     // Process all basic blocks
     auto Blocks = linearize(F);
+
+    for (auto Block : Blocks) {
+      for (auto &Instr : Block->instructions()) {
+        emitInstruction(*Instr);
+      }
+    }
 
     // Epilog
     emitF1(Op::ADDI, SP, FP, -4);

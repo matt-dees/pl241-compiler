@@ -7,3 +7,5 @@ doc/
 *.vcg
 .DS_store
 *.ps
+*.class
+*.dlxo
