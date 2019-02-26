@@ -1,6 +1,5 @@
 #include "Instruction.h"
 #include "BasicBlock.h"
-#include "Function.h"
 #include "SSAContext.h"
 #include "Variable.h"
 #include <algorithm>
@@ -174,11 +173,3 @@ MemoryInstruction::MemoryInstruction(int Id, InstructionType InstrT, Variable *O
     : Instruction(InstrT, Id, Arg1, Arg2), Object(Object) {}
 
 Variable *MemoryInstruction::object() const { return Object; }
-
-MoveInstruction::MoveInstruction(int Id, ValueRef Y, ValueRef X) : Instruction(T::Move, Id, Y, X) {}
-
-void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) { arguments() = {NewSource, NewTarget}; }
-
-Value *MoveInstruction::source() const { return arguments()[0]; }
-
-Value *MoveInstruction::target() const { return arguments()[1]; }

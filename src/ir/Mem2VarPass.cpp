@@ -23,7 +23,8 @@ void Mem2VarPass::run(Module &M) {
           auto Local = make_unique<LocalVariable>(string("_") + (Global->name().data() + 1), Global->wordCount());
           LocalSubstitutions[Global.get()] = Local.get();
 
-          auto InitLocalMove = make_unique<MoveInstruction>(NameGen::genInstructionId(), InitConst, Local.get());
+          auto InitLocalMove =
+              make_unique<Instruction>(InstructionType::Move, NameGen::genInstructionId(), InitConst, Local.get());
           InitLocalMove->owner() = F->entryBlock();
 
           auto &EntryInstructions = F->entryBlock()->instructions();
@@ -63,8 +64,9 @@ void Mem2VarPass::run(Module &M) {
                 if (MemInstr->InstrT == InstructionType::Load) {
                   ArgSubstitutions[MemInstr] = LocalSubstitutions[MemInstr->object()];
                 } else if (MemInstr->InstrT == InstructionType::Store) {
-                  auto Move = make_unique<MoveInstruction>(NameGen::genInstructionId(), MemInstr->arguments()[0],
-                                                           LocalSubstitutions[MemInstr->object()]);
+                  auto Move =
+                      make_unique<Instruction>(InstructionType::Move, NameGen::genInstructionId(),
+                                               MemInstr->arguments()[0], LocalSubstitutions[MemInstr->object()]);
                   Move->owner() = BB;
                   InstrIt = Instructions.erase(InstrIt);
                   InstrIt = Instructions.insert(InstrIt, move(Move));

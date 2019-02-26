@@ -71,9 +71,9 @@ void SSAPass::recursiveGenAllPhis(BasicBlock *CurrentBB) {
 void SSAPass::basicBlockToSSA(BasicBlock &BB, SSAContext &SSACtx) {
   // Remove MOVE instructions and update SSA context accordingly.
   for (auto InstIter = BB.instructions().begin(); InstIter != BB.instructions().end();) {
-    if (auto MovInst = dynamic_cast<MoveInstruction *>(InstIter->get())) {
-      if (auto Target = dynamic_cast<Variable *>(MovInst->target())) {
-        SSACtx.updateVariable(Target, MovInst->source());
+    if (InstIter->get()->InstrT == InstructionType::Move) {
+      if (auto Target = dynamic_cast<Variable *>(InstIter->get()->arguments()[1].R.Ptr)) {
+        SSACtx.updateVariable(Target, InstIter->get()->arguments()[0]);
       }
       InstIter = BB.instructions().erase(InstIter);
       continue;

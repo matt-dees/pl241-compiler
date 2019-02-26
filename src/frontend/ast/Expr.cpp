@@ -38,7 +38,7 @@ Value *VarDesignator::genIr(IrGenContext &Ctx, Variable *Storage) const {
 void VarDesignator::genStore(IrGenContext &Ctx, Value *V) {
   auto Var = Ctx.lookupVariable(Ident).Var;
   if (Var->isMoveable()) {
-    Ctx.makeInstruction<MoveInstruction>(V, Var);
+    Ctx.makeInstruction(InstructionType::Move, V, Var);
   } else {
     auto BaseAddress = Ctx.makeInstruction(T::Adda, Ctx.globalBase(), Var);
     Ctx.makeInstruction<MemoryInstruction>(T::Store, Var, V, BaseAddress);

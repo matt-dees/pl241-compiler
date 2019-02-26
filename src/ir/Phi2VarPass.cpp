@@ -46,7 +46,7 @@ void Phi2VarPass::process(Function &F) {
         if (ArgRegister != TargetRegister) {
           ValueRef Source =
               ArgRegister != RegisterAllocator::RA_REGISTER::SPILL ? ValueRef(ValueType::Register, ArgRegister) : Arg;
-          auto Move = make_unique<MoveInstruction>(NameGen::genInstructionId(), Source, Target);
+          auto Move = make_unique<Instruction>(InstructionType::Move, NameGen::genInstructionId(), Source, Target);
           Move->storage() = Instr->storage();
 
           Predecessors[I]->appendInstruction(move(Move));

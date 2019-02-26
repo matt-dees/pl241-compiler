@@ -61,7 +61,7 @@ void Func::genIr(IrGenContext &Ctx) {
 
   for (const pair<string, Symbol> &Symbol : Ctx.localsTable()) {
     if (Symbol.second.Var->isSingleWord()) {
-      Ctx.makeInstruction<MoveInstruction>(Ctx.makeConstant(0), Symbol.second.Var);
+      Ctx.makeInstruction(InstructionType::Move, Ctx.makeConstant(0), Symbol.second.Var);
     }
   }
 

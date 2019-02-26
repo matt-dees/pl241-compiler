@@ -11,6 +11,7 @@
 #include <vector>
 
 namespace cs241c {
+class Function;
 class Module;
 
 struct Symbol {

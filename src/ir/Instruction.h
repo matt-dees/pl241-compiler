@@ -11,7 +11,6 @@
 
 namespace cs241c {
 class BasicBlock;
-class Function;
 class SSAContext;
 class Variable;
 
@@ -83,15 +82,6 @@ public:
   MemoryInstruction(int Id, InstructionType, Variable *Object, Value *Arg1, Value *Arg2);
 
   Variable *object() const;
-};
-
-class MoveInstruction : public Instruction {
-public:
-  MoveInstruction(int Id, ValueRef Y, ValueRef X);
-
-  void updateArgs(Value *NewTarget, Value *NewSource);
-  Value *source() const;
-  Value *target() const;
 };
 } // namespace cs241c
 
