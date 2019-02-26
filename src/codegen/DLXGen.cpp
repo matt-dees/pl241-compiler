@@ -84,12 +84,13 @@ struct DLXObject {
 
   DLXObject() { CodeSegment.reserve(10000000); }
 
-  void addGlobals(const vector<unique_ptr<GlobalVariable>> &Globals) {
+  int32_t addGlobals(const vector<unique_ptr<GlobalVariable>> &Globals) {
     int32_t Offset = 0;
     for (auto &Global : Globals) {
       Offset += Global->wordCount() * 4;
       GlobalVarOffsets[Global.get()] = Offset;
     }
+    return Offset;
   }
 
   void emitF1(Op Op, uint8_t A, uint8_t B, int16_t C) {
@@ -117,6 +118,11 @@ struct DLXObject {
     Word[2] = C >> 8;
     Word[3] = C;
     copy(Word.begin(), Word.end(), back_inserter(CodeSegment));
+  }
+
+  void setupRegisters(int32_t StackOffset) {
+    emitF1(Op::SUBI, Reg::FP, Reg::GR, StackOffset);
+    emitF2(Op::ADD, Reg::SP, Reg::FP, Reg::R0);
   }
 
   int mapSpills(Function &F, FunctionAnalyzer &FA, unordered_map<Value *, int16_t> &ValueOffsets, int StartOffset) {
@@ -291,7 +297,8 @@ struct DLXObject {
 
 vector<uint8_t> cs241c::genDlx(Module &M, FunctionAnalyzer &FA) {
   DLXObject DLXO;
-  DLXO.addGlobals(M.globals());
+  int32_t StackOffset = DLXO.addGlobals(M.globals());
+  DLXO.setupRegisters(StackOffset);
   DLXO.addFunctions(M.functions(), FA);
   return move(DLXO.CodeSegment);
 }
