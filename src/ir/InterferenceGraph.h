@@ -16,8 +16,7 @@ class InterferenceGraph : public Vcg {
 
 private:
   void writeNodes(std::ofstream &OutFileStream);
-  bool interferes(const std::unordered_set<Value *> &NodeSet1,
-                  const std::unordered_set<Value *> &NodeSet2);
+  bool interferes(const std::unordered_set<Value *> &NodeSet1, const std::unordered_set<Value *> &NodeSet2);
 
   Value *getValueInGraph(Value *);
   std::unordered_map<Value *, RAHeuristicInfo> HeuristicDataMap;
@@ -52,8 +51,7 @@ private:
   struct IgBuildCtx {
   public:
     IgBuildCtx() : NextNode(nullptr), LiveSet({}) {}
-    IgBuildCtx(BasicBlock *NextNode, std::unordered_set<Value *> LiveSet)
-        : NextNode(NextNode), LiveSet(LiveSet) {}
+    IgBuildCtx(BasicBlock *NextNode, std::unordered_set<Value *> LiveSet) : NextNode(NextNode), LiveSet(LiveSet) {}
     BasicBlock *NextNode;
     std::unordered_set<Value *> LiveSet;
     void merge(IgBuildCtx Other);
@@ -67,8 +65,8 @@ private:
   IgBuildCtx igBuildLoop(IgBuildCtx CurrentCtx);
   IgBuildCtx igBuildNormal(IgBuildCtx CurrentCtx);
 
-  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
-  processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet);
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>> processBlock(BasicBlock *BB,
+                                                                             std::unordered_set<Value *> LiveSet);
 
   Function *F;
   DominatorTree *DT;

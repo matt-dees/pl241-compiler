@@ -1,6 +1,8 @@
 #include "RegisterAllocator.h"
 #include <iostream>
 #include <limits>
+#include <stack>
+#include <utility>
 
 using namespace cs241c;
 using namespace std;
@@ -11,7 +13,7 @@ RegisterAllocator::Coloring RegisterAllocator::color(InterferenceGraph IG) {
   }
 
   Coloring CurrentColoring = {};
-  colorRecur(IG, CurrentColoring);
+  color(IG, CurrentColoring);
   for (auto Node : IG.coalescedNodes()) {
     CurrentColoring[Node.first] = CurrentColoring.at(Node.second);
   }
@@ -19,8 +21,7 @@ RegisterAllocator::Coloring RegisterAllocator::color(InterferenceGraph IG) {
 }
 
 namespace {
-void addNodeBack(InterferenceGraph &IG, Value *Node,
-                 std::unordered_set<Value *> &Neighbors) {
+void addNodeBack(InterferenceGraph &IG, Value *Node, std::unordered_set<Value *> &Neighbors) {
   IG.addNode(Node);
   for (auto Neighbor : Neighbors) {
     if (IG.hasNode(Neighbor)) {
@@ -30,17 +31,23 @@ void addNodeBack(InterferenceGraph &IG, Value *Node,
 }
 }; // namespace
 
-void RegisterAllocator::colorRecur(
-    InterferenceGraph &IG, RegisterAllocator::Coloring &CurrentColoring) {
-  if (IG.graph().size() == 1) {
-    assignColor(IG, CurrentColoring, IG.graph().begin()->first);
-    return;
+void RegisterAllocator::color(InterferenceGraph &IG, RegisterAllocator::Coloring &CurrentColoring) {
+  stack<pair<Value *, unordered_set<Value *>>> RemovedNodes;
+
+  while (IG.graph().size() > 1) {
+    Value *NextNode = chooseNextNodeToColor(IG);
+    std::unordered_set<Value *> NeighborsOfRemoved = IG.removeNode(NextNode);
+    RemovedNodes.push({NextNode, move(NeighborsOfRemoved)});
   }
-  Value *NextNode = chooseNextNodeToColor(IG);
-  std::unordered_set<Value *> NeighborsOfRemoved = IG.removeNode(NextNode);
-  colorRecur(IG, CurrentColoring);
-  addNodeBack(IG, NextNode, NeighborsOfRemoved);
-  assignColor(IG, CurrentColoring, NextNode);
+
+  assignColor(IG, CurrentColoring, IG.graph().begin()->first);
+
+  while (!RemovedNodes.empty()) {
+    auto &NextNode = RemovedNodes.top();
+    addNodeBack(IG, NextNode.first, NextNode.second);
+    assignColor(IG, CurrentColoring, NextNode.first);
+    RemovedNodes.pop();
+  }
 }
 
 Value *RegisterAllocator::getValWithLowestSpillCost(InterferenceGraph &IG) {
@@ -73,16 +80,13 @@ Value *RegisterAllocator::chooseNextNodeToColor(InterferenceGraph &IG) {
   return NextNode;
 }
 
-void RegisterAllocator::assignColor(
-    InterferenceGraph &IG, RegisterAllocator::Coloring &CurrentColoring,
-    Value *NodeToColor) {
-  std::unordered_set<RA_REGISTER> RemainingColors = {R1, R2, R3, R4,
-                                                     R5, R6, R7, R8};
+void RegisterAllocator::assignColor(InterferenceGraph &IG, RegisterAllocator::Coloring &CurrentColoring,
+                                    Value *NodeToColor) {
+  std::unordered_set<RA_REGISTER> RemainingColors = {R1, R2, R3, R4, R5, R6, R7, R8};
   for (auto Neighbor : IG.neighbors(NodeToColor)) {
     RemainingColors.erase(CurrentColoring[Neighbor]);
   }
-  CurrentColoring[NodeToColor] =
-      RemainingColors.empty() ? RA_REGISTER::SPILL : *(RemainingColors.begin());
+  CurrentColoring[NodeToColor] = RemainingColors.empty() ? RA_REGISTER::SPILL : *(RemainingColors.begin());
 }
 
 void AnnotatedIG::writeGraph(std::ofstream &OutFileStream) {

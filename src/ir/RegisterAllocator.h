@@ -8,8 +8,8 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
-namespace cs241c {
 
+namespace cs241c {
 class RegisterAllocator {
 public:
   enum RA_REGISTER { SPILL = 0, R1 = 1, R2, R3, R4, R5, R6, R7, R8 };
@@ -22,10 +22,9 @@ public:
 private:
   Value *getValWithLowestSpillCost(InterferenceGraph &);
 
-  void colorRecur(InterferenceGraph &IG, Coloring &CurrentColoring);
+  void color(InterferenceGraph &IG, Coloring &CurrentColoring);
 
-  void assignColor(InterferenceGraph &IG, Coloring &CurrentColoring,
-                   Value *NodeToColor);
+  void assignColor(InterferenceGraph &IG, Coloring &CurrentColoring, Value *NodeToColor);
   Value *chooseNextNodeToColor(InterferenceGraph &IG);
 };
 
@@ -38,10 +37,10 @@ private:
   std::string lookupColor(Value *);
 
 public:
-  AnnotatedIG(InterferenceGraph *IG, RegisterAllocator::Coloring *C)
-      : IG(IG), C(C){};
+  AnnotatedIG(InterferenceGraph *IG, RegisterAllocator::Coloring *C) : IG(IG), C(C){};
 
   virtual void writeGraph(std::ofstream &OutFileStream) override;
 };
-};     // namespace cs241c
-#endif // CS241C_REGISTERALLOCATION_H
+} // namespace cs241c
+
+#endif
