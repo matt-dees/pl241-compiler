@@ -57,13 +57,6 @@ public:
   Instruction *makeInstruction(InstructionType, Value *);
   Instruction *makeInstruction(InstructionType, Value *, Value *);
 
-  template <typename T, typename... Params> T *makeInstruction(Params... Args) {
-    auto Instr = std::make_unique<T>(genInstructionId(), Args...);
-    T *InstrP = Instr.get();
-    CurrentBlock->appendInstruction(move(Instr));
-    return InstrP;
-  }
-
   BasicBlock *makeBasicBlock();
 };
 } // namespace cs241c
