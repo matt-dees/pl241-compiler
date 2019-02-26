@@ -70,7 +70,7 @@ void Func::genIr(IrGenContext &Ctx) {
   }
 
   if (!Ctx.currentBlock()->isTerminated()) {
-    auto RetType = Ident == "Main" ? InstructionType::End : InstructionType::Ret;
+    auto RetType = Ident == "main" ? InstructionType::End : InstructionType::Ret;
     Ctx.currentBlock()->terminate(make_unique<Instruction>(RetType, Ctx.genInstructionId()));
   }
 }
