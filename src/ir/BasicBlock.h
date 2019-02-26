@@ -9,12 +9,11 @@
 #include <vector>
 
 namespace cs241c {
-class BasicBlockTerminator;
 class Instruction;
 class SSAContext;
 class Variable;
 
-enum class BasicBlockAttr : uint8_t {Join = 0x1, If = 0x2, While = 0x4};
+enum class BasicBlockAttr : uint8_t { Join = 0x1, If = 0x2, While = 0x4 };
 
 class BasicBlock : public Value {
 public:
@@ -41,9 +40,9 @@ private:
   std::vector<std::unique_ptr<Instruction>> Instructions;
 
   std::unordered_map<Variable *, Instruction *> PhiInstrMap;
+
 public:
-  BasicBlock(std::string Name,
-             std::vector<std::unique_ptr<Instruction>> Instructions = {});
+  BasicBlock(std::string Name, std::vector<std::unique_ptr<Instruction>> Instructions = {});
 
   void addAttribute(BasicBlockAttr Attr);
   bool hasAttribute(BasicBlockAttr Attr);
@@ -56,20 +55,19 @@ public:
   void updateSuccessor(BasicBlock *From, BasicBlock *To);
 
   std::vector<std::unique_ptr<Instruction>> &instructions();
-  BasicBlockTerminator *terminator() const;
+  Instruction *terminator() const;
 
   void appendPredecessor(BasicBlock *BB);
   void appendInstruction(std::unique_ptr<Instruction> I);
 
   bool isTerminated();
-  void terminate(std::unique_ptr<BasicBlockTerminator> T);
-  std::unique_ptr<BasicBlockTerminator> releaseTerminator();
+  void terminate(std::unique_ptr<Instruction> T);
+  std::unique_ptr<Instruction> releaseTerminator();
 
   void insertPhiInstruction(std::unique_ptr<Instruction> Phi);
   void updatePhiInst(BasicBlock *From, Variable *VarToChange, Value *NewVal);
 
-  std::vector<BasicBlock *>::difference_type
-  getPredecessorIndex(BasicBlock *Predecessor);
+  std::vector<BasicBlock *>::difference_type getPredecessorIndex(BasicBlock *Predecessor);
 
   std::vector<Variable *> getMoveTargets();
 
@@ -77,9 +75,6 @@ public:
   iterator end();
 
   std::string toString() const override;
-
-  friend class ConditionalBlockTerminator;
-  friend class BraInstruction;
 };
 } // namespace cs241c
 

@@ -21,16 +21,16 @@ TEST_CASE("Test Dominator Tree Generation 1") {
   BasicBlock *BB4 = Context.makeBasicBlock();
 
   Context.currentBlock() = BB1;
-  BB1->terminate(make_unique<BraInstruction>(Context.genInstructionId(), BB2));
+  BB1->terminate(make_unique<Instruction>(InstructionType::Bra, Context.genInstructionId(), BB2));
 
   Context.currentBlock() = BB2;
-  BB2->terminate(make_unique<BraInstruction>(Context.genInstructionId(), BB3));
+  BB2->terminate(make_unique<Instruction>(InstructionType::Bra, Context.genInstructionId(), BB3));
 
   Context.currentBlock() = BB3;
-  BB3->terminate(make_unique<BraInstruction>(Context.genInstructionId(), BB4));
+  BB3->terminate(make_unique<Instruction>(InstructionType::Bra, Context.genInstructionId(), BB4));
 
   Context.currentBlock() = BB4;
-  BB4->terminate(make_unique<BasicBlockTerminator>(InstructionType::End, Context.genInstructionId()));
+  BB4->terminate(make_unique<Instruction>(InstructionType::End, Context.genInstructionId()));
 
   DominatorTree D;
   D.buildDominatorTree(*FPtr);
@@ -53,7 +53,7 @@ TEST_CASE("Test Dominator Tree Generation 2") {
   BasicBlock *BB5 = Context.makeBasicBlock();
 
   Context.currentBlock() = BB1;
-  BB1->terminate(make_unique<BraInstruction>(Context.genInstructionId(), BB2));
+  BB1->terminate(make_unique<Instruction>(InstructionType::Bra, Context.genInstructionId(), BB2));
 
   Context.currentBlock() = BB2;
   auto Cmp = make_unique<Instruction>(InstructionType::Cmp, Context.genInstructionId(), Context.makeConstant(5),
@@ -62,18 +62,18 @@ TEST_CASE("Test Dominator Tree Generation 2") {
   BB2->appendInstruction(move(Cmp));
 
   BB2->fallthoughSuccessor() = BB3;
-  BB2->terminate(make_unique<ConditionalBlockTerminator>(InstructionType::Bne, Context.genInstructionId(), CmpP, BB4));
+  BB2->terminate(make_unique<Instruction>(InstructionType::Bne, Context.genInstructionId(), CmpP, BB4));
 
   Context.currentBlock() = BB3;
 
-  BB3->terminate(make_unique<BraInstruction>(Context.genInstructionId(), BB5));
+  BB3->terminate(make_unique<Instruction>(InstructionType::Bra, Context.genInstructionId(), BB5));
 
   Context.currentBlock() = BB4;
 
-  BB4->terminate(make_unique<BraInstruction>(Context.genInstructionId(), BB5));
+  BB4->terminate(make_unique<Instruction>(InstructionType::Bra, Context.genInstructionId(), BB5));
 
   Context.currentBlock() = BB5;
-  BB5->terminate(make_unique<BasicBlockTerminator>(InstructionType::End, Context.genInstructionId()));
+  BB5->terminate(make_unique<Instruction>(InstructionType::End, Context.genInstructionId()));
   DominatorTree D;
   D.buildDominatorTree(*FPtr);
   CHECK(true);

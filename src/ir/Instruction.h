@@ -51,6 +51,7 @@ protected:
   virtual void updateArg(int Index, ValueRef NewVal);
 
 public:
+  Instruction(InstructionType, int Id);
   Instruction(InstructionType, int Id, ValueRef Arg1);
   Instruction(InstructionType, int Id, ValueRef Arg1, ValueRef Arg2);
 
@@ -58,6 +59,7 @@ public:
   BasicBlock *&owner();
   Variable *&storage();
   std::vector<ValueRef> arguments() const;
+  BasicBlock *target();
   bool updateArgs(const std::map<ValueRef, ValueRef> &UpdateCtx);
   bool updateArgs(const SSAContext &SSAVarCtx);
 
@@ -83,23 +85,6 @@ public:
   Variable *object() const;
 };
 
-class BasicBlockTerminator : public Instruction {
-public:
-  BasicBlockTerminator(InstructionType, int Id);
-  BasicBlockTerminator(InstructionType, int Id, Value *Arg1);
-  BasicBlockTerminator(InstructionType, int Id, Value *Arg1, Value *Arg2);
-
-  virtual BasicBlock *target();
-
-  friend class BasicBlock;
-};
-
-class ConditionalBlockTerminator : public BasicBlockTerminator {
-public:
-  ConditionalBlockTerminator(InstructionType, int Id, Instruction *Cmp, BasicBlock *Target);
-  BasicBlock *target() override;
-};
-
 class MoveInstruction : public Instruction {
 public:
   MoveInstruction(int Id, ValueRef Y, ValueRef X);
@@ -107,13 +92,6 @@ public:
   void updateArgs(Value *NewTarget, Value *NewSource);
   Value *source() const;
   Value *target() const;
-};
-
-class BraInstruction : public BasicBlockTerminator {
-  BasicBlock *target() override;
-
-public:
-  BraInstruction(int Id, BasicBlock *Y);
 };
 } // namespace cs241c
 

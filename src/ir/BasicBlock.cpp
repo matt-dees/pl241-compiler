@@ -81,30 +81,30 @@ void BasicBlock::updateSuccessor(BasicBlock *From, BasicBlock *To) {
 
 vector<unique_ptr<Instruction>> &BasicBlock::instructions() { return Instructions; }
 
-BasicBlockTerminator *BasicBlock::terminator() const {
+Instruction *BasicBlock::terminator() const {
   if (Instructions.empty())
     return nullptr;
-  return dynamic_cast<BasicBlockTerminator *>(Instructions.back().get());
+  Instruction *LastInstr = Instructions.back().get();
+  return isTerminator(LastInstr->InstrT) ? LastInstr : nullptr;
 }
 
 void BasicBlock::appendInstruction(unique_ptr<Instruction> I) {
   I->Owner = this;
   auto Pos = Instructions.end();
-  if (!Instructions.empty() && dynamic_cast<BasicBlockTerminator *>(Instructions.back().get()))
+  if (!Instructions.empty() && isTerminator(Instructions.back()->InstrT))
     --Pos;
   Instructions.insert(Pos, move(I));
 }
 void BasicBlock::appendPredecessor(BasicBlock *BB) { Predecessors.push_back(BB); }
 
-bool BasicBlock::isTerminated() {
-  return !Instructions.empty() && dynamic_cast<BasicBlockTerminator *>(Instructions.back().get());
-}
+bool BasicBlock::isTerminated() { return !Instructions.empty() && isTerminator(Instructions.back()->InstrT); }
 
-void BasicBlock::terminate(unique_ptr<BasicBlockTerminator> T) {
-  static const array<InstructionType, 6> ConditionalBranches{InstructionType::Bne, InstructionType::Beq,
-                                                             InstructionType::Ble, InstructionType::Blt,
-                                                             InstructionType::Bge, InstructionType::Bgt};
-  if (find(ConditionalBranches.begin(), ConditionalBranches.end(), T->InstrT) == ConditionalBranches.end()) {
+void BasicBlock::terminate(unique_ptr<Instruction> T) {
+  if (!isTerminator(T->InstrT)) {
+    throw logic_error("Instruction is not a terminator.");
+  }
+
+  if (!isConditionalBranch(T->InstrT)) {
     fallthoughSuccessor() = nullptr;
   }
 
@@ -116,18 +116,18 @@ void BasicBlock::terminate(unique_ptr<BasicBlockTerminator> T) {
   Instructions.push_back(move(T));
 }
 
-unique_ptr<BasicBlockTerminator> BasicBlock::releaseTerminator() {
+unique_ptr<Instruction> BasicBlock::releaseTerminator() {
   if (Instructions.empty())
     return nullptr;
 
   auto &LastInstruction = Instructions.back();
 
-  auto Terminator = dynamic_cast<BasicBlockTerminator *>(LastInstruction.get());
-  if (Terminator == nullptr)
+  Instruction *Terminator = LastInstruction.get();
+  if (!isTerminator(Terminator->InstrT))
     return nullptr;
 
   LastInstruction.release();
-  std::unique_ptr<BasicBlockTerminator> TerminatorPtr(Terminator);
+  std::unique_ptr<Instruction> TerminatorPtr(Terminator);
 
   Instructions.pop_back();
 

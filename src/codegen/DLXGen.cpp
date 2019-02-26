@@ -146,7 +146,7 @@ struct DLXObject {
       LinearBlockOrder.push_back(CurrentBB);
 
       if (CurrentBB->fallthoughSuccessor() != nullptr) {
-        if (dynamic_cast<ConditionalBlockTerminator *>(CurrentBB->terminator())) {
+        if (isConditionalBranch(CurrentBB->terminator()->InstrT)) {
           JumpBlocks.push(CurrentBB);
         }
 
@@ -162,7 +162,7 @@ struct DLXObject {
       }
     }
 
-	return LinearBlockOrder;
+    return LinearBlockOrder;
   }
 
   void addFunction(Function *F, FunctionAnalyzer &FA) {

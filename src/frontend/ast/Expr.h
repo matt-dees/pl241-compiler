@@ -9,7 +9,6 @@
 
 namespace cs241c {
 class BasicBlock;
-class BasicBlockTerminator;
 class Instruction;
 class IrGenContext;
 class Variable;
@@ -98,7 +97,7 @@ public:
   Relation(Type T, std::unique_ptr<Expr> Left, std::unique_ptr<Expr> Right);
 
   Instruction *genCmp(IrGenContext &Ctx) const;
-  std::unique_ptr<BasicBlockTerminator> genBranch(IrGenContext &Ctx, Instruction *Cmp, BasicBlock *Target) const;
+  std::unique_ptr<Instruction> genBranch(IrGenContext &Ctx, Instruction *Cmp, BasicBlock *Target) const;
 };
 } // namespace cs241c
 

@@ -46,6 +46,9 @@ struct InstructionSignature {
 const InstructionSignature &signature(InstructionType);
 ValueType valTy(InstructionType);
 std::string_view mnemonic(InstructionType);
+
+bool isConditionalBranch(InstructionType);
+bool isTerminator(InstructionType);
 } // namespace cs241c
 
 #endif

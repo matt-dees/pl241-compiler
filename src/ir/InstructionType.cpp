@@ -1,4 +1,5 @@
 #include "InstructionType.h"
+#include <algorithm>
 #include <array>
 #include <type_traits>
 
@@ -51,3 +52,13 @@ const InstructionSignature &cs241c::signature(InsTyT InstrTy) { return typeInfo(
 ValTyT cs241c::valTy(InsTyT InstrTy) { return typeInfo(InstrTy).Def.ValTy; }
 
 string_view cs241c::mnemonic(InsTyT InstrTy) { return typeInfo(InstrTy).Mnemonic; }
+
+bool cs241c::isConditionalBranch(InstructionType InsTy) {
+  static const InstructionType Types[] = {InsTyT::Bne, InsTyT::Beq, InsTyT::Ble, InsTyT::Blt, InsTyT::Bge, InsTyT::Bgt};
+  return find(begin(Types), end(Types), InsTy) != end(Types);
+}
+
+bool cs241c::isTerminator(InstructionType InsTy) {
+  static const InstructionType Types[] = {InsTyT::End, InsTyT::Bra, InsTyT::Ret};
+  return find(begin(Types), end(Types), InsTy) != end(Types) || isConditionalBranch(InsTy);
+}

@@ -19,8 +19,7 @@ void SSAPass::run(Function &F) {
   recursiveNodeToSSA(F.entryBlock(), SSACtx);
 }
 
-SSAContext SSAPass::recursiveNodeToSSA(BasicBlock *CurrentBB,
-                                       SSAContext SSACtx) {
+SSAContext SSAPass::recursiveNodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx) {
   static std::unordered_set<BasicBlock *> Visited = {};
   if (Visited.find(CurrentBB) != Visited.end()) {
     // Already visited this node. Skip.
@@ -40,13 +39,9 @@ SSAContext SSAPass::recursiveNodeToSSA(BasicBlock *CurrentBB,
   return SSACtx;
 }
 
-void SSAPass::propagateChangeToPhis(cs241c::BasicBlock *SourceBB,
-                                    cs241c::Variable *ChangedVar,
-                                    cs241c::Value *NewVal) {
-  for (auto BB :
-       FA.dominatorTree(CurrentFunction)->dominanceFrontier(SourceBB)) {
-    if (find(BB->predecessors().begin(), BB->predecessors().end(), SourceBB) !=
-        BB->predecessors().end()) {
+void SSAPass::propagateChangeToPhis(cs241c::BasicBlock *SourceBB, cs241c::Variable *ChangedVar, cs241c::Value *NewVal) {
+  for (auto BB : FA.dominatorTree(CurrentFunction)->dominanceFrontier(SourceBB)) {
+    if (find(BB->predecessors().begin(), BB->predecessors().end(), SourceBB) != BB->predecessors().end()) {
       BB->updatePhiInst(SourceBB, ChangedVar, NewVal);
     }
   }
@@ -59,11 +54,9 @@ void SSAPass::recursiveGenAllPhis(BasicBlock *CurrentBB) {
   }
   auto MoveTargets = CurrentBB->getMoveTargets();
   Visited.insert(CurrentBB);
-  for (auto DFEntry :
-       FA.dominatorTree(CurrentFunction)->dominanceFrontier(CurrentBB)) {
+  for (auto DFEntry : FA.dominatorTree(CurrentFunction)->dominanceFrontier(CurrentBB)) {
     for (auto &Target : MoveTargets) {
-      auto Phi = std::make_unique<Instruction>(
-          InstructionType::Phi, NameGen::genInstructionId(), Target, Target);
+      auto Phi = std::make_unique<Instruction>(InstructionType::Phi, NameGen::genInstructionId(), Target, Target);
       Phi->storage() = Target;
       DFEntry->insertPhiInstruction(move(Phi));
       Visited.erase(DFEntry);
@@ -77,8 +70,7 @@ void SSAPass::recursiveGenAllPhis(BasicBlock *CurrentBB) {
 
 void SSAPass::basicBlockToSSA(BasicBlock &BB, SSAContext &SSACtx) {
   // Remove MOVE instructions and update SSA context accordingly.
-  for (auto InstIter = BB.instructions().begin();
-       InstIter != BB.instructions().end();) {
+  for (auto InstIter = BB.instructions().begin(); InstIter != BB.instructions().end();) {
     if (auto MovInst = dynamic_cast<MoveInstruction *>(InstIter->get())) {
       if (auto Target = dynamic_cast<Variable *>(MovInst->target())) {
         SSACtx.updateVariable(Target, MovInst->source());

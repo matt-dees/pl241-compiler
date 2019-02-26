@@ -16,8 +16,7 @@ ReturnStmt::ReturnStmt(unique_ptr<Expr> E) : E(move(E)) {}
 
 void ReturnStmt::genIr(IrGenContext &Ctx) const {
   auto Value = E->genIr(Ctx, nullptr);
-  Ctx.currentBlock()->terminate(
-      make_unique<BasicBlockTerminator>(InstructionType::Ret, Ctx.genInstructionId(), Value));
+  Ctx.currentBlock()->terminate(make_unique<Instruction>(InstructionType::Ret, Ctx.genInstructionId(), Value));
 }
 
 FunctionCallStmt::FunctionCallStmt(FunctionCall CallExpr) : CallExpr(move(CallExpr)) {}
@@ -34,7 +33,6 @@ void IfStmt::genIr(IrGenContext &Ctx) const {
   auto FalseBB = Ctx.makeBasicBlock();
   auto FollowBB = Ctx.makeBasicBlock();
 
-
   Ctx.currentBlock()->fallthoughSuccessor() = TrueBB;
   auto Comparison = Rel.genCmp(Ctx);
   auto Branch = Rel.genBranch(Ctx, Comparison, FalseBB);
@@ -46,7 +44,7 @@ void IfStmt::genIr(IrGenContext &Ctx) const {
   }
 
   if (!Ctx.currentBlock()->isTerminated()) {
-    Ctx.currentBlock()->terminate(make_unique<BraInstruction>(Ctx.genInstructionId(), FollowBB));
+    Ctx.currentBlock()->terminate(make_unique<Instruction>(InstructionType::Bra, Ctx.genInstructionId(), FollowBB));
   }
 
   Ctx.currentBlock() = FalseBB;
@@ -85,7 +83,7 @@ void WhileStmt::genIr(IrGenContext &Ctx) const {
   }
 
   if (!Ctx.currentBlock()->isTerminated()) {
-    Ctx.currentBlock()->terminate(make_unique<BraInstruction>(Ctx.genInstructionId(), HeaderBB));
+    Ctx.currentBlock()->terminate(make_unique<Instruction>(InstructionType::Bra, Ctx.genInstructionId(), HeaderBB));
   }
 
   Ctx.currentBlock() = FollowBB;

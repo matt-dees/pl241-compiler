@@ -163,7 +163,7 @@ Instruction *Relation::genCmp(IrGenContext &Ctx) const {
 
 namespace {
 using RelT = Relation::Type;
-unique_ptr<BasicBlockTerminator> makeBranch(IrGenContext &Ctx, RelT T, Instruction *Cmp, BasicBlock *Target) {
+unique_ptr<Instruction> makeBranch(IrGenContext &Ctx, RelT T, Instruction *Cmp, BasicBlock *Target) {
   static const array<pair<RelT, InstructionType>, 6> OpToInstrT{{
       {RelT::Eq, InstructionType::Bne},
       {RelT::Ne, InstructionType::Beq},
@@ -178,11 +178,11 @@ unique_ptr<BasicBlockTerminator> makeBranch(IrGenContext &Ctx, RelT T, Instructi
                                ->second;
 
   int Id = Ctx.genInstructionId();
-  auto Terminator = make_unique<ConditionalBlockTerminator>(InstrT, Id, Cmp, Target);
+  auto Terminator = make_unique<Instruction>(InstrT, Id, Cmp, Target);
   return Terminator;
 }
 } // namespace
 
-unique_ptr<BasicBlockTerminator> Relation::genBranch(IrGenContext &Ctx, Instruction *Cmp, BasicBlock *Target) const {
+unique_ptr<Instruction> Relation::genBranch(IrGenContext &Ctx, Instruction *Cmp, BasicBlock *Target) const {
   return makeBranch(Ctx, T, Cmp, Target);
 }

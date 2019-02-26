@@ -36,8 +36,7 @@ unordered_set<Value *> mark(Function &F, FunctionAnalyzer &FA) {
 
   for (auto &BB : F.basicBlocks()) {
     for (auto &I : BB->instructions()) {
-      if (find(PreLive.begin(), PreLive.end(), I->InstrT) != PreLive.end() ||
-          dynamic_cast<BasicBlockTerminator *>(I.get())) {
+      if (find(PreLive.begin(), PreLive.end(), I->InstrT) != PreLive.end() || isTerminator(I->InstrT)) {
         LiveSet.insert(I.get());
         WorkList.push_back(I.get());
       }
@@ -90,8 +89,7 @@ void erase(Function &F, const unordered_set<Value *> &LiveValues) {
     Instructions.erase(remove_if(Instructions.begin(), Instructions.end(),
                                  [&LiveValues](const auto &Instruction) {
                                    bool IsDead = LiveValues.find(Instruction.get()) == LiveValues.end();
-                                   bool IsNotTerminator =
-                                       dynamic_cast<BasicBlockTerminator *>(Instruction.get()) == nullptr;
+                                   bool IsNotTerminator = !isTerminator(Instruction->InstrT);
                                    return IsDead && IsNotTerminator;
                                  }),
                        Instructions.end());
@@ -105,10 +103,10 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveVal
   while (!Followers.empty() && VisitedBlocks.find(BB) == VisitedBlocks.end()) {
     VisitedBlocks.insert(BB);
 
-    auto Terminator = BB->terminator();
-    if (auto ConditionalBranch = dynamic_cast<ConditionalBlockTerminator *>(Terminator)) {
-      if (LiveValues.find(ConditionalBranch) == LiveValues.end()) {
-        BB->fallthoughSuccessor() = ConditionalBranch->target();
+    Instruction *Terminator = BB->terminator();
+    if (isConditionalBranch(Terminator->InstrT)) {
+      if (LiveValues.find(Terminator) == LiveValues.end()) {
+        BB->fallthoughSuccessor() = Terminator->target();
         BB->releaseTerminator();
         Followers = BB->successors();
       } else {
@@ -119,16 +117,16 @@ BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveVal
       }
     }
 
-    if (dynamic_cast<BraInstruction *>(BB->terminator())) {
+    if (BB->terminator()->InstrT == InstructionType::Bra) {
       if (BB->instructions().size() == 1 && BB->predecessors().size() <= 1) {
-        //BB = Followers.front();
+        // BB = Followers.front();
       } else {
         BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
         break;
       }
     } else if (BB->fallthoughSuccessor() != nullptr) {
       if (BB->instructions().size() == 0 && BB->predecessors().size() <= 1) {
-        //BB = Followers.front();
+        // BB = Followers.front();
       } else {
         BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
         break;
@@ -199,6 +197,6 @@ void cleanAttributes(Function &F) {
 void DeadCodeEliminationPass::run(Function &F) {
   auto LiveValues = mark(F, FA);
   erase(F, LiveValues);
-  //trim(F, LiveValues);
-  //cleanAttributes(F);
+  // trim(F, LiveValues);
+  // cleanAttributes(F);
 }

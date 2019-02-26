@@ -41,6 +41,8 @@ bool ValueRef::operator<(ValueRef Other) const {
   return ValTy < Other.ValTy;
 }
 
+Instruction::Instruction(InstructionType InstrT, int Id) : Instruction(InstrT, Id, nullptr, nullptr) {}
+
 Instruction::Instruction(InstructionType InstrT, int Id, ValueRef Arg1) : Instruction(InstrT, Id, Arg1, nullptr) {}
 
 Instruction::Instruction(InstructionType InstrT, int Id, ValueRef Arg1, ValueRef Arg2)
@@ -102,6 +104,18 @@ vector<ValueRef> Instruction::arguments() const {
   return Arguments;
 }
 
+BasicBlock *Instruction::target() {
+  Value *Target = nullptr;
+  if (InstrT == T::Bra) {
+    Target = Args[0];
+  } else if (isConditionalBranch(InstrT)) {
+    Target = Args[1];
+  } else {
+    return nullptr;
+  }
+  return dynamic_cast<BasicBlock *>(Target);
+}
+
 bool Instruction::updateArgs(const map<ValueRef, ValueRef> &UpdateCtx) {
   vector<ValueRef> Args = arguments();
   bool DidChange = false;
@@ -161,23 +175,6 @@ MemoryInstruction::MemoryInstruction(int Id, InstructionType InstrT, Variable *O
 
 Variable *MemoryInstruction::object() const { return Object; }
 
-BasicBlockTerminator::BasicBlockTerminator(InstructionType InstrT, int Id)
-    : BasicBlockTerminator(InstrT, Id, nullptr, nullptr) {}
-
-BasicBlockTerminator::BasicBlockTerminator(InstructionType InstrT, int Id, Value *Arg1)
-    : BasicBlockTerminator(InstrT, Id, Arg1, nullptr) {}
-
-BasicBlockTerminator::BasicBlockTerminator(InstructionType InstrT, int Id, Value *Arg1, Value *Arg2)
-    : Instruction(InstrT, Id, Arg1, Arg2) {}
-
-BasicBlock *BasicBlockTerminator::target() { return nullptr; }
-
-ConditionalBlockTerminator::ConditionalBlockTerminator(InstructionType InstrT, int Id, Instruction *Cmp,
-                                                       BasicBlock *Target)
-    : BasicBlockTerminator(InstrT, Id, Cmp, Target) {}
-
-BasicBlock *ConditionalBlockTerminator::target() { return dynamic_cast<BasicBlock *>(&*arguments()[1]); }
-
 MoveInstruction::MoveInstruction(int Id, ValueRef Y, ValueRef X) : Instruction(T::Move, Id, Y, X) {}
 
 void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) { arguments() = {NewSource, NewTarget}; }
@@ -185,11 +182,3 @@ void MoveInstruction::updateArgs(Value *NewTarget, Value *NewSource) { arguments
 Value *MoveInstruction::source() const { return arguments()[0]; }
 
 Value *MoveInstruction::target() const { return arguments()[1]; }
-
-BraInstruction::BraInstruction(int Id, BasicBlock *Y) : BasicBlockTerminator(T::Bra, Id, Y) {}
-
-BasicBlock *BraInstruction::target() {
-  auto *Target = dynamic_cast<BasicBlock *>(&*arguments()[0]);
-  assert(Target);
-  return Target;
-}
