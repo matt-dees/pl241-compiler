@@ -359,21 +359,16 @@ struct DLXObject {
       break;
     case InstructionType::Ret:
       break;
-    case InstructionType::Read:
+    case InstructionType::Read: {
+      Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
+      emitF2(Op::RDD, Ra, 0, 0);
       break;
+    }
     case InstructionType::Write: {
       auto Arg = Instr.arguments()[0];
-      uint8_t Rb;
-      if (Arg.ValTy == ValueType::Register) {
-        Rb = Arg.R.Id;
-      } else {
-        Value *Val = Arg;
-        if (Val->ValTy == ValueType::Constant) {
-          emitF1(Op::ADDI, Reg::Accu, Reg::R0, dynamic_cast<ConstantValue *>(Val)->Val);
-          Rb = Reg::Accu;
-        } else {
-          throw logic_error("Not implemented.");
-        }
+      Reg Rb = mapValueToRegister(Arg, State, Reg::Accu);
+      if (Arg.ValTy == ValueType::Constant) {
+        prepareConstantRegister(Rb, dynamic_cast<ConstantValue *>((Value *)Arg)->Val);
       }
       emitF2(Op::WRD, 0, Rb, 0);
       break;
@@ -435,7 +430,7 @@ struct DLXObject {
       addFunction(FPtr.get(), FA);
     }
   }
-};
+}; // namespace
 } // namespace
 
 vector<uint8_t> cs241c::genDlx(Module &M, FunctionAnalyzer &FA) {

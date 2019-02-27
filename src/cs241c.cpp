@@ -93,6 +93,6 @@ int main(int ArgC, char **ArgV) {
   string ObjectFilename = string(InputFile) + ".dlxo";
   ofstream ObjectFile(ObjectFilename, ofstream::binary);
   ObjectFile.write(reinterpret_cast<char *>(Object.data()), Object.size());
-
+  ObjectFile.close();
   return 0;
 }
