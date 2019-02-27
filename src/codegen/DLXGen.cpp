@@ -299,6 +299,11 @@ struct DLXObject {
   }
 
   void emitInstruction(Instruction &Instr, DLXGenState &State) {
+    for (auto Arg : Instr.arguments()) {
+      if (Arg.ValTy == ValueType::Variable) {
+        throw logic_error("Cannot emit instructions with variables as operands.");
+      }
+    }
     switch (Instr.InstrT) {
     case InstructionType::Neg: {
       Value *A = &Instr;
