@@ -327,8 +327,10 @@ struct DLXObject {
       emitArithmetic(Instr, State);
       break;
     case InstructionType::Load:
+      throw logic_error("Not implemented");
       break;
     case InstructionType::Store:
+      throw logic_error("Not implemented");
       break;
     case InstructionType::Move:
       emitArithmeticImmediate(Op::ADDI, Instr.arguments().at(1), Instr.arguments().at(0), 0, State);
@@ -340,24 +342,34 @@ struct DLXObject {
       emitF2(Op::RET, 0, 0, 0);
       break;
     case InstructionType::Bra:
+      throw logic_error("Not implemented");
       break;
     case InstructionType::Bne:
+      throw logic_error("Not implemented");
       break;
     case InstructionType::Beq:
+      throw logic_error("Not implemented");
       break;
     case InstructionType::Ble:
+      throw logic_error("Not implemented");
       break;
     case InstructionType::Blt:
+      throw logic_error("Not implemented");
       break;
     case InstructionType::Bge:
+      throw logic_error("Not implemented");
       break;
     case InstructionType::Bgt:
+      throw logic_error("Not implemented");
       break;
     case InstructionType::Param:
+      throw logic_error("Not implemented");
       break;
     case InstructionType::Call:
+      throw logic_error("Not implemented");
       break;
     case InstructionType::Ret:
+      throw logic_error("Not implemented");
       break;
     case InstructionType::Read: {
       Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
