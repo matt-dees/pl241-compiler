@@ -147,7 +147,7 @@ struct DLXObject {
     }
 
     bool const containsConstant =
-        Instr.arguments().at(1)->ValTy == ValueType::Constant;
+        Instr.arguments().at(1).ValTy == ValueType::Constant;
     Op OpCode;
     switch (Instr.InstrT) {
     case InstructionType::Adda:
@@ -192,7 +192,7 @@ struct DLXObject {
     }
 
     Op OpCode = getArithmeticOpCode(Inst);
-    if (C->ValTy == ValueType::Constant &&
+    if (C.ValTy == ValueType::Constant &&
         (OpCode >= Op::ADD && OpCode <= Op::CHK)) {
       throw logic_error(
           "If C is a constant the immediate variant of this instruction "
@@ -204,7 +204,7 @@ struct DLXObject {
     Reg const RcSpill = Reg::Spill2;
     Reg const Ra = mapValueToRegister(A, State, RaSpill);
     Reg const Rb = mapValueToRegister(B, State, RbSpill);
-    if (B->ValTy == ValueType::Constant) {
+    if (B.ValTy == ValueType::Constant) {
       // If constant, need to prep constant register for R.b
       prepareConstantRegister(Rb,
                               dynamic_cast<ConstantValue *>((Value *)B)->Val);
@@ -213,7 +213,7 @@ struct DLXObject {
       prepareSpilledRegister(Rb, State.ValueOffsets.at(B));
     }
 
-    if (C->ValTy == ValueType::Constant) {
+    if (C.ValTy == ValueType::Constant) {
       // Do the actual arithmetic emission
       // Note: Only 16-bit constants supported for now
       emitF1(OpCode, Ra, Rb, dynamic_cast<ConstantValue *>((Value *)C)->Val);

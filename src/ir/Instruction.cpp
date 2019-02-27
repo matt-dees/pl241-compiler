@@ -153,7 +153,8 @@ void Instruction::checkArgs() {
 
     if (Arg.isUndef()) {
       if (Type != ValueType::Undef && Type != ValueType::Any) {
-        // The explicit any part is for ret instructions... maybe not very clean.
+        // The explicit any part is for ret instructions... maybe not very
+        // clean.
         stringstream M;
         M << "Argument " << I << " of instruction " << Id << " (" << mnemonic(InstrT) << ") is missing, expected "
           << cs241c::name(Type) << ".";
