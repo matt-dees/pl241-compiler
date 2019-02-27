@@ -1,8 +1,28 @@
 //Simple parsing test
 main 
-var x, y;
+var x, y, z;
 {
-    let x <- call InputNum(); 
-    let y <- 2 * x;
-    call OutputNum(y)
+    let x <- call InputNum();
+    call OutputNum(x);
+
+    let z <- x * 5;
+    call OutputNum(z);
+    let z <- x + 5;
+    call OutputNum(z);
+    let z <- x - 5;
+    call OutputNum(z);
+    let z <- x / 5;
+    call OutputNum(z);
+    call OutputNewLine();
+    let y <- call InputNum();
+    call OutputNum(y);
+    let z <- x * y;
+    call OutputNum(z);
+    let z <- x + y;
+    call OutputNum(z);
+    let z <- x - y;
+    call OutputNum(z);
+    let z <- x / y;
+    call OutputNum(z);
+    call OutputNewLine()
 }.
