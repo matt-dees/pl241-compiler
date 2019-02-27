@@ -19,6 +19,14 @@ struct DLXGenState {
 
 enum Reg : uint8_t {
   R0 = 0,
+  R1,
+  R2,
+  R3,
+  R4,
+  R5,
+  R6,
+  R7,
+  R8,
   Accu = 9,
   Spill1 = 10,
   Spill2 = 11,
@@ -108,12 +116,24 @@ struct DLXObject {
     return Offset;
   }
 
-  uint8_t valueToRegister(Value *Val, DLXGenState &State, Reg SpillReg) {
+  Reg mapValueToRegister(Value *Val, DLXGenState &State, Reg SpillReg) {
     return State.Coloring.find(Val) == State.Coloring.end() ||
                    State.Coloring.at(Val) ==
                        RegisterAllocator::RA_REGISTER::SPILL
                ? SpillReg
-               : State.Coloring.at(Val);
+               : static_cast<Reg>(State.Coloring.at(Val));
+  }
+
+  void prepareConstantRegister(Reg Register, int Value) {
+    emitF1(Op::ADDI, Register, Reg::R0, Value);
+  }
+
+  void prepareSpilledRegister(Reg Regster, int Offset) {
+    emitF1(Op::LDW, Regster, Reg::FP, Offset);
+  }
+
+  void restoreSpilledRegister(Reg Register, int Offset) {
+    emitF1(Op::STW, Register, FP, Offset);
   }
 
   Op getArithmeticOpCode(Instruction &Instr) {
@@ -179,14 +199,14 @@ struct DLXObject {
     Reg const RaSpill = Reg::Spill1;
     Reg const RbSpill = Reg::Spill1;
     Reg const RcSpill = Reg::Spill2;
-    uint8_t const Ra = valueToRegister(A, State, RaSpill);
-    uint8_t const Rb = valueToRegister(B, State, RbSpill);
+    Reg const Ra = mapValueToRegister(A, State, RaSpill);
+    Reg const Rb = mapValueToRegister(B, State, RbSpill);
     if (B->ValTy == ValueType::Constant) {
       // If constant, need to prep constant register for R.b
-      emitF1(Op::ADDI, Rb, Reg::R0, dynamic_cast<ConstantValue *>(B)->Val);
+      prepareConstantRegister(Rb, dynamic_cast<ConstantValue *>(B)->Val);
     } else if (Rb == RbSpill) {
       // Else if Rb spilled, need to load from memory before emission
-      emitF1(Op::LDW, Rb, Reg::FP, State.ValueOffsets.at(B));
+      prepareSpilledRegister(Rb, State.ValueOffsets.at(B));
     }
 
     if (C->ValTy == ValueType::Constant) {
@@ -194,16 +214,16 @@ struct DLXObject {
       // Note: Only 16-bit constants supported for now
       emitF1(OpCode, Ra, Rb, dynamic_cast<ConstantValue *>(C)->Val);
     } else {
-      uint8_t Rc = valueToRegister(C, State, RcSpill);
+      Reg Rc = mapValueToRegister(C, State, RcSpill);
       if (Rc == RcSpill) {
-        emitF1(Op::LDW, Rc, Reg::FP, State.ValueOffsets.at(C));
+        prepareSpilledRegister(Rc, State.ValueOffsets.at(C));
       }
       // Do the actual arithmetic emission
       emitF1(OpCode, Ra, Rb, Rc);
     }
     // If Ra was a spill register, need to store its value back to memory.
     if (Ra == RaSpill) {
-      emitF1(Op::STW, Ra, FP, State.ValueOffsets.at(A));
+      restoreSpilledRegister(Ra, State.ValueOffsets.at(A));
     }
   }
 
@@ -395,12 +415,12 @@ struct DLXObject {
 
     // Make space for spills
     Offset = mapSpills(*F, FA, ValueOffsets, Offset);
-    DLXGenState CurrentState = {ValueOffsets, *FA.coloring(F)};
     emitF1(Op::ADDI, SP, FP, Offset);
 
     // Process all basic blocks
     auto Blocks = linearize(F);
 
+    DLXGenState CurrentState = {ValueOffsets, *FA.coloring(F)};
     for (auto Block : Blocks) {
       for (auto &Instr : Block->instructions()) {
         emitInstruction(*Instr, CurrentState);
