@@ -116,26 +116,38 @@ struct DLXObject {
     return Offset;
   }
 
-  Reg mapValueToRegister(Value *Val, DLXGenState &State, Reg SpillReg) {
+  Reg mapValueToRegister(ValueRef Val, DLXGenState &State, Reg SpillReg) {
+    if (Val.ValTy == ValueType::Register) {
+      return static_cast<Reg>(Val.R.Id);
+    }
     return State.Coloring.find(Val) == State.Coloring.end() ||
-                   State.Coloring.at(Val) == RegisterAllocator::RA_REGISTER::SPILL
+                   State.Coloring.at(Val) ==
+                       RegisterAllocator::RA_REGISTER::SPILL
                ? SpillReg
                : static_cast<Reg>(State.Coloring.at(Val));
   }
 
-  void prepareConstantRegister(Reg Register, int Value) { emitF1(Op::ADDI, Register, Reg::R0, Value); }
+  void prepareConstantRegister(Reg Register, int Value) {
+    emitF1(Op::ADDI, Register, Reg::R0, Value);
+  }
 
-  void prepareSpilledRegister(Reg Regster, int Offset) { emitF1(Op::LDW, Regster, Reg::FP, Offset); }
+  void prepareSpilledRegister(Reg Regster, int Offset) {
+    emitF1(Op::LDW, Regster, Reg::FP, Offset);
+  }
 
-  void restoreSpilledRegister(Reg Register, int Offset) { emitF1(Op::STW, Register, FP, Offset); }
+  void restoreSpilledRegister(Reg Register, int Offset) {
+    emitF1(Op::STW, Register, FP, Offset);
+  }
 
   Op getArithmeticOpCode(Instruction &Instr) {
     if (Instr.arguments().size() != 2) {
-      throw logic_error("Unable to emit arithmetic instruction " + Instr.toString() +
+      throw logic_error("Unable to emit arithmetic instruction " +
+                        Instr.toString() +
                         " because it does not have two arguments.");
     }
 
-    bool const containsConstant = Instr.arguments().at(1)->ValTy == ValueType::Constant;
+    bool const containsConstant =
+        Instr.arguments().at(1)->ValTy == ValueType::Constant;
     Op OpCode;
     switch (Instr.InstrT) {
     case InstructionType::Adda:
@@ -173,16 +185,18 @@ struct DLXObject {
   void emitArithmetic(Instruction &Inst, DLXGenState &State) {
 
     auto Args = Inst.arguments();
-    Value *A = &Inst, *B = Args.at(0), *C = Args.at(1);
+    ValueRef A = &Inst, B = Args.at(0), C = Args.at(1);
 
     if (A->ValTy == ValueType::Constant) {
       throw logic_error("emitF1 called with A as constant");
     }
 
     Op OpCode = getArithmeticOpCode(Inst);
-    if (C->ValTy == ValueType::Constant && (OpCode >= Op::ADD && OpCode <= Op::CHK)) {
-      throw logic_error("If C is a constant the immediate variant of this instruction "
-                        "should be used.");
+    if (C->ValTy == ValueType::Constant &&
+        (OpCode >= Op::ADD && OpCode <= Op::CHK)) {
+      throw logic_error(
+          "If C is a constant the immediate variant of this instruction "
+          "should be used.");
     }
     // Use Spill1 for Ra, Spill1 for Rb, Spill2 for Rc.
     Reg const RaSpill = Reg::Spill1;
@@ -192,7 +206,8 @@ struct DLXObject {
     Reg const Rb = mapValueToRegister(B, State, RbSpill);
     if (B->ValTy == ValueType::Constant) {
       // If constant, need to prep constant register for R.b
-      prepareConstantRegister(Rb, dynamic_cast<ConstantValue *>(B)->Val);
+      prepareConstantRegister(Rb,
+                              dynamic_cast<ConstantValue *>((Value *)B)->Val);
     } else if (Rb == RbSpill) {
       // Else if Rb spilled, need to load from memory before emission
       prepareSpilledRegister(Rb, State.ValueOffsets.at(B));
@@ -201,7 +216,7 @@ struct DLXObject {
     if (C->ValTy == ValueType::Constant) {
       // Do the actual arithmetic emission
       // Note: Only 16-bit constants supported for now
-      emitF1(OpCode, Ra, Rb, dynamic_cast<ConstantValue *>(C)->Val);
+      emitF1(OpCode, Ra, Rb, dynamic_cast<ConstantValue *>((Value *)C)->Val);
     } else {
       Reg Rc = mapValueToRegister(C, State, RcSpill);
       if (Rc == RcSpill) {
@@ -248,7 +263,9 @@ struct DLXObject {
     emitF2(Op::ADD, Reg::SP, Reg::FP, Reg::R0);
   }
 
-  int mapSpills(Function &F, FunctionAnalyzer &FA, unordered_map<Value *, int16_t> &ValueOffsets, int StartOffset) {
+  int mapSpills(Function &F, FunctionAnalyzer &FA,
+                unordered_map<Value *, int16_t> &ValueOffsets,
+                int StartOffset) {
     auto Registers = FA.coloring(&F);
 
     int CurrentOffset = StartOffset;
@@ -256,7 +273,8 @@ struct DLXObject {
       for (auto &Instr : BB->instructions()) {
         if (isSubtype(Instr->ValTy, ValueType::Value)) {
           if (Registers->find(Instr.get()) == Registers->end() ||
-              Registers->at(Instr.get()) == RegisterAllocator::RA_REGISTER::SPILL) {
+              Registers->at(Instr.get()) ==
+                  RegisterAllocator::RA_REGISTER::SPILL) {
             CurrentOffset -= 4;
             ValueOffsets[Instr.get()] = CurrentOffset;
           }
@@ -276,7 +294,8 @@ struct DLXObject {
       LinearBlockOrder.push_back(CurrentBB);
 
       if (CurrentBB->fallthoughSuccessor() != nullptr) {
-        if (CurrentBB->isTerminated() && isConditionalBranch(CurrentBB->terminator()->InstrT)) {
+        if (CurrentBB->isTerminated() &&
+            isConditionalBranch(CurrentBB->terminator()->InstrT)) {
           JumpBlocks.push(CurrentBB);
         }
 
@@ -374,7 +393,8 @@ struct DLXObject {
       } else {
         Value *Val = Arg;
         if (Val->ValTy == ValueType::Constant) {
-          emitF1(Op::ADDI, Reg::Accu, Reg::R0, dynamic_cast<ConstantValue *>(Val)->Val);
+          emitF1(Op::ADDI, Reg::Accu, Reg::R0,
+                 dynamic_cast<ConstantValue *>(Val)->Val);
           Rb = Reg::Accu;
         } else {
           throw logic_error("Not implemented.");
@@ -435,7 +455,8 @@ struct DLXObject {
     emitF2(Op::RET, 0, 0, RA);
   }
 
-  void addFunctions(vector<unique_ptr<Function>> &Functions, FunctionAnalyzer &FA) {
+  void addFunctions(vector<unique_ptr<Function>> &Functions,
+                    FunctionAnalyzer &FA) {
     for (auto &FPtr : Functions) {
       addFunction(FPtr.get(), FA);
     }
