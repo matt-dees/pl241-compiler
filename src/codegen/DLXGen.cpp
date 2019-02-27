@@ -158,6 +158,7 @@ struct DLXObject {
     }
     return OpCode;
   }
+
   void emitArithmetic(Instruction &Inst, DLXGenState &State) {
 
     auto Args = Inst.arguments();
@@ -178,8 +179,8 @@ struct DLXObject {
     Reg const RaSpill = Reg::Spill1;
     Reg const RbSpill = Reg::Spill1;
     Reg const RcSpill = Reg::Spill2;
-    uint8_t Ra = valueToRegister(A, State, RaSpill);
-    uint8_t Rb = valueToRegister(B, State, RbSpill);
+    uint8_t const Ra = valueToRegister(A, State, RaSpill);
+    uint8_t const Rb = valueToRegister(B, State, RbSpill);
     if (B->ValTy == ValueType::Constant) {
       // If constant, need to prep constant register for R.b
       emitF1(Op::ADDI, Rb, Reg::R0, dynamic_cast<ConstantValue *>(B)->Val);
@@ -190,6 +191,7 @@ struct DLXObject {
 
     if (C->ValTy == ValueType::Constant) {
       // Do the actual arithmetic emission
+      // Note: Only 16-bit constants supported for now
       emitF1(OpCode, Ra, Rb, dynamic_cast<ConstantValue *>(C)->Val);
     } else {
       uint8_t Rc = valueToRegister(C, State, RcSpill);
@@ -307,6 +309,7 @@ struct DLXObject {
       emitArithmetic(Instr, State);
       break;
     case InstructionType::Adda:
+      emitArithmetic(Instr, State);
       break;
     case InstructionType::Load:
       break;
