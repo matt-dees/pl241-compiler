@@ -44,6 +44,8 @@ Func::Func(string Ident, vector<string> Params, vector<unique_ptr<Decl>> Vars, v
 }
 
 void Func::genIr(IrGenContext &Ctx) {
+  Ctx.IsMain = Ident == "main";
+
   Ctx.beginScope();
 
   vector<unique_ptr<LocalVariable>> Locals;
@@ -70,7 +72,7 @@ void Func::genIr(IrGenContext &Ctx) {
   }
 
   if (!Ctx.currentBlock()->isTerminated()) {
-    auto RetType = Ident == "main" ? InstructionType::End : InstructionType::Ret;
+    auto RetType = Ctx.IsMain ? InstructionType::End : InstructionType::Ret;
     Ctx.currentBlock()->terminate(make_unique<Instruction>(RetType, Ctx.genInstructionId()));
   }
 }
