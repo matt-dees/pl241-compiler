@@ -303,11 +303,6 @@ struct DLXObject {
   }
 
   void emitInstruction(Instruction &Instr, DLXGenState &State) {
-    for (auto Arg : Instr.arguments()) {
-      if (Arg.ValTy == ValueType::Variable) {
-        throw logic_error("Cannot emit instructions with variables as operands.");
-      }
-    }
     switch (Instr.InstrT) {
     case InstructionType::Neg: {
       emitArithmeticImmediate(Op::MULI, &Instr, Instr.arguments().at(0), -1, State);
