@@ -362,14 +362,14 @@ struct DLXObject {
     case InstructionType::Read: {
       Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
       emitF2(Op::RDD, Ra, 0, 0);
+      if (Ra == Reg::Accu) {
+        restoreSpilledRegister(Ra, State.ValueOffsets.at(Instr.arguments().at(0)));
+      }
       break;
     }
     case InstructionType::Write: {
       auto Arg = Instr.arguments()[0];
-      Reg Rb = mapValueToRegister(Arg, State, Reg::Accu);
-      if (Arg.ValTy == ValueType::Constant) {
-        prepareConstantRegister(Rb, dynamic_cast<ConstantValue *>((Value *)Arg)->Val);
-      }
+      Reg Rb = prepareOperandRegister(Arg, State, Reg::Accu);
       emitF2(Op::WRD, 0, Rb, 0);
       break;
     }
