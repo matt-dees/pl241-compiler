@@ -30,22 +30,22 @@ void Phi2VarPass::process(Function &F) {
       if (Instr->InstrT != InstructionType::Phi)
         break;
 
-      auto TargetRegister =
-          Registers->find(Instr.get()) != Registers->end() ? Registers->at(Instr.get()) : RegisterAllocator::SPILL;
-      ValueRef Target = TargetRegister != RegisterAllocator::RA_REGISTER::SPILL
-                            ? ValueRef(ValueType::Register, TargetRegister)
-                            : Instr->storage();
-      PhiSubstitutions[Instr.get()] = Target;
+      if (Registers->find(Instr.get()) == Registers->end()) {
+        throw logic_error("Value " + Instr.get()->toString() +
+                          " did not get a virtual register from Register Allocator.");
+      }
 
+      auto TargetRegister = Registers->at(Instr.get());
+      ValueRef Target = ValueRef(ValueType::Register, TargetRegister);
+      PhiSubstitutions[Instr.get()] = Target;
       auto Args = Instr->arguments();
 
       for (int I = 0; I < 2; ++I) {
         auto Arg = Args[I];
-        auto ArgRegister = Registers->find(Arg) != Registers->end() ? Registers->at(Arg) : RegisterAllocator::SPILL;
+        auto ArgRegister = Registers->find(Arg) == Registers->end() ? 0 : Registers->at(Arg);
 
         if (ArgRegister != TargetRegister) {
-          ValueRef Source =
-              ArgRegister != RegisterAllocator::RA_REGISTER::SPILL ? ValueRef(ValueType::Register, ArgRegister) : Arg;
+          ValueRef Source = ArgRegister == 0 ? Arg : ValueRef(ValueType::Register, ArgRegister);
           auto Move = make_unique<Instruction>(InstructionType::Move, NameGen::genInstructionId(), Source, Target);
           Move->storage() = Instr->storage();
 

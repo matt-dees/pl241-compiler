@@ -44,7 +44,15 @@ void FunctionAnalyzer::runRegisterAllocation(Module *M) {
   for (auto &F : M->functions()) {
     buildInterferenceGraph(F.get());
     RegisterAllocator RA;
-    RAColoring[F.get()] = std::make_unique<RegisterAllocator::Coloring>(
-        RA.color(*interferenceGraph(F.get())));
+    RAColoring[F.get()] = std::make_unique<RegisterAllocator::Coloring>(RA.color(*interferenceGraph(F.get())));
   }
+}
+
+bool FunctionAnalyzer::isValueSpilled(Function *F, Value *Val) {
+  RegisterAllocator::Coloring *Coloring = coloring(F);
+  if (Coloring->find(Val) == Coloring->end()) {
+    return true;
+  }
+  RegisterAllocator::VirtualRegister Reg = Coloring->at(Val);
+  return Reg < 1 || Reg > RegisterAllocator::NUM_REGISTERS;
 }

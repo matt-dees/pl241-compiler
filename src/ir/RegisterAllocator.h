@@ -12,8 +12,8 @@
 namespace cs241c {
 class RegisterAllocator {
 public:
-  enum RA_REGISTER { SPILL = 0, R1 = 1, R2, R3, R4, R5, R6, R7, R8 };
-  using Coloring = std::unordered_map<Value *, RA_REGISTER>;
+  typedef uint32_t VirtualRegister;
+  using Coloring = std::unordered_map<Value *, VirtualRegister>;
   static const uint8_t NUM_REGISTERS = 8;
 
 public:

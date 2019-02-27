@@ -14,7 +14,8 @@ namespace {
 
 struct DLXGenState {
   unordered_map<Value *, int16_t> &ValueOffsets;
-  RegisterAllocator::Coloring &Coloring;
+  FunctionAnalyzer &FA;
+  Function *CurrentFunction;
 };
 
 enum Reg : uint8_t {
@@ -120,10 +121,9 @@ struct DLXObject {
     if (Val.ValTy == ValueType::Register) {
       return static_cast<Reg>(Val.R.Id);
     }
-    return State.Coloring.find(Val) == State.Coloring.end() ||
-                   State.Coloring.at(Val) == RegisterAllocator::RA_REGISTER::SPILL
+    return State.FA.isValueSpilled(State.CurrentFunction, Val)
                ? SpillReg
-               : static_cast<Reg>(State.Coloring.at(Val));
+               : static_cast<Reg>(State.FA.coloring(State.CurrentFunction)->at(Val));
   }
 
   void prepareConstantRegister(Reg Register, int Value) { emitF1(Op::ADDI, Register, Reg::R0, Value); }
@@ -252,14 +252,11 @@ struct DLXObject {
   }
 
   int mapSpills(Function &F, FunctionAnalyzer &FA, unordered_map<Value *, int16_t> &ValueOffsets, int StartOffset) {
-    auto Registers = FA.coloring(&F);
-
     int CurrentOffset = StartOffset;
     for (auto &BB : F.basicBlocks()) {
       for (auto &Instr : BB->instructions()) {
         if (isSubtype(Instr->ValTy, ValueType::Value)) {
-          if (Registers->find(Instr.get()) == Registers->end() ||
-              Registers->at(Instr.get()) == RegisterAllocator::RA_REGISTER::SPILL) {
+          if (FA.isValueSpilled(&F, Instr.get())) {
             CurrentOffset -= 4;
             ValueOffsets[Instr.get()] = CurrentOffset;
           }
@@ -424,7 +421,7 @@ struct DLXObject {
     // Process all basic blocks
     auto Blocks = linearize(F);
 
-    DLXGenState CurrentState = {ValueOffsets, *FA.coloring(F)};
+    DLXGenState CurrentState = {ValueOffsets, FA, F};
     for (auto Block : Blocks) {
       for (auto &Instr : Block->instructions()) {
         emitInstruction(*Instr, CurrentState);

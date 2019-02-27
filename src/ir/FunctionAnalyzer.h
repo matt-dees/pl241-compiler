@@ -12,8 +12,7 @@ class FunctionAnalyzer {
 private:
   std::unordered_map<Function *, std::unique_ptr<DominatorTree>> DTMap;
   std::unordered_map<Function *, std::unique_ptr<InterferenceGraph>> IGMap;
-  std::unordered_map<Function *, std::unique_ptr<RegisterAllocator::Coloring>>
-      RAColoring;
+  std::unordered_map<Function *, std::unique_ptr<RegisterAllocator::Coloring>> RAColoring;
 
   void buildDominatorTree(Function *F);
   void buildInterferenceGraph(Function *F);
@@ -22,6 +21,8 @@ public:
   DominatorTree *dominatorTree(Function *);
   InterferenceGraph *interferenceGraph(Function *);
   RegisterAllocator::Coloring *coloring(Function *);
+
+  bool isValueSpilled(Function *, Value *Val);
 
   void runDominanceAnalytics(Module *M);
   void runInterferenceAnalytics(Module *M);

@@ -1,9 +1,9 @@
 #include "RegisterAllocator.h"
 #include <iostream>
 #include <limits>
+#include <set>
 #include <stack>
 #include <utility>
-
 using namespace cs241c;
 using namespace std;
 
@@ -82,11 +82,26 @@ Value *RegisterAllocator::chooseNextNodeToColor(InterferenceGraph &IG) {
 
 void RegisterAllocator::assignColor(InterferenceGraph &IG, RegisterAllocator::Coloring &CurrentColoring,
                                     Value *NodeToColor) {
-  std::unordered_set<RA_REGISTER> RemainingColors = {R1, R2, R3, R4, R5, R6, R7, R8};
+  std::set<VirtualRegister> UsedColors;
+  // Figure out what colors are used by neighbors
   for (auto Neighbor : IG.neighbors(NodeToColor)) {
-    RemainingColors.erase(CurrentColoring[Neighbor]);
+    UsedColors.insert(CurrentColoring[Neighbor]);
   }
-  CurrentColoring[NodeToColor] = RemainingColors.empty() ? RA_REGISTER::SPILL : *(RemainingColors.begin());
+
+  VirtualRegister ColorToUse = 0;
+  // Find first unused color
+  for (auto Reg = 1; Reg <= std::numeric_limits<VirtualRegister>::max(); Reg++) {
+    if (UsedColors.find(Reg) == UsedColors.end()) {
+      ColorToUse = Reg;
+      break;
+    }
+  }
+
+  if (ColorToUse == 0) {
+    throw logic_error("Not enough virtual registers to color interference graph.");
+  }
+
+  CurrentColoring[NodeToColor] = ColorToUse;
 }
 
 void AnnotatedIG::writeGraph(std::ofstream &OutFileStream) {
@@ -100,30 +115,21 @@ void AnnotatedIG::writeGraph(std::ofstream &OutFileStream) {
 }
 
 std::string AnnotatedIG::lookupColor(Value *RAV) {
+  std::array<std::string, RegisterAllocator::NUM_REGISTERS> const Colors = {
+      "lightblue", "lightcyan", "lightgreen", "lightmagenta", "lightred", "lightyellow", "pink", "yellowgreen"};
   if (C->find(RAV) == C->end()) {
+    // Value didn't get colored
     return "white";
   }
-  switch (C->at(RAV)) {
-  case RegisterAllocator::RA_REGISTER::SPILL:
-    return "darkgrey";
-  case RegisterAllocator::RA_REGISTER::R1:
-    return "lightblue";
-  case RegisterAllocator::RA_REGISTER::R2:
-    return "lightcyan";
-  case RegisterAllocator::RA_REGISTER::R3:
-    return "lightgreen";
-  case RegisterAllocator::RA_REGISTER::R4:
-    return "lightmagenta";
-  case RegisterAllocator::RA_REGISTER::R5:
-    return "lightred";
-  case RegisterAllocator::RA_REGISTER::R6:
-    return "lightyellow";
-  case RegisterAllocator::RA_REGISTER::R7:
-    return "pink";
-  case RegisterAllocator::RA_REGISTER::R8:
-    return "yellowgreen";
+
+  // Lookup color in const array
+  RegisterAllocator::VirtualRegister Color = C->at(RAV);
+  if (Color <= RegisterAllocator::NUM_REGISTERS && Color >= 1) {
+    return Colors.at(Color - 1);
   }
-  return "white";
+
+  // Spilled register
+  return "darkgrey";
 }
 
 void AnnotatedIG::writeNodes(std::ofstream &OutFileStream) {
