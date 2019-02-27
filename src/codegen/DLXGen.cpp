@@ -183,39 +183,40 @@ struct DLXObject {
     return OpCode;
   }
 
+  void emitArithmeticImmediate(Op OpCode, ValueRef A, ValueRef B, int32_t C, DLXGenState &State) {
+    if (OpCode < Op::ADDI || OpCode > Op::CHKI) {
+      throw logic_error("Invalid Opcode for immediate arithmetic emission");
+    }
+    Reg Ra = mapValueToRegister(A, State, Reg::Spill1);
+    Reg Rb = prepareOperandRegister(B, State, Reg::Spill1);
+    emitF1(OpCode, Ra, Rb, C);
+    if (Ra == Reg::Spill1) {
+      restoreSpilledRegister(Ra, State.ValueOffsets.at(A));
+    }
+  }
+
+  void emitArithmeticRegister(Op OpCode, ValueRef A, ValueRef B, ValueRef C, DLXGenState &State) {
+    if (OpCode > Op::CHK) {
+      throw logic_error("Invalid Opcode for register arithmetic emission");
+    }
+    Reg Ra = mapValueToRegister(A, State, Reg::Spill1);
+    Reg Rb = prepareOperandRegister(B, State, Reg::Spill1);
+    Reg Rc = prepareOperandRegister(C, State, Reg::Spill2);
+    emitF1(OpCode, Ra, Rb, Rc);
+    if (Ra == Reg::Spill1) {
+      restoreSpilledRegister(Ra, State.ValueOffsets.at(A));
+    }
+  }
+
   void emitArithmetic(Instruction &Inst, DLXGenState &State) {
 
     auto Args = Inst.arguments();
-    ValueRef A = &Inst, B = Args.at(0), C = Args.at(1);
-
-    if (A->ValTy == ValueType::Constant) {
-      throw logic_error("emitF1 called with A as constant");
-    }
-
     Op OpCode = getArithmeticOpCode(Inst);
-    if (C.ValTy == ValueType::Constant && (OpCode >= Op::ADD && OpCode <= Op::CHK)) {
-      throw logic_error("If C is a constant the immediate variant of this instruction "
-                        "should be used.");
-    }
-    // Use Spill1 for Ra, Spill1 for Rb, Spill2 for Rc.
-    Reg const RaSpill = Reg::Spill1;
-    Reg const RbSpill = Reg::Spill1;
-    Reg const RcSpill = Reg::Spill2;
-    Reg const Ra = mapValueToRegister(A, State, RaSpill);
-    Reg const Rb = prepareOperandRegister(B, State, RbSpill);
-
-    if (C.ValTy == ValueType::Constant) {
-      // Do the actual arithmetic emission
-      // Note: Only 16-bit constants supported for now
-      emitF1(OpCode, Ra, Rb, dynamic_cast<ConstantValue *>((Value *)C)->Val);
+    if (OpCode <= Op::CHK) {
+      emitArithmeticRegister(OpCode, &Inst, Args.at(0), Args.at(1), State);
     } else {
-      Reg Rc = prepareOperandRegister(C, State, RcSpill);
-      // Do the actual arithmetic emission
-      emitF1(OpCode, Ra, Rb, Rc);
-    }
-    // If Ra was a spill register, need to store its value back to memory.
-    if (Ra == RaSpill) {
-      restoreSpilledRegister(Ra, State.ValueOffsets.at(A));
+      emitArithmeticImmediate(OpCode, &Inst, Args.at(0), dynamic_cast<ConstantValue *>((Value *)Args.at(1))->Val,
+                              State);
     }
   }
 
@@ -303,15 +304,7 @@ struct DLXObject {
     }
     switch (Instr.InstrT) {
     case InstructionType::Neg: {
-      Value *A = &Instr;
-      Reg Ra = mapValueToRegister(A, State, Reg::Spill1);
-
-      Value *B = Instr.arguments().at(0);
-      Reg Rb = prepareOperandRegister(B, State, Reg::Spill1);
-      emitF1(Op::MULI, Ra, Rb, -1);
-      if (Ra == Reg::Spill1) {
-        restoreSpilledRegister(Ra, State.ValueOffsets.at(A));
-      }
+      emitArithmeticImmediate(Op::MULI, &Instr, Instr.arguments().at(0), -1, State);
       break;
     }
     case InstructionType::Add:
@@ -337,6 +330,7 @@ struct DLXObject {
     case InstructionType::Store:
       break;
     case InstructionType::Move:
+      emitArithmeticImmediate(Op::ADDI, Instr.arguments().at(1), Instr.arguments().at(0), 0, State);
       break;
     case InstructionType::Phi:
       throw logic_error("Error: Unable to emit Phi instructions.");
