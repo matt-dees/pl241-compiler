@@ -127,20 +127,26 @@ struct DLXObject {
         Instr.arguments().at(1)->ValTy == ValueType::Constant;
     Op OpCode;
     switch (Instr.InstrT) {
+    case InstructionType::Adda:
     case InstructionType::Add: {
       OpCode = Op::ADD;
+      break;
     }
     case InstructionType::Sub: {
       OpCode = Op::SUB;
+      break;
     }
     case InstructionType::Mul: {
       OpCode = Op::MUL;
+      break;
     }
     case InstructionType::Div: {
       OpCode = Op::DIV;
+      break;
     }
     case InstructionType::Cmp: {
       OpCode = Op::CMP;
+      break;
     }
     default:
       throw logic_error("Unsupported arithmetic instruction");
