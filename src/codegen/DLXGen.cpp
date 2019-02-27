@@ -187,6 +187,9 @@ struct DLXObject {
     if (OpCode < Op::ADDI || OpCode > Op::CHKI) {
       throw logic_error("Invalid Opcode for immediate arithmetic emission");
     }
+    if (OpCode == Op::CHKI) {
+      throw logic_error("Unsupported for now");
+    }
     Reg Ra = mapValueToRegister(A, State, Reg::Spill1);
     Reg Rb = prepareOperandRegister(B, State, Reg::Spill1);
     emitF1(OpCode, Ra, Rb, C);
@@ -198,6 +201,9 @@ struct DLXObject {
   void emitArithmeticRegister(Op OpCode, ValueRef A, ValueRef B, ValueRef C, DLXGenState &State) {
     if (OpCode > Op::CHK) {
       throw logic_error("Invalid Opcode for register arithmetic emission");
+    }
+    if (OpCode == Op::CHK) {
+      throw logic_error("Unsupported for now");
     }
     Reg Ra = mapValueToRegister(A, State, Reg::Spill1);
     Reg Rb = prepareOperandRegister(B, State, Reg::Spill1);
