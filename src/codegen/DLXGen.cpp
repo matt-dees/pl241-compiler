@@ -182,7 +182,7 @@ struct DLXObject {
   void emitArithmetic(Instruction &Inst, DLXGenState &State) {
 
     auto Args = Inst.arguments();
-    Value *A = Args.at(0), *B = Args.at(1), *C = Args.at(2);
+    Value *A = &Inst, *B = Args.at(0), *C = Args.at(1);
 
     if (A->ValTy == ValueType::Constant) {
       throw logic_error("emitF1 called with A as constant");
@@ -311,8 +311,23 @@ struct DLXObject {
 
   void emitInstruction(Instruction &Instr, DLXGenState &State) {
     switch (Instr.InstrT) {
-    case InstructionType::Neg:
+    case InstructionType::Neg: {
+      Value *A = &Instr;
+      Reg Ra = mapValueToRegister(A, State, Reg::Spill1);
+
+      Value *B = Instr.arguments().at(0);
+      Reg Rb = mapValueToRegister(B, State, Reg::Spill1);
+      if (B->ValTy == ValueType::Constant) {
+        prepareConstantRegister(Rb, State.ValueOffsets.at(B));
+      } else if (Rb == Reg::Spill1) {
+        prepareSpilledRegister(Rb, State.ValueOffsets.at(B));
+      }
+      emitF1(Op::MULI, Ra, Rb, -1);
+      if (Ra == Reg::Spill1) {
+        restoreSpilledRegister(Ra, State.ValueOffsets.at(A));
+      }
       break;
+    }
     case InstructionType::Add:
       emitArithmetic(Instr, State);
       break;
@@ -384,6 +399,7 @@ struct DLXObject {
       break;
     }
     case InstructionType::WriteNL:
+      emitF1(Op::WRL, 0, 0, 0);
       break;
     }
   }
