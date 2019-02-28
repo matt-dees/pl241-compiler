@@ -19,7 +19,7 @@ void Mem2VarPass::run(Module &M) {
       auto InitConst = F->constant(0);
 
       for (auto &Global : M.globals()) {
-        if (ActuallyGlobal.find(Global.get()) == ActuallyGlobal.end()) {
+        if (ActuallyGlobal.find(Global.get()) == ActuallyGlobal.end() && Global->isSingleWord()) {
           auto Local = make_unique<LocalVariable>(string("_") + (Global->name().data() + 1), Global->wordCount());
           LocalSubstitutions[Global.get()] = Local.get();
 
@@ -74,7 +74,7 @@ void Mem2VarPass::run(Module &M) {
               }
             }
 
-			Instr = InstrIt->get();
+            Instr = InstrIt->get();
             Instr->updateArgs(ArgSubstitutions);
             if (LocalSubstitutions.find(Instr->storage()) != LocalSubstitutions.end()) {
               Instr->storage() = LocalSubstitutions[Instr->storage()];
