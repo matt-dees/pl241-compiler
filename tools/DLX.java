@@ -17,7 +17,9 @@ public class DLX {
 
     
 	public static void main(String argv[]) throws IOException {
-		File file = new File(argv[0]);
+		boolean disassemble = argv.length == 2 && argv[0].equals("--dis");
+
+		File file = new File(argv[argv.length - 1]);
 		FileInputStream fin = new FileInputStream(file);
 		BufferedInputStream bin = new BufferedInputStream(fin);
 		DataInputStream din = new DataInputStream(bin);
@@ -27,9 +29,15 @@ public class DLX {
 		for (int i = 0; i < count; i++) {
 			values[i] = din.readInt();
 		}
-		
-		load(values);
-		execute();
+
+		if (disassemble) {
+		    for (int i = 0; i < count; i++) {
+                System.out.print((i * 4) + ":\t\t" + disassemble(values[i]));
+            }
+		} else {
+		    load(values);
+            execute();
+		}
 	}
 
 	public static void load(int program[]) {
