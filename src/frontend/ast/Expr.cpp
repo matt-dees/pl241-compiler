@@ -48,19 +48,18 @@ void VarDesignator::genStore(IrGenContext &Ctx, Value *V) {
 }
 
 Value *ArrayDesignator::calculateMemoryOffset(IrGenContext &Ctx) const {
-  Value *Offset = Dim.front()->genIr(Ctx, nullptr);
 
+  auto CurrentOffset = 1;
+  auto Prev = Dim.back()->genIr(Ctx, nullptr);
   auto Sym = Ctx.lookupVariable(Ident);
-  auto DimensionsEnd = Sym.Dimensions.end() - 1;
-  for (auto Dimension = Sym.Dimensions.begin(); Dimension != DimensionsEnd; ++Dimension) {
-    auto Mul = Ctx.makeInstruction(T::Mul, Offset, Ctx.makeConstant(*Dimension));
-    auto DimOffset = Dim.at(Dimension - Sym.Dimensions.begin() + 1)->genIr(Ctx, nullptr);
-    auto NewOffset = Ctx.makeInstruction(T::Add, Mul, DimOffset);
-    Offset = NewOffset;
+  for (auto Dimension = Dim.rbegin() + 1; Dimension != Dim.rend(); ++Dimension) {
+    CurrentOffset *= Sym.Dimensions.at(Dim.rend() - Dimension);
+    auto Mul = Ctx.makeInstruction(T::Mul, Ctx.makeConstant(CurrentOffset), (*Dimension)->genIr(Ctx, nullptr));
+    auto Add = Ctx.makeInstruction(T::Add, Prev, Mul);
+    Prev = Add;
   }
 
-  auto ScaledOffset = Ctx.makeInstruction(T::Mul, Offset, Ctx.makeConstant(4));
-
+  auto ScaledOffset = Ctx.makeInstruction(T::Mul, Prev, Ctx.makeConstant(4));
   return ScaledOffset;
 }
 

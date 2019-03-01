@@ -1,0 +1,8 @@
+main
+array[ 2 ][ 3 ][ 4 ] a;
+{
+	let a[ 0 ][ 0 ][ 3 ] <- 4;
+	let a[ 0 ][ 1 ][ 0 ] <- 5;
+    call OutputNum(a[ 0 ][ 0 ][ 3 ]);
+    call OutputNum(a[ 0 ][ 1 ][ 0 ])
+}.
