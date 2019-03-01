@@ -404,8 +404,6 @@ struct DLXObject {
       // Nothing to emit for Adda. Will fall through to memory instructions.
       break;
     case InstructionType::Load:
-      emitMemory(Instr, State);
-      break;
     case InstructionType::Store:
       emitMemory(Instr, State);
       break;
