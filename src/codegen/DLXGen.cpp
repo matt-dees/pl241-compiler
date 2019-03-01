@@ -394,6 +394,8 @@ struct DLXObject {
     case InstructionType::Mul:
     case InstructionType::Div:
     case InstructionType::Cmp:
+      emitArithmetic(Instr, State);
+      break;
     case InstructionType::Adda:
       // Nothing to emit for Adda. Will fall through to memory instructions.
       break;
