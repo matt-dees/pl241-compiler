@@ -123,6 +123,8 @@ struct DLXObject {
   Reg mapValueToRegister(ValueRef Val, DLXGenState &State, Reg SpillReg) {
     if (Val.ValTy == ValueType::Register) {
       return static_cast<Reg>(Val.R.Id);
+    } else if (Val->name() == "GlobalBase") {
+      return Reg::GR;
     }
     return State.FA.isValueSpilled(State.CurrentFunction, Val)
                ? SpillReg
@@ -141,8 +143,6 @@ struct DLXObject {
       prepareConstantRegister(R, dynamic_cast<ConstantValue *>((Value *)Val)->Val);
     } else if (Val.ValTy == ValueType::Variable) {
       prepareConstantRegister(R, -1 * GlobalVarOffsets.at((GlobalVariable *)(Value *)Val));
-    } else if (Val->name() == "GlobalBase") {
-      R = Reg::GR;
     } else if (R == SpillRegToUse) {
       prepareSpilledRegister(R, State.ValueOffsets.at(Val));
     }
@@ -247,8 +247,9 @@ struct DLXObject {
       throw logic_error("Argument to Load was not ADDA.");
     }
     // Load destination is the instruction, Store destination is first param
-    Reg Ra = isLoad ? mapValueToRegister(&Instr, State, Reg::Accu)
-                    : prepareOperandRegister(Instr.arguments().at(0), State, Reg::Accu);
+    Reg const RaSpill = Reg::Accu;
+    ValueRef AVal = isLoad ? &Instr : Instr.arguments().at(0);
+    Reg Ra = isLoad ? mapValueToRegister(AVal, State, RaSpill) : prepareOperandRegister(AVal, State, RaSpill);
     Reg Rb = prepareOperandRegister(Adda->arguments().at(0), State, Reg::Spill1);
     if (Adda->arguments().at(1).ValTy == ValueType::Constant) {
       int32_t C = dynamic_cast<ConstantValue *>((Value *)Adda->arguments().at(1))->Val;
@@ -256,6 +257,9 @@ struct DLXObject {
     } else {
       Reg Rc = prepareOperandRegister(Adda->arguments().at(1), State, Reg::Spill2);
       emitF2(isLoad ? Op::LDX : Op::STX, Ra, Rb, Rc);
+    }
+    if (Ra == RaSpill && isLoad) {
+      restoreSpilledRegister(RaSpill, State.ValueOffsets.at(AVal));
     }
   }
 
