@@ -136,6 +136,10 @@ struct DLXObject {
     Reg R = mapValueToRegister(Val, State, SpillRegToUse);
     if (Val.ValTy == ValueType::Constant) {
       prepareConstantRegister(R, dynamic_cast<ConstantValue *>((Value *)Val)->Val);
+    } else if (Val.ValTy == ValueType::Variable) {
+      prepareConstantRegister(R, -1 * GlobalVarOffsets.at((GlobalVariable *)(Value *)Val));
+    } else if (Val->name() == "GlobalBase") {
+      R = Reg::GR;
     } else if (R == SpillRegToUse) {
       prepareSpilledRegister(R, State.ValueOffsets.at(Val));
     }
@@ -223,6 +227,32 @@ struct DLXObject {
     } else {
       emitArithmeticImmediate(OpCode, &Inst, Args.at(0), dynamic_cast<ConstantValue *>((Value *)Args.at(1))->Val,
                               State);
+    }
+  }
+
+  void emitMemory(Instruction &Instr, DLXGenState &State) {
+    bool isLoad = Instr.InstrT == InstructionType::Load;
+    if (!isLoad && Instr.InstrT != InstructionType::Store) {
+      throw logic_error("Invalid instruction type for emitMemory().");
+    }
+    if (Instr.arguments().size() != (isLoad ? 1 : 2)) {
+      throw logic_error("Incorrect number of arguments for memory instruction.");
+    }
+    // Adda will be at position 1 for Store, 0 for Load
+    Instruction *Adda = dynamic_cast<Instruction *>((Value *)Instr.arguments().at((isLoad ? 0 : 1)));
+    if (Adda == nullptr) {
+      throw logic_error("Argument to Load was not ADDA.");
+    }
+    // Load destination is the instruction, Store destination is first param
+    Reg Ra = isLoad ? mapValueToRegister(&Instr, State, Reg::Accu)
+                    : prepareOperandRegister(Instr.arguments().at(0), State, Reg::Accu);
+    Reg Rb = prepareOperandRegister(Adda->arguments().at(0), State, Reg::Spill1);
+    if (Adda->arguments().at(1).ValTy == ValueType::Constant) {
+      int32_t C = dynamic_cast<ConstantValue *>((Value *)Adda->arguments().at(1))->Val;
+      emitF1(isLoad ? Op::LDW : Op::STW, Ra, Rb, C);
+    } else {
+      Reg Rc = prepareOperandRegister(Adda->arguments().at(1), State, Reg::Spill2);
+      emitF2(isLoad ? Op::LDX : Op::STX, Ra, Rb, Rc);
     }
   }
 
@@ -324,13 +354,13 @@ struct DLXObject {
       emitArithmetic(Instr, State);
       break;
     case InstructionType::Adda:
-      emitArithmetic(Instr, State);
+      // Nothing to emit for Adda. Will fall through to memory instructions.
       break;
     case InstructionType::Load:
-      throw logic_error("Not implemented");
+      emitMemory(Instr, State);
       break;
     case InstructionType::Store:
-      throw logic_error("Not implemented");
+      emitMemory(Instr, State);
       break;
     case InstructionType::Move:
       emitArithmeticImmediate(Op::ADDI, Instr.arguments().at(1), Instr.arguments().at(0), 0, State);

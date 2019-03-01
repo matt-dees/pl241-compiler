@@ -72,7 +72,7 @@ void SSAPass::basicBlockToSSA(BasicBlock &BB, SSAContext &SSACtx) {
   // Remove MOVE instructions and update SSA context accordingly.
   for (auto InstIter = BB.instructions().begin(); InstIter != BB.instructions().end();) {
     if (InstIter->get()->InstrT == InstructionType::Move) {
-      if (auto Target = dynamic_cast<Variable *>(InstIter->get()->arguments()[1].R.Ptr)) {
+      if (auto Target = (dynamic_cast<Variable *>(InstIter->get()->arguments()[1].R.Ptr))) {
         SSACtx.updateVariable(Target, InstIter->get()->arguments()[0]);
       }
       InstIter = BB.instructions().erase(InstIter);
