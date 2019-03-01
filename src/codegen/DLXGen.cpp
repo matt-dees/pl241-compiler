@@ -5,6 +5,7 @@
 #include <array>
 #include <stack>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace cs241c;
@@ -13,9 +14,11 @@ using namespace std;
 namespace {
 
 struct DLXGenState {
-  unordered_map<Value *, int16_t> &ValueOffsets;
+  unordered_map<Value *, int16_t> ValueOffsets;
   FunctionAnalyzer &FA;
   Function *CurrentFunction;
+  unordered_map<BasicBlock *, int32_t> BlockAddresses;
+  vector<pair<BasicBlock *, int32_t>> Fixups;
 };
 
 enum Reg : uint8_t {
@@ -256,6 +259,54 @@ struct DLXObject {
     }
   }
 
+  void emitBranch(Instruction &Instr, DLXGenState &State) {
+    int32_t PC = CodeSegment.size();
+    int32_t Offset = 0xF0F0;
+
+    int TargetIndex = Instr.InstrT == InstructionType::Bra ? 0 : 1;
+    BasicBlock *Target = dynamic_cast<BasicBlock *>(Instr.arguments().at(TargetIndex).R.Ptr);
+    if (State.BlockAddresses.find(Target) == State.BlockAddresses.end()) {
+      State.Fixups.push_back({Target, PC});
+    } else {
+      Offset = (State.BlockAddresses[Target] - PC) / 4;
+      if (Offset != (int16_t)Offset) {
+        throw logic_error("Relative jump out of range.");
+      }
+    }
+
+    Op BranchOp;
+    switch (Instr.InstrT) {
+    case InstructionType::Bra:
+      BranchOp = Op::BEQ;
+      break;
+    case InstructionType::Bne:
+      BranchOp = Op::BNE;
+      break;
+    case InstructionType::Beq:
+      BranchOp = Op::BEQ;
+      break;
+    case InstructionType::Ble:
+      BranchOp = Op::BLE;
+      break;
+    case InstructionType::Blt:
+      BranchOp = Op::BLT;
+      break;
+    case InstructionType::Bge:
+      BranchOp = Op::BGE;
+      break;
+    case InstructionType::Bgt:
+      BranchOp = Op::BGT;
+      break;
+    default:
+      throw logic_error("This is not a branch instruction.");
+    }
+
+    Reg CmpReg = Instr.InstrT == InstructionType::Bra
+                     ? Reg::R0
+                     : prepareOperandRegister(Instr.arguments().at(0), State, Reg::Spill1);
+    emitF1(BranchOp, CmpReg, 0, Offset);
+  }
+
   void emitF1(Op Op, uint8_t A, uint8_t B, int16_t C) {
     array<uint8_t, 4> Word;
     Word[0] = number(Op) << 2 | ((A >> 3) & 0x3);
@@ -339,20 +390,10 @@ struct DLXObject {
       break;
     }
     case InstructionType::Add:
-      emitArithmetic(Instr, State);
-      break;
     case InstructionType::Sub:
-      emitArithmetic(Instr, State);
-      break;
     case InstructionType::Mul:
-      emitArithmetic(Instr, State);
-      break;
     case InstructionType::Div:
-      emitArithmetic(Instr, State);
-      break;
     case InstructionType::Cmp:
-      emitArithmetic(Instr, State);
-      break;
     case InstructionType::Adda:
       // Nothing to emit for Adda. Will fall through to memory instructions.
       break;
@@ -372,25 +413,13 @@ struct DLXObject {
       emitF2(Op::RET, 0, 0, 0);
       break;
     case InstructionType::Bra:
-      throw logic_error("Not implemented");
-      break;
     case InstructionType::Bne:
-      throw logic_error("Not implemented");
-      break;
     case InstructionType::Beq:
-      throw logic_error("Not implemented");
-      break;
     case InstructionType::Ble:
-      throw logic_error("Not implemented");
-      break;
     case InstructionType::Blt:
-      throw logic_error("Not implemented");
-      break;
     case InstructionType::Bge:
-      throw logic_error("Not implemented");
-      break;
     case InstructionType::Bgt:
-      throw logic_error("Not implemented");
+      emitBranch(Instr, State);
       break;
     case InstructionType::Param:
       throw logic_error("Not implemented");
@@ -453,12 +482,29 @@ struct DLXObject {
     // Process all basic blocks
     auto Blocks = linearize(F);
 
-    DLXGenState CurrentState = {ValueOffsets, FA, F};
+    DLXGenState CurrentState = {move(ValueOffsets), FA, F};
     for (auto Block : Blocks) {
+      CurrentState.BlockAddresses[Block] = CodeSegment.size();
       for (auto &Instr : Block->instructions()) {
         emitInstruction(*Instr, CurrentState);
       }
     }
+
+    // Process all the branch fixups
+    for (auto [Target, PC] : CurrentState.Fixups) {
+      if (CurrentState.BlockAddresses.find(Target) == CurrentState.BlockAddresses.end()) {
+        throw logic_error("Missing basic block address.");
+      }
+      int32_t FixupAddr = CurrentState.BlockAddresses[Target];
+      int32_t RelativeOffset = (FixupAddr - PC) / 4;
+      if (RelativeOffset != (int16_t)RelativeOffset) {
+        throw logic_error("Relative jump is out of range.");
+      }
+      CodeSegment[PC + 2] = RelativeOffset >> 8;
+      CodeSegment[PC + 3] = RelativeOffset;
+    }
+    CurrentState.Fixups.clear();
+    CurrentState.BlockAddresses.clear();
 
     // Epilog
     emitF1(Op::ADDI, SP, FP, -4);
@@ -472,7 +518,7 @@ struct DLXObject {
       addFunction(FPtr.get(), FA);
     }
   }
-}; // namespace
+};
 } // namespace
 
 vector<uint8_t> cs241c::genDlx(Module &M, FunctionAnalyzer &FA) {
