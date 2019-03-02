@@ -338,9 +338,18 @@ struct DLXObject {
     copy(Word.begin(), Word.end(), back_inserter(CodeSegment));
   }
 
-  void setupRegisters(int32_t StackOffset) {
+  void init(int32_t StackOffset) {
     emitF1(Op::SUBI, Reg::FP, Reg::GR, StackOffset);
     emitF2(Op::ADD, Reg::SP, Reg::FP, Reg::R0);
+    emitF1(Op::JSR, 0, 0, 0);
+  }
+
+  void setMainAddress(Function *Main) {
+    int32_t MainAddr = FunctionAddresses[Main];
+    CodeSegment[8] |= (MainAddr >> 24) & 0x3;
+    CodeSegment[9] = (MainAddr >> 16);
+    CodeSegment[10] = (MainAddr >> 8);
+    CodeSegment[11] = (MainAddr >> 0);
   }
 
   int mapSpills(Function &F, FunctionAnalyzer &FA, unordered_map<Value *, int16_t> &ValueOffsets, int StartOffset) {
@@ -425,20 +434,38 @@ struct DLXObject {
     case InstructionType::Bgt:
       emitBranch(Instr, State);
       break;
-    case InstructionType::Param:
-      throw logic_error("Not implemented");
+    case InstructionType::Param: {
+      Reg Ra = prepareOperandRegister(Instr.arguments().at(0), State, Reg::Spill1);
+      emitF1(Op::PSH, Ra, SP, -4);
       break;
-    case InstructionType::Call:
-      throw logic_error("Not implemented");
+    }
+    case InstructionType::Call: {
+      int32_t PC = CodeSegment.size();
+      int32_t TargetAddress = FunctionAddresses[dynamic_cast<Function *>(Instr.arguments().at(0).R.Ptr)];
+      int16_t Jump = (TargetAddress - PC) / 4;
+      emitF1(Op::BSR, 0, 0, Jump);
+      Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
+      emitF1(Op::LDW, Ra, Reg::SP, 0);
+      if (Ra == Reg::Accu) {
+        restoreSpilledRegister(Ra, State.ValueOffsets.at(&Instr));
+      }
       break;
+    }
     case InstructionType::Ret:
-      throw logic_error("Not implemented");
+      // Epilog
+      emitF1(Op::ADDI, SP, FP, -36);
+      for (uint8_t R = 1; R <= 8; ++R) {
+        emitF1(Op::POP, R, SP, 4);
+      }
+      emitF1(Op::POP, FP, SP, 4);
+      emitF1(Op::POP, RA, SP, 4);
+      emitF2(Op::RET, 0, 0, RA);
       break;
     case InstructionType::Read: {
       Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
       emitF2(Op::RDD, Ra, 0, 0);
       if (Ra == Reg::Accu) {
-        restoreSpilledRegister(Ra, State.ValueOffsets.at(Instr.arguments().at(0)));
+        restoreSpilledRegister(Ra, State.ValueOffsets.at(&Instr));
       }
       break;
     }
@@ -459,21 +486,31 @@ struct DLXObject {
     FunctionAddresses[F] = Address;
 
     // Prolog
-    emitF1(Op::PSH, FP, SP, -4);
     emitF1(Op::PSH, RA, SP, -4);
+    emitF1(Op::PSH, FP, SP, -4);
     emitF1(Op::ADDI, FP, SP, 4);
 
-    // Sage registers 1-8
+    // Save registers 1-8
     for (uint8_t R = 1; R <= 8; ++R) {
       emitF1(Op::PSH, R, SP, -4);
     }
 
     // Make space for arrays
     unordered_map<Value *, int16_t> ValueOffsets;
-    int Offset = -4;
+
+    int Offset = 0;
+
+    for (auto Param : F->parameters()) {
+      Offset += 4;
+      ValueOffsets[Param] = Offset;
+    }
+
+    Offset = -36;
 
     for (auto &Local : F->locals()) {
-      if (!Local->isSingleWord()) {
+      // The second check is not necessary right now, because parameters can only be single word. We still add it to
+      // avoid bugs in case arrays or other complex objects can be passed as arguments at some point.
+      if (!Local->isSingleWord() && ValueOffsets.find(Local.get()) == ValueOffsets.end()) {
         Offset -= 4 * Local->wordCount();
         ValueOffsets[Local.get()] = Offset;
       }
@@ -509,12 +546,6 @@ struct DLXObject {
     }
     CurrentState.Fixups.clear();
     CurrentState.BlockAddresses.clear();
-
-    // Epilog
-    emitF1(Op::ADDI, SP, FP, -4);
-    emitF1(Op::POP, RA, SP, 4);
-    emitF1(Op::POP, FP, SP, 4);
-    emitF2(Op::RET, 0, 0, RA);
   }
 
   void addFunctions(vector<unique_ptr<Function>> &Functions, FunctionAnalyzer &FA) {
@@ -528,7 +559,8 @@ struct DLXObject {
 vector<uint8_t> cs241c::genDlx(Module &M, FunctionAnalyzer &FA) {
   DLXObject DLXO;
   int32_t StackOffset = DLXO.addGlobals(M.globals());
-  DLXO.setupRegisters(StackOffset);
+  DLXO.init(StackOffset);
   DLXO.addFunctions(M.functions(), FA);
+  DLXO.setMainAddress(M.functions().back().get());
   return move(DLXO.CodeSegment);
 }

@@ -52,10 +52,12 @@ void Func::genIr(IrGenContext &Ctx) {
   Locals.reserve(Params.size() + Vars.size());
   transform(Params.begin(), Params.end(), back_inserter(Locals),
             [&Ctx](const unique_ptr<IntDecl> &Param) { return Param->declareLocal(Ctx); });
+  vector<LocalVariable *> Parameters;
+  transform(Locals.begin(), Locals.end(), back_inserter(Parameters), [](auto &Ptr) { return Ptr.get(); });
   transform(Vars.begin(), Vars.end(), back_inserter(Locals),
             [&Ctx](const unique_ptr<Decl> &Var) { return Var->declareLocal(Ctx); });
 
-  auto Func = make_unique<Function>(Ident, move(Locals));
+  auto Func = make_unique<Function>(Ident, move(Locals), move(Parameters));
   Ctx.declare(move(Func));
 
   BasicBlock *EntryBlock = Ctx.makeBasicBlock();

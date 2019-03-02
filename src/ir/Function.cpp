@@ -8,14 +8,13 @@
 using namespace cs241c;
 using namespace std;
 
-Function::Function(string Name, vector<unique_ptr<LocalVariable>> &&Locals)
-    : Value(ValueType::Function), Name(move(Name)), Locals(move(Locals)) {}
+Function::Function(string Name, vector<unique_ptr<LocalVariable>> &&Locals, vector<LocalVariable *> &&Parameters)
+    : Value(ValueType::Function), Name(move(Name)), Locals(move(Locals)), Parameters(move(Parameters)) {}
 
 vector<unique_ptr<ConstantValue>> &Function::constants() { return Constants; }
 
 ConstantValue *Function::constant(int Value) {
-  auto ConstantIt = find_if(Constants.begin(), Constants.end(),
-                            [Value](auto &C) { return C->Val == Value; });
+  auto ConstantIt = find_if(Constants.begin(), Constants.end(), [Value](auto &C) { return C->Val == Value; });
   if (ConstantIt == Constants.end()) {
     return Constants.emplace_back(make_unique<ConstantValue>(Value)).get();
   } else {
@@ -28,9 +27,9 @@ vector<unique_ptr<LocalVariable>> &Function::locals() { return Locals; }
 BasicBlock *Function::entryBlock() const { return BasicBlocks.front().get(); }
 vector<unique_ptr<BasicBlock>> &Function::basicBlocks() { return BasicBlocks; }
 
-const vector<unique_ptr<BasicBlock>> &Function::basicBlocks() const {
-  return BasicBlocks;
-}
+const vector<unique_ptr<BasicBlock>> &Function::basicBlocks() const { return BasicBlocks; }
+
+const std::vector<LocalVariable *> &Function::parameters() const { return Parameters; }
 
 string Function::toString() const { return Name; }
 
@@ -61,7 +60,6 @@ std::vector<BasicBlock *> Function::postOrderCfg() {
   }
   return PostOrdering;
 }
-
 std::vector<BasicBlock *> Function::exitBlocks() {
   std::vector<BasicBlock *> ExitBlocks = {};
   for (auto &BB : basicBlocks()) {
