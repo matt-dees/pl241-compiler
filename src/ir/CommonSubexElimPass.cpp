@@ -45,18 +45,18 @@ struct InstructionEquality {
 
 namespace {
 bool shouldIgnore(Instruction *I) {
-  static const array<InstructionType, 7> IgnoredInstructions{
-      InstructionType::Load, InstructionType::Store, InstructionType::Param,  InstructionType::Call,
-      InstructionType::Read, InstructionType::Write, InstructionType::WriteNL};
+  static const array<InstructionType, 7> IgnoredInstructions{InstructionType::Param, InstructionType::Call,
+                                                             InstructionType::Read, InstructionType::Write,
+                                                             InstructionType::WriteNL};
   return isTerminator(I->InstrT) ||
          find(IgnoredInstructions.begin(), IgnoredInstructions.end(), I->InstrT) != IgnoredInstructions.end();
 }
 
 bool shouldExplore(BasicBlock *From, BasicBlock *To, const unordered_set<BasicBlock *> &Visited, DominatorTree *DT) {
+  // If the basic block we want to explore has a predecessor that is
+  // unexplored and is NOT dominated by us, don't explore it yet.
   for (auto &P : To->predecessors()) {
-    // If the basic block we want to explore has a predecessor that is
-    // unexplored and is NOT dominated by us, don't explore it yet.
-    if (Visited.find(P) == Visited.end() && !DT->doesBlockDominate(From, To)) {
+    if (Visited.find(P) == Visited.end() && !DT->doesBlockDominate(To, P)) {
       return false;
     }
   }
@@ -78,10 +78,12 @@ void CommonSubexElimPass::run(Function &F) {
   map<ValueRef, ValueRef> Replacements;
   stack<BasicBlock *> BlocksToExplore;
   unordered_set<BasicBlock *> VisitedBlocks;
+  unordered_set<Instruction *> Loads;
 
   BlocksToExplore.push(F.entryBlock());
 
   while (!BlocksToExplore.empty()) {
+    bool NeedToExploreDF = false;
     BasicBlock *Runner = BlocksToExplore.top();
     BlocksToExplore.pop();
 
@@ -91,12 +93,24 @@ void CommonSubexElimPass::run(Function &F) {
     }
 
     for (auto InstIter = Runner->instructions().begin(); InstIter != Runner->instructions().end();) {
+      InstIter->get()->updateArgs(Replacements);
       if (shouldIgnore(InstIter->get())) {
         // If instruction should not be considered for CSE,
         // simply update arguments according to Replacements map and continue.
-        InstIter->get()->updateArgs(Replacements);
         InstIter++;
         continue;
+      }
+      if (InstIter->get()->InstrT == InstructionType::Store) {
+        // If the instruction is a Store, we must clear all Load replacements because memory may have been updated.
+        for (auto Load : Loads) {
+          CandidateInstructions.erase(Load);
+        }
+        InstIter++;
+        continue;
+      }
+      if (InstIter->get()->InstrT == InstructionType::Load) {
+        // If load, add to loads set that will be used to clear replacement map when a Store is encountered.
+        Loads.insert(InstIter->get());
       }
       bool HasMatch = CandidateInstructions.find(InstIter->get()) != CandidateInstructions.end();
       bool MatchIsMe = HasMatch && CandidateInstructions.at(InstIter->get()) == InstIter->get();
@@ -122,11 +136,7 @@ void CommonSubexElimPass::run(Function &F) {
         if (PrintDebug)
           cout << "[CSE] " << (*InstIter)->toString() << " --> "
                << CandidateInstructions.at(InstIter->get())->toString() << "\n";
-        for (auto &DFEntry : FA.dominatorTree(&F)->dominanceFrontier(Runner)) {
-          // Need to revisit all blocks in the dominance frontier.
-          VisitedBlocks.erase(DFEntry);
-          BlocksToExplore.push(DFEntry);
-        }
+        NeedToExploreDF = true;
         // Perform CSE. Delete duplicate instruction.
         InstIter = Runner->instructions().erase(InstIter);
       } else {
@@ -136,6 +146,16 @@ void CommonSubexElimPass::run(Function &F) {
       }
     }
     VisitedBlocks.insert(Runner);
+    if (NeedToExploreDF) {
+      for (auto &DFEntry : FA.dominatorTree(&F)->dominanceFrontier(Runner)) {
+        // Need to revisit all blocks in the dominance frontier.
+
+        if (shouldExplore(Runner, DFEntry, VisitedBlocks, FA.dominatorTree(&F))) {
+          VisitedBlocks.erase(DFEntry);
+          BlocksToExplore.push(DFEntry);
+        }
+      }
+    }
     for (auto &BB : Runner->successors()) {
       if (shouldExplore(Runner, BB, VisitedBlocks, FA.dominatorTree(&F))) {
         BlocksToExplore.push(BB);

@@ -1,0 +1,18 @@
+main
+array[ 2 ][ 3 ][ 4 ] a;
+var b;
+{
+    let b <- call InputNum();
+	let a[ 0 ][ 0 ][ 0 ] <- 1;
+
+    call OutputNum(a[ 0 ][ 0 ][ 0 ]);
+    if b == 5 then
+        let a[ 0 ][ 0 ][ 1 ] <- 2
+    else
+        call OutputNum(a[ 0 ][ 0 ][ 0 ])
+    fi;
+
+    call OutputNum(a[ 0 ][ 0 ][ 0 ]);
+    call OutputNum(a[ 0 ][ 0 ][ 0 ]);
+    call OutputNum(a[ 0 ][ 0 ][ 0 ])
+}.

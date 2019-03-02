@@ -10,7 +10,7 @@ TEST_CASE("Test Dominator Tree Generation 1") {
   auto CompilationUnit = make_unique<Module>("program");
   IrGenContext Context(CompilationUnit.get());
 
-  auto F = make_unique<Function>("main", vector<unique_ptr<LocalVariable>>{});
+  auto F = make_unique<Function>("main", vector<unique_ptr<LocalVariable>>{}, vector<LocalVariable *>{});
   Function *FPtr = F.get();
   Context.declare(move(F));
 
@@ -41,7 +41,7 @@ TEST_CASE("Test Dominator Tree Generation 2") {
   auto CompilationUnit = make_unique<Module>("program");
   IrGenContext Context(CompilationUnit.get());
 
-  auto F = make_unique<Function>("main", vector<unique_ptr<LocalVariable>>{});
+  auto F = make_unique<Function>("main", vector<unique_ptr<LocalVariable>>{}, vector<LocalVariable *>{});
   Function *FPtr = F.get();
   Context.declare(move(F));
 

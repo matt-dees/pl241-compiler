@@ -1,10 +1,9 @@
 //Basic if statement test
 main
+var a, b;
 procedure foo( );
 var a, b;
 {
-	let a <- call InputNum();
-	let b <- 2;
 	if a > b then
 		let a <- a + 1
 	else
@@ -19,5 +18,7 @@ var a, b;
 	call OutputNum(b)
 };
 {
-    call foo()
+	let a <- call InputNum();
+	let b <- 2;
+    call foo(a, b)
 }.
