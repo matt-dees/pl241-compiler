@@ -1,0 +1,11 @@
+main
+var a, b;
+{
+	let a <- 1;
+    let b <- 64;
+	while a != b do
+		let a <- a * 2
+	od;
+	call OutputNum(b);
+	call OutputNum(a)
+}.

@@ -487,6 +487,9 @@ struct DLXObject {
     case InstructionType::WriteNL:
       emitF1(Op::WRL, 0, 0, 0);
       break;
+    case InstructionType::Kill:
+      // Nothing to emit
+      break;
     }
   }
 

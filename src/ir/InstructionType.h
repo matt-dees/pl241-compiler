@@ -35,7 +35,9 @@ enum class InstructionType {
 
   Read,
   Write,
-  WriteNL
+  WriteNL,
+
+  Kill
 };
 
 struct InstructionSignature {

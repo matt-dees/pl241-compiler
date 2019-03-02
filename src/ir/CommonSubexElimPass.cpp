@@ -12,6 +12,8 @@ using namespace cs241c;
 using namespace std;
 
 void CommonSubexElimPass::run(Module &M) {
+  KillPass KP(FA);
+  KP.run(M);
   for (auto &F : M.functions()) {
     run(*F);
   }
@@ -45,9 +47,9 @@ struct InstructionEquality {
 
 namespace {
 bool shouldIgnore(Instruction *I) {
-  static const array<InstructionType, 7> IgnoredInstructions{InstructionType::Param, InstructionType::Call,
-                                                             InstructionType::Read, InstructionType::Write,
-                                                             InstructionType::WriteNL};
+  static const array<InstructionType, 7> IgnoredInstructions{InstructionType::Store, InstructionType::Param,
+                                                             InstructionType::Call,  InstructionType::Read,
+                                                             InstructionType::Write, InstructionType::WriteNL};
   return isTerminator(I->InstrT) ||
          find(IgnoredInstructions.begin(), IgnoredInstructions.end(), I->InstrT) != IgnoredInstructions.end();
 }
@@ -100,8 +102,8 @@ void CommonSubexElimPass::run(Function &F) {
         InstIter++;
         continue;
       }
-      if (InstIter->get()->InstrT == InstructionType::Store) {
-        // If the instruction is a Store, we must clear all Load replacements because memory may have been updated.
+      if (InstIter->get()->InstrT == InstructionType::Kill) {
+        // If the instruction is a Kill, we must clear all Load replacements because memory may have been updated.
         for (auto Load : Loads) {
           CandidateInstructions.erase(Load);
         }
