@@ -19,6 +19,7 @@ struct DLXGenState {
   Function *CurrentFunction;
   unordered_map<BasicBlock *, int32_t> BlockAddresses;
   vector<pair<BasicBlock *, int32_t>> Fixups;
+  int16_t ReturnOffset;
 };
 
 enum Reg : uint8_t {
@@ -451,8 +452,15 @@ struct DLXObject {
       }
       break;
     }
-    case InstructionType::Ret:
-      // Epilog
+    case InstructionType::Ret: {
+      int paramCount = State.CurrentFunction->parameters().size();
+
+      if (Instr.arguments().size() == 1) {
+        auto RetVal = Instr.arguments().at(0);
+        Reg Ra = prepareOperandRegister(RetVal, State, Reg::Accu);
+        emitF1(Op::STW, Ra, FP, State.ReturnOffset);
+      }
+
       emitF1(Op::ADDI, SP, FP, -36);
       for (uint8_t R = 1; R <= 8; ++R) {
         emitF1(Op::POP, R, SP, 4);
@@ -461,6 +469,7 @@ struct DLXObject {
       emitF1(Op::POP, RA, SP, 4);
       emitF2(Op::RET, 0, 0, RA);
       break;
+    }
     case InstructionType::Read: {
       Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
       emitF2(Op::RDD, Ra, 0, 0);
@@ -498,10 +507,11 @@ struct DLXObject {
     // Make space for arrays
     unordered_map<Value *, int16_t> ValueOffsets;
 
-    int Offset = 0;
+    auto &Parameters = F->parameters();
+    int Offset = Parameters.size() * 4;
 
     for (auto Param : F->parameters()) {
-      Offset += 4;
+      Offset -= 4;
       ValueOffsets[Param] = Offset;
     }
 
