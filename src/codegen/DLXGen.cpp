@@ -284,6 +284,11 @@ struct DLXObject {
   }
 
   void emitBranch(Instruction &Instr, DLXGenState &State) {
+    // Do the CmpReg up here or else you might calculate wrong addresses for the fixup!
+    Reg CmpReg = Instr.InstrT == InstructionType::Bra
+                     ? Reg::R0
+                     : loadValueIntoRegister(Instr.arguments().at(0), State, Reg::Spill1);
+
     int32_t PC = CodeSegment.size();
     int32_t Offset = 0xF0F0;
 
@@ -325,9 +330,6 @@ struct DLXObject {
       throw logic_error("This is not a branch instruction.");
     }
 
-    Reg CmpReg = Instr.InstrT == InstructionType::Bra
-                     ? Reg::R0
-                     : loadValueIntoRegister(Instr.arguments().at(0), State, Reg::Spill1);
     emitF1(BranchOp, CmpReg, 0, Offset);
   }
 

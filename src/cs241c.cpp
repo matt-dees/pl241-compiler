@@ -51,6 +51,12 @@ int main(int ArgC, char **ArgV) {
   IntegrityCheckPass ICP(FA);
   ICP.run(*IR);
 
+  if (GenerateVcg) {
+    string VcgOutput{string(InputFile) + ".ssa.vcg"};
+    removeFile(VcgOutput);
+    IR->writeToFile(VcgOutput);
+  }
+
   ConstExprEvalPass CEE(FA);
   CEE.run(*IR);
 
@@ -66,6 +72,12 @@ int main(int ArgC, char **ArgV) {
   DCEP.run(*IR);
 
   ICP.run(*IR);
+
+  if (GenerateVcg) {
+    string VcgOutput{string(InputFile) + ".opt.vcg"};
+    removeFile(VcgOutput);
+    IR->writeToFile(VcgOutput);
+  }
 
   FA.runRegisterAllocation(IR.get());
 
@@ -84,7 +96,7 @@ int main(int ArgC, char **ArgV) {
   ICP.run(*IR);
 
   if (GenerateVcg) {
-    string VcgOutput{string(InputFile) + ".vcg"};
+    string VcgOutput{string(InputFile) + ".reg.vcg"};
     removeFile(VcgOutput);
     IR->writeToFile(VcgOutput);
   }

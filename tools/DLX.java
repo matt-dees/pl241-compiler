@@ -588,6 +588,7 @@ public class DLX {
 	}
 	
 	static void bug(int n) {
+		System.out.println("PC=" + PC*4);
 		System.out.println("bug number: " + n);
 		try{ System.in.read(); } catch (Exception ee) {;}
 		System.exit(n);
