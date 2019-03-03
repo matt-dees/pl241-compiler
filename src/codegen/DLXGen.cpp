@@ -236,15 +236,20 @@ struct DLXObject {
     }
   }
 
+  bool isCommutative(Op OpCode) {
+    return OpCode == Op::ADD || OpCode == Op::MUL || OpCode == Op::OR || OpCode == Op::AND || OpCode == Op::XOR;
+  }
+
   void emitArithmetic(Instruction &Inst, DLXGenState &State) {
     auto Args = Inst.arguments();
-    if (Args[0].ValTy == ValueType::Constant) {
+    Op OpCode = getArithmeticOpCode(Inst);
+
+    if (Args[0].ValTy == ValueType::Constant && isCommutative(OpCode)) {
       auto Arg1 = Args[1];
       Inst.updateArg(1, Args[0]);
       Inst.updateArg(0, Arg1);
       Args = Inst.arguments();
     }
-    Op OpCode = getArithmeticOpCode(Inst);
     if (OpCode <= Op::CHK) {
       emitArithmeticRegister(OpCode, &Inst, Args.at(0), Args.at(1), State);
     } else {
