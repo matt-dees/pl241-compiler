@@ -1,0 +1,12 @@
+main
+var Akt, Next;
+{
+	let Akt <- call InputNum;
+
+	while 10 < 5 do
+		let Next <- call InputNum;
+		call OutputNum(Akt);
+		
+		let Akt <- Next
+	od
+}.
