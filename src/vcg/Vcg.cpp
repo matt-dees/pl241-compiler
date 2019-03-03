@@ -13,10 +13,7 @@ void Vcg::writeToFile(const string &OutFilePath) {
   ofstream VcgFileStream;
   VcgFileStream.open(OutFilePath);
   VcgFileStream << "graph: {";
-  writeProperties(VcgFileStream);
   writeGraph(VcgFileStream);
   VcgFileStream << "}";
   VcgFileStream.close();
 }
-
-void Vcg::writeProperties(ofstream &OutFileStream) {}

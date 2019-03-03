@@ -9,7 +9,6 @@ namespace cs241c {
 class Vcg {
 protected:
   virtual void writeGraph(std::ofstream &OutFileStream) = 0;
-  void writeProperties(std::ofstream &OutFileStream);
 
 public:
   virtual ~Vcg() = default;

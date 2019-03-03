@@ -73,13 +73,14 @@ int main(int ArgC, char **ArgV) {
 
   ICP.run(*IR);
 
+  FA.runRegisterAllocation(IR.get());
+
   if (GenerateVcg) {
+    IR->FA = &FA;
     string VcgOutput{string(InputFile) + ".opt.vcg"};
     removeFile(VcgOutput);
     IR->writeToFile(VcgOutput);
   }
-
-  FA.runRegisterAllocation(IR.get());
 
   if (GenerateVcg) {
     for (auto &F : IR->functions()) {
