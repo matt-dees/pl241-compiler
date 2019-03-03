@@ -501,7 +501,8 @@ struct DLXObject {
     case InstructionType::Read: {
       Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
       emitF2(Op::RDD, Ra, 0, 0);
-      if (Ra == Reg::Accu) {
+      auto Coloring = State.FA.coloring(State.CurrentFunction);
+      if (Ra == Reg::Accu && Coloring->find(&Instr) != Coloring->end()) {
         storeStackValue(Ra, State.lookupRegisterOffset(&Instr));
       }
       break;
