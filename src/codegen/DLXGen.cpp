@@ -21,7 +21,6 @@ struct DLXGenState {
   Function *CurrentFunction;
   unordered_map<BasicBlock *, int32_t> BlockAddresses;
   vector<pair<BasicBlock *, int32_t>> Fixups;
-  int16_t ReturnOffset;
   RegisterAllocator::VirtualRegister lookupRegisterOffset(ValueRef Val) {
     if (Val.ValTy == ValueType::Register) {
       return SpilledRegisterOffsets.at(Val.R.Id);
@@ -142,29 +141,36 @@ struct DLXObject {
 
   void prepareConstantRegister(Reg Register, int Value) { emitF1(Op::ADDI, Register, Reg::R0, Value); }
 
-  void prepareSpilledRegister(Reg Regster, int Offset) { emitF1(Op::LDW, Regster, Reg::FP, Offset); }
+  void loadStackValue(Reg Register, int Offset) { emitF1(Op::LDW, Register, Reg::FP, Offset); }
 
-  void restoreSpilledRegister(Reg Register, int Offset) { emitF1(Op::STW, Register, FP, Offset); }
+  void storeStackValue(Reg Register, int Offset) { emitF1(Op::STW, Register, FP, Offset); }
 
-  Reg prepareOperandRegister(ValueRef Val, DLXGenState &State, Reg SpillRegToUse) {
+  Reg loadValueIntoRegister(ValueRef Val, DLXGenState &State, Reg SpillRegToUse) {
     Reg R = mapValueToRegister(Val, State, SpillRegToUse);
+
     if (Val.ValTy == ValueType::Constant) {
       prepareConstantRegister(R, dynamic_cast<ConstantValue *>((Value *)Val)->Val);
     } else if (Val.ValTy == ValueType::Variable) {
-      prepareConstantRegister(R, -1 * GlobalVarOffsets.at((GlobalVariable *)(Value *)Val));
+      if (auto Param = dynamic_cast<LocalVariable *>(Val.R.Ptr)) {
+        loadStackValue(R, State.ValueOffsets.at(Param));
+      } else {
+        prepareConstantRegister(R, -1 * GlobalVarOffsets.at(dynamic_cast<GlobalVariable *>(Val.R.Ptr)));
+      }
     } else if (R == SpillRegToUse) {
-      prepareSpilledRegister(R, State.lookupRegisterOffset(Val));
+      loadStackValue(R, State.lookupRegisterOffset(Val));
     }
     return R;
   }
 
   Op getArithmeticOpCode(Instruction &Instr) {
-    if (Instr.arguments().size() != 2) {
+    auto Args = Instr.arguments();
+
+    if (Args.size() != 2) {
       throw logic_error("Unable to emit arithmetic instruction " + Instr.toString() +
                         " because it does not have two arguments.");
     }
 
-    bool const containsConstant = Instr.arguments().at(1).ValTy == ValueType::Constant;
+    bool const containsConstant = Args.at(1).ValTy == ValueType::Constant;
     Op OpCode;
     switch (Instr.InstrT) {
     case InstructionType::Adda:
@@ -207,10 +213,10 @@ struct DLXObject {
       throw logic_error("Unsupported for now");
     }
     Reg Ra = mapValueToRegister(A, State, Reg::Spill1);
-    Reg Rb = prepareOperandRegister(B, State, Reg::Spill1);
+    Reg Rb = loadValueIntoRegister(B, State, Reg::Spill1);
     emitF1(OpCode, Ra, Rb, C);
     if (Ra == Reg::Spill1) {
-      restoreSpilledRegister(Ra, State.lookupRegisterOffset(A));
+      storeStackValue(Ra, State.lookupRegisterOffset(A));
     }
   }
 
@@ -222,17 +228,22 @@ struct DLXObject {
       throw logic_error("Unsupported for now");
     }
     Reg Ra = mapValueToRegister(A, State, Reg::Spill1);
-    Reg Rb = prepareOperandRegister(B, State, Reg::Spill1);
-    Reg Rc = prepareOperandRegister(C, State, Reg::Spill2);
+    Reg Rb = loadValueIntoRegister(B, State, Reg::Spill1);
+    Reg Rc = loadValueIntoRegister(C, State, Reg::Spill2);
     emitF1(OpCode, Ra, Rb, Rc);
     if (Ra == Reg::Spill1) {
-      restoreSpilledRegister(Ra, State.lookupRegisterOffset(A));
+      storeStackValue(Ra, State.lookupRegisterOffset(A));
     }
   }
 
   void emitArithmetic(Instruction &Inst, DLXGenState &State) {
-
     auto Args = Inst.arguments();
+    if (Args[0].ValTy == ValueType::Constant) {
+      auto Arg1 = Args[1];
+      Inst.updateArg(1, Args[0]);
+      Inst.updateArg(0, Arg1);
+      Args = Inst.arguments();
+    }
     Op OpCode = getArithmeticOpCode(Inst);
     if (OpCode <= Op::CHK) {
       emitArithmeticRegister(OpCode, &Inst, Args.at(0), Args.at(1), State);
@@ -258,17 +269,17 @@ struct DLXObject {
     // Load destination is the instruction, Store destination is first param
     Reg const RaSpill = Reg::Accu;
     ValueRef AVal = isLoad ? &Instr : Instr.arguments().at(0);
-    Reg Ra = isLoad ? mapValueToRegister(AVal, State, RaSpill) : prepareOperandRegister(AVal, State, RaSpill);
-    Reg Rb = prepareOperandRegister(Adda->arguments().at(0), State, Reg::Spill1);
+    Reg Ra = isLoad ? mapValueToRegister(AVal, State, RaSpill) : loadValueIntoRegister(AVal, State, RaSpill);
+    Reg Rb = loadValueIntoRegister(Adda->arguments().at(0), State, Reg::Spill1);
     if (Adda->arguments().at(1).ValTy == ValueType::Constant) {
       int32_t C = dynamic_cast<ConstantValue *>((Value *)Adda->arguments().at(1))->Val;
       emitF1(isLoad ? Op::LDW : Op::STW, Ra, Rb, C);
     } else {
-      Reg Rc = prepareOperandRegister(Adda->arguments().at(1), State, Reg::Spill2);
+      Reg Rc = loadValueIntoRegister(Adda->arguments().at(1), State, Reg::Spill2);
       emitF2(isLoad ? Op::LDX : Op::STX, Ra, Rb, Rc);
     }
     if (Ra == RaSpill && isLoad) {
-      restoreSpilledRegister(RaSpill, State.lookupRegisterOffset(AVal));
+      storeStackValue(RaSpill, State.lookupRegisterOffset(AVal));
     }
   }
 
@@ -316,7 +327,7 @@ struct DLXObject {
 
     Reg CmpReg = Instr.InstrT == InstructionType::Bra
                      ? Reg::R0
-                     : prepareOperandRegister(Instr.arguments().at(0), State, Reg::Spill1);
+                     : loadValueIntoRegister(Instr.arguments().at(0), State, Reg::Spill1);
     emitF1(BranchOp, CmpReg, 0, Offset);
   }
 
@@ -441,7 +452,7 @@ struct DLXObject {
       emitBranch(Instr, State);
       break;
     case InstructionType::Param: {
-      Reg Ra = prepareOperandRegister(Instr.arguments().at(0), State, Reg::Spill1);
+      Reg Ra = loadValueIntoRegister(Instr.arguments().at(0), State, Reg::Spill1);
       emitF1(Op::PSH, Ra, SP, -4);
       break;
     }
@@ -450,20 +461,29 @@ struct DLXObject {
       int32_t TargetAddress = FunctionAddresses[dynamic_cast<Function *>(Instr.arguments().at(0).R.Ptr)];
       int16_t Jump = (TargetAddress - PC) / 4;
       emitF1(Op::BSR, 0, 0, Jump);
-      Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
-      emitF1(Op::LDW, Ra, Reg::SP, 0);
-      if (Ra == Reg::Accu) {
-        restoreSpilledRegister(Ra, State.lookupRegisterOffset(&Instr));
+
+      // Retrieve return value from stack if there is any.
+      auto Coloring = State.FA.coloring(State.CurrentFunction);
+      if (Coloring->find(&Instr) != Coloring->end()) {
+        Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
+        emitF1(Op::LDW, Ra, Reg::SP, -4);
+        if (Ra == Reg::Accu) {
+          storeStackValue(Ra, State.lookupRegisterOffset(&Instr));
+        }
       }
+
       break;
     }
     case InstructionType::Ret: {
-      int paramCount = State.CurrentFunction->parameters().size();
+      int ParamCount = State.CurrentFunction->parameters().size();
+      // Add fake parameter for return value.
+      ParamCount = ParamCount == 0 ? 1 : ParamCount;
+      int RetValOffset = ParamCount * 4;
 
       if (Instr.arguments().size() == 1) {
         auto RetVal = Instr.arguments().at(0);
-        Reg Ra = prepareOperandRegister(RetVal, State, Reg::Accu);
-        emitF1(Op::STW, Ra, FP, State.ReturnOffset);
+        Reg Ra = loadValueIntoRegister(RetVal, State, Reg::Accu);
+        emitF1(Op::STW, Ra, FP, RetValOffset);
       }
 
       emitF1(Op::ADDI, SP, FP, -36);
@@ -472,6 +492,7 @@ struct DLXObject {
       }
       emitF1(Op::POP, FP, SP, 4);
       emitF1(Op::POP, RA, SP, 4);
+      emitF1(Op::ADDI, SP, SP, 4 * ParamCount);
       emitF2(Op::RET, 0, 0, RA);
       break;
     }
@@ -479,13 +500,13 @@ struct DLXObject {
       Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
       emitF2(Op::RDD, Ra, 0, 0);
       if (Ra == Reg::Accu) {
-        restoreSpilledRegister(Ra, State.lookupRegisterOffset(&Instr));
+        storeStackValue(Ra, State.lookupRegisterOffset(&Instr));
       }
       break;
     }
     case InstructionType::Write: {
       auto Arg = Instr.arguments()[0];
-      Reg Rb = prepareOperandRegister(Arg, State, Reg::Accu);
+      Reg Rb = loadValueIntoRegister(Arg, State, Reg::Accu);
       emitF2(Op::WRD, 0, Rb, 0);
       break;
     }
@@ -502,6 +523,12 @@ struct DLXObject {
     int32_t Address = static_cast<int32_t>(CodeSegment.size());
     FunctionAddresses[F] = Address;
 
+    // Make space for return value if function has no parameters
+    auto &Parameters = F->parameters();
+    if (Parameters.empty()) {
+      emitF1(Op::ADDI, SP, SP, -4);
+    }
+
     // Prolog
     emitF1(Op::PSH, RA, SP, -4);
     emitF1(Op::PSH, FP, SP, -4);
@@ -512,19 +539,18 @@ struct DLXObject {
       emitF1(Op::PSH, R, SP, -4);
     }
 
-    // Make space for arrays
+    // Create the stack map
     unordered_map<Value *, int16_t> ValueOffsets;
 
-    auto &Parameters = F->parameters();
+    // Map all parameters
     int Offset = Parameters.size() * 4;
-
     for (auto Param : F->parameters()) {
-      Offset -= 4;
       ValueOffsets[Param] = Offset;
+      Offset -= 4;
     }
 
+    // Map all arrays
     Offset = -36;
-
     for (auto &Local : F->locals()) {
       // The second check is not necessary right now, because parameters can only be single word. We still add it to
       // avoid bugs in case arrays or other complex objects can be passed as arguments at some point.

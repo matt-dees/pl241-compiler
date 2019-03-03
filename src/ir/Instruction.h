@@ -47,9 +47,6 @@ private:
   std::array<ValueRef, 2> Args;
   Variable *Object;
 
-protected:
-  virtual void updateArg(int Index, ValueRef NewVal);
-
 public:
   Instruction(InstructionType, int Id);
   Instruction(InstructionType, int Id, ValueRef Arg1);
@@ -62,6 +59,7 @@ public:
   BasicBlock *target();
   Variable *&object();
 
+  void updateArg(int Index, ValueRef NewVal);
   bool updateArgs(const std::map<ValueRef, ValueRef> &UpdateCtx);
   bool updateArgs(const SSAContext &SSAVarCtx);
 

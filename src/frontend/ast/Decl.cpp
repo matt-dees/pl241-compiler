@@ -57,14 +57,16 @@ void Func::genIr(IrGenContext &Ctx) {
   transform(Vars.begin(), Vars.end(), back_inserter(Locals),
             [&Ctx](const unique_ptr<Decl> &Var) { return Var->declareLocal(Ctx); });
 
-  auto Func = make_unique<Function>(Ident, move(Locals), move(Parameters));
+  auto Func = make_unique<Function>(Ident, move(Locals), vector<LocalVariable *>(Parameters));
   Ctx.declare(move(Func));
 
   BasicBlock *EntryBlock = Ctx.makeBasicBlock();
   Ctx.currentBlock() = EntryBlock;
 
   for (const pair<string, Symbol> &Symbol : Ctx.localsTable()) {
-    if (Symbol.second.Var->isSingleWord()) {
+    if (Symbol.second.Var->isSingleWord() && find_if(Parameters.begin(), Parameters.end(), [Symbol](auto Param) {
+                                               return Symbol.second.Var == Param;
+                                             }) == Parameters.end()) {
       Ctx.makeInstruction(InstructionType::Move, Ctx.makeConstant(0), Symbol.second.Var);
     }
   }

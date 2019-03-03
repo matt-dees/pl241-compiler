@@ -40,7 +40,7 @@ static const array<InsTyTInfo, 26> Types{{{InsTyT::Neg, {ValTyT::Value, {ValTyT:
                                           {InsTyT::Read, {ValTyT::Value, {ValTyT::Undef, ValTyT::Undef}}, "read"},
                                           {InsTyT::Write, {ValTyT::Unit, {ValTyT::Value, ValTyT::Undef}}, "write"},
                                           {InsTyT::WriteNL, {ValTyT::Unit, {ValTyT::Undef, ValTyT::Undef}}, "writeNL"},
-                                          {InsTyT::Kill, {}, "kill"}}};
+                                          {InsTyT::Kill, {ValTyT::Unit, {ValTyT::Undef, ValTyT::Undef}}, "kill"}}};
 
 static const InsTyTInfo &typeInfo(InsTyT InstrTy) {
   auto Id = static_cast<underlying_type<InsTyT>::type>(InstrTy);
