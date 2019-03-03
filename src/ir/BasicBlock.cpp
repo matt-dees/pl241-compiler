@@ -148,7 +148,9 @@ void BasicBlock::insertPhiInstruction(unique_ptr<Instruction> Phi) {
     // Basic Block does not contain a Phi node for this variable.
     // Create one and add it to the front of the instruction double ended queue.
     PhiInstrMap[Phi->storage()] = Phi.get();
-    Instructions.insert(Instructions.begin(), move(Phi));
+    auto Pos = find_if_not(Instructions.begin(), Instructions.end(),
+                           [](auto &Instr) { return Instr->InstrT == InstructionType::Phi; });
+    Instructions.insert(Pos, move(Phi));
     return;
   }
 }
