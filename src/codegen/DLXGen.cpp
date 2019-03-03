@@ -123,7 +123,7 @@ struct DLXObject {
 
   Reg mapValueToRegister(ValueRef Val, DLXGenState &State, Reg SpillReg) {
     if (Val.ValTy == ValueType::Register) {
-      return static_cast<Reg>(Val.R.Id);
+      return State.FA.isRegisterSpilled(static_cast<Reg>(Val.R.Id)) ? SpillReg : static_cast<Reg>(Val.R.Id);
     } else if (Val->name() == "GlobalBase") {
       return Reg::GR;
     }
@@ -365,6 +365,7 @@ struct DLXObject {
         }
       }
     }
+
     return CurrentOffset;
   }
 

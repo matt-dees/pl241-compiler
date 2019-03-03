@@ -54,5 +54,9 @@ bool FunctionAnalyzer::isValueSpilled(Function *F, Value *Val) {
     return true;
   }
   RegisterAllocator::VirtualRegister Reg = Coloring->at(Val);
+  return isRegisterSpilled(Reg);
+}
+
+bool FunctionAnalyzer::isRegisterSpilled(RegisterAllocator::VirtualRegister Reg) {
   return Reg < 1 || Reg > RegisterAllocator::NUM_REGISTERS;
 }

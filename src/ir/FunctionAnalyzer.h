@@ -23,6 +23,7 @@ public:
   RegisterAllocator::Coloring *coloring(Function *);
 
   bool isValueSpilled(Function *, Value *Val);
+  bool isRegisterSpilled(RegisterAllocator::VirtualRegister Reg);
 
   void runDominanceAnalytics(Module *M);
   void runInterferenceAnalytics(Module *M);
