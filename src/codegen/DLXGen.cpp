@@ -489,7 +489,7 @@ struct DLXObject {
       }
 
       emitF1(Op::ADDI, SP, FP, -36);
-      for (uint8_t R = 1; R <= 8; ++R) {
+      for (uint8_t R = 8; R >= 1; --R) {
         emitF1(Op::POP, R, SP, 4);
       }
       emitF1(Op::POP, FP, SP, 4);
