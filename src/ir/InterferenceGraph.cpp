@@ -108,18 +108,12 @@ void InterferenceGraph::coalesce() {
     if (auto Instr = dynamic_cast<Instruction *>(NodeEdgePair.first)) {
       auto GraphInstr = getValueInGraph(Instr);
       if (Instr->InstrT == InstructionType::Phi) {
-        bool CanCoalesce = true;
-        std::unordered_set<Value *> Cluster;
-        for (auto Arg : Instr->arguments()) {
-          auto GraphArg = getValueInGraph(Arg);
-          Cluster.insert(GraphArg);
-          if (!hasNode(GraphArg) || interferes({GraphInstr}, Cluster)) {
-            CanCoalesce = false;
-            break;
-          }
-        }
-        if (CanCoalesce) {
-          for (auto Node : Cluster) {
+        auto PhiArgs = Instr->arguments();
+        auto LeftArg = getValueInGraph(PhiArgs.at(0));
+        auto RightArg = getValueInGraph(PhiArgs.at(1));
+        if (hasNode(LeftArg) && hasNode(RightArg) && !interferes(GraphInstr, LeftArg) &&
+            !interferes(GraphInstr, RightArg) && !interferes(LeftArg, RightArg)) {
+          for (auto Node : {LeftArg, RightArg}) {
             addEdges(neighbors(Node), GraphInstr);
             removeNode(Node);
             CoalesceMap[Node] = GraphInstr;
@@ -135,17 +129,9 @@ void InterferenceGraph::coalesce() {
   }
 }
 
-bool InterferenceGraph::interferes(const std::unordered_set<Value *> &NodeSet1,
-                                   const std::unordered_set<Value *> &NodeSet2) {
-  for (auto Node : NodeSet1) {
-    for (auto OtherNode : NodeSet2) {
-      std::unordered_set<Value *> Neighbors = neighbors(Node);
-      if (Neighbors.find(OtherNode) != Neighbors.end()) {
-        return true;
-      }
-    }
-  }
-  return false;
+bool InterferenceGraph::interferes(Value *Node1, Value *Node2) {
+  std::unordered_set<Value *> Node2Neighbors = neighbors(Node2);
+  return Node2Neighbors.find(Node1) != Node2Neighbors.end();
 }
 
 Value *InterferenceGraph::getValueInGraph(Value *V) {

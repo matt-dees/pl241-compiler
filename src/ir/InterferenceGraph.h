@@ -16,7 +16,7 @@ class InterferenceGraph : public Vcg {
 
 private:
   void writeNodes(std::ofstream &OutFileStream);
-  bool interferes(const std::unordered_set<Value *> &NodeSet1, const std::unordered_set<Value *> &NodeSet2);
+  bool interferes(Value *Node1, Value *Node2);
 
   Value *getValueInGraph(Value *);
   std::unordered_map<Value *, RAHeuristicInfo> HeuristicDataMap;
