@@ -156,11 +156,10 @@ Value *InterferenceGraph::getValueInGraph(Value *V) {
 }
 
 void IGBuilder::buildInterferenceGraph() {
-  std::unordered_set<Value *> LiveSet;
   for (auto ExitBB : F->exitBlocks()) {
-    BasicBlock *BB = ExitBB;
-    while (BB != nullptr) {
-      BB = igBuild({BB, LiveSet}).NextNode;
+    IgBuildCtx Ctx{ExitBB, {}};
+    while (Ctx.NextNode != nullptr) {
+      Ctx = igBuild(Ctx);
     }
   }
   IG.coalesce();
