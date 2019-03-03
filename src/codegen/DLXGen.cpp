@@ -4,6 +4,7 @@
 #include "RegisterAllocator.h"
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <stack>
 #include <unordered_map>
 #include <utility>
@@ -15,8 +16,8 @@ using namespace std;
 namespace {
 
 struct DLXGenState {
-  unordered_map<RegisterAllocator::VirtualRegister, int16_t> SpilledRegisterOffsets;
-  unordered_map<Value *, int16_t> ValueOffsets;
+  unordered_map<RegisterAllocator::VirtualRegister, int32_t> SpilledRegisterOffsets;
+  unordered_map<Value *, int32_t> ValueOffsets;
   FunctionAnalyzer &FA;
   Function *CurrentFunction;
   unordered_map<BasicBlock *, int32_t> BlockAddresses;
@@ -139,7 +140,13 @@ struct DLXObject {
                : static_cast<Reg>(State.FA.coloring(State.CurrentFunction)->at(Val));
   }
 
-  void prepareConstantRegister(Reg Register, int Value) { emitF1(Op::ADDI, Register, Reg::R0, Value); }
+  void prepareConstantRegister(Reg Register, int Value) {
+    if (fitsIn16BitReg(Value)) {
+      emitF1(Op::ADDI, Register, Reg::R0, Value);
+      return;
+    }
+    throw logic_error("32-Bit values not supported yet.");
+  }
 
   void loadStackValue(Reg Register, int Offset) { emitF1(Op::LDW, Register, Reg::FP, Offset); }
 
@@ -256,6 +263,10 @@ struct DLXObject {
       emitArithmeticImmediate(OpCode, &Inst, Args.at(0), dynamic_cast<ConstantValue *>((Value *)Args.at(1))->Val,
                               State);
     }
+  }
+
+  bool fitsIn16BitReg(int32_t Val) {
+    return Val <= numeric_limits<int16_t>::max() && Val >= numeric_limits<int16_t>::min();
   }
 
   void emitMemory(Instruction &Instr, DLXGenState &State) {
@@ -380,7 +391,7 @@ struct DLXObject {
   }
 
   int mapSpills(Function &F, FunctionAnalyzer &FA,
-                unordered_map<RegisterAllocator::VirtualRegister, int16_t> &SpilledRegisterOffsets, int StartOffset) {
+                unordered_map<RegisterAllocator::VirtualRegister, int32_t> &SpilledRegisterOffsets, int StartOffset) {
     int CurrentOffset = StartOffset;
     for (auto ValueVRPair : *(FA.coloring(&F))) {
       if (FA.isRegisterSpilled(ValueVRPair.second)) {
@@ -548,7 +559,7 @@ struct DLXObject {
     }
 
     // Create the stack map
-    unordered_map<Value *, int16_t> ValueOffsets;
+    unordered_map<Value *, int32_t> ValueOffsets;
 
     // Map all parameters
     int Offset = Parameters.size() * 4;
@@ -568,7 +579,7 @@ struct DLXObject {
       }
     }
 
-    unordered_map<RegisterAllocator::VirtualRegister, int16_t> SpilledRegOffsets;
+    unordered_map<RegisterAllocator::VirtualRegister, int32_t> SpilledRegOffsets;
     // Make space for spills
     Offset = mapSpills(*F, FA, SpilledRegOffsets, Offset);
     emitF1(Op::ADDI, SP, FP, Offset);
