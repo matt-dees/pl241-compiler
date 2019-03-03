@@ -1,6 +1,7 @@
 #include "DLXGen.h"
 #include "FunctionAnalyzer.h"
 #include "Module.h"
+#include "RegisterAllocator.h"
 #include <algorithm>
 #include <array>
 #include <stack>
@@ -14,12 +15,19 @@ using namespace std;
 namespace {
 
 struct DLXGenState {
+  unordered_map<RegisterAllocator::VirtualRegister, int16_t> SpilledRegisterOffsets;
   unordered_map<Value *, int16_t> ValueOffsets;
   FunctionAnalyzer &FA;
   Function *CurrentFunction;
   unordered_map<BasicBlock *, int32_t> BlockAddresses;
   vector<pair<BasicBlock *, int32_t>> Fixups;
   int16_t ReturnOffset;
+  RegisterAllocator::VirtualRegister lookupRegisterOffset(ValueRef Val) {
+    if (Val.ValTy == ValueType::Register) {
+      return SpilledRegisterOffsets.at(Val.R.Id);
+    }
+    return SpilledRegisterOffsets.at(FA.coloring(CurrentFunction)->at(Val));
+  }
 };
 
 enum Reg : uint8_t {
@@ -145,7 +153,7 @@ struct DLXObject {
     } else if (Val.ValTy == ValueType::Variable) {
       prepareConstantRegister(R, -1 * GlobalVarOffsets.at((GlobalVariable *)(Value *)Val));
     } else if (R == SpillRegToUse) {
-      prepareSpilledRegister(R, State.ValueOffsets.at(Val));
+      prepareSpilledRegister(R, State.lookupRegisterOffset(Val));
     }
     return R;
   }
@@ -202,7 +210,7 @@ struct DLXObject {
     Reg Rb = prepareOperandRegister(B, State, Reg::Spill1);
     emitF1(OpCode, Ra, Rb, C);
     if (Ra == Reg::Spill1) {
-      restoreSpilledRegister(Ra, State.ValueOffsets.at(A));
+      restoreSpilledRegister(Ra, State.lookupRegisterOffset(A));
     }
   }
 
@@ -218,7 +226,7 @@ struct DLXObject {
     Reg Rc = prepareOperandRegister(C, State, Reg::Spill2);
     emitF1(OpCode, Ra, Rb, Rc);
     if (Ra == Reg::Spill1) {
-      restoreSpilledRegister(Ra, State.ValueOffsets.at(A));
+      restoreSpilledRegister(Ra, State.lookupRegisterOffset(A));
     }
   }
 
@@ -260,7 +268,7 @@ struct DLXObject {
       emitF2(isLoad ? Op::LDX : Op::STX, Ra, Rb, Rc);
     }
     if (Ra == RaSpill && isLoad) {
-      restoreSpilledRegister(RaSpill, State.ValueOffsets.at(AVal));
+      restoreSpilledRegister(RaSpill, State.lookupRegisterOffset(AVal));
     }
   }
 
@@ -353,19 +361,15 @@ struct DLXObject {
     CodeSegment[11] = (MainAddr >> 0);
   }
 
-  int mapSpills(Function &F, FunctionAnalyzer &FA, unordered_map<Value *, int16_t> &ValueOffsets, int StartOffset) {
+  int mapSpills(Function &F, FunctionAnalyzer &FA,
+                unordered_map<RegisterAllocator::VirtualRegister, int16_t> &SpilledRegisterOffsets, int StartOffset) {
     int CurrentOffset = StartOffset;
-    for (auto &BB : F.basicBlocks()) {
-      for (auto &Instr : BB->instructions()) {
-        if (isSubtype(Instr->ValTy, ValueType::Value)) {
-          if (FA.isValueSpilled(&F, Instr.get())) {
-            CurrentOffset -= 4;
-            ValueOffsets[Instr.get()] = CurrentOffset;
-          }
-        }
+    for (auto ValueVRPair : *(FA.coloring(&F))) {
+      if (FA.isRegisterSpilled(ValueVRPair.second)) {
+        CurrentOffset -= 4;
+        SpilledRegisterOffsets[ValueVRPair.second] = CurrentOffset;
       }
     }
-
     return CurrentOffset;
   }
 
@@ -449,7 +453,7 @@ struct DLXObject {
       Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
       emitF1(Op::LDW, Ra, Reg::SP, 0);
       if (Ra == Reg::Accu) {
-        restoreSpilledRegister(Ra, State.ValueOffsets.at(&Instr));
+        restoreSpilledRegister(Ra, State.lookupRegisterOffset(&Instr));
       }
       break;
     }
@@ -475,7 +479,7 @@ struct DLXObject {
       Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
       emitF2(Op::RDD, Ra, 0, 0);
       if (Ra == Reg::Accu) {
-        restoreSpilledRegister(Ra, State.ValueOffsets.at(&Instr));
+        restoreSpilledRegister(Ra, State.lookupRegisterOffset(&Instr));
       }
       break;
     }
@@ -530,14 +534,15 @@ struct DLXObject {
       }
     }
 
+    unordered_map<RegisterAllocator::VirtualRegister, int16_t> SpilledRegOffsets;
     // Make space for spills
-    Offset = mapSpills(*F, FA, ValueOffsets, Offset);
+    Offset = mapSpills(*F, FA, SpilledRegOffsets, Offset);
     emitF1(Op::ADDI, SP, FP, Offset);
 
     // Process all basic blocks
     auto Blocks = linearize(F);
 
-    DLXGenState CurrentState = {move(ValueOffsets), FA, F};
+    DLXGenState CurrentState = {move(SpilledRegOffsets), move(ValueOffsets), FA, F};
     for (auto Block : Blocks) {
       CurrentState.BlockAddresses[Block] = CodeSegment.size();
       for (auto &Instr : Block->instructions()) {
