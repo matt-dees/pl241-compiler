@@ -113,10 +113,7 @@ void InterferenceGraph::coalesce() {
         auto RightArg = getValueInGraph(PhiArgs.at(1));
         if (hasNode(LeftArg) && hasNode(RightArg) && !interferes(GraphInstr, LeftArg) &&
             !interferes(GraphInstr, RightArg) && !interferes(LeftArg, RightArg)) {
-          for (auto Node : {LeftArg, RightArg}) {
-            if (!hasNode(Node)) {
-              continue;
-            }
+          for (auto Node : std::unordered_set<Value *>{LeftArg, RightArg}) {
             addEdges(neighbors(Node), GraphInstr);
             removeNode(Node);
             CoalesceMap[Node] = GraphInstr;
