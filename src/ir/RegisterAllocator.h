@@ -4,7 +4,6 @@
 #include "Function.h"
 #include "InterferenceGraph.h"
 #include "Pass.h"
-#include "Vcg.h"
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
@@ -21,25 +20,19 @@ public:
 
 private:
   Value *getValWithLowestSpillCost(InterferenceGraph &);
-
   void color(InterferenceGraph &IG, Coloring &CurrentColoring);
-
   void assignColor(InterferenceGraph &IG, Coloring &CurrentColoring, Value *NodeToColor);
   Value *chooseNextNodeToColor(InterferenceGraph &IG);
 };
 
-class AnnotatedIG : public Vcg {
+class AnnotatedIG {
   InterferenceGraph *IG;
   RegisterAllocator::Coloring *C;
 
-private:
-  void writeNodes(std::ofstream &OutFileStream);
-  std::string lookupColor(Value *);
-
 public:
+  std::string lookupColor(Value *);
+  InterferenceGraph &interferenceGraph() const { return *IG; }
   AnnotatedIG(InterferenceGraph *IG, RegisterAllocator::Coloring *C) : IG(IG), C(C){};
-
-  virtual void writeGraph(std::ofstream &OutFileStream) override;
 };
 } // namespace cs241c
 

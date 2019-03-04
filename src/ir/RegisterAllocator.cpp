@@ -104,16 +104,6 @@ void RegisterAllocator::assignColor(InterferenceGraph &IG, RegisterAllocator::Co
   CurrentColoring[NodeToColor] = ColorToUse;
 }
 
-void AnnotatedIG::writeGraph(std::ofstream &OutFileStream) {
-  IG->reset();
-  OutFileStream << "layoutalgorithm: circular\n";
-  OutFileStream << "title: "
-                << "\""
-                << "Colored Interference Graph"
-                << "\"\n";
-  writeNodes(OutFileStream);
-}
-
 std::string AnnotatedIG::lookupColor(Value *RAV) {
   std::array<std::string, RegisterAllocator::NUM_REGISTERS> const Colors = {
       "lightblue", "lightcyan", "lightgreen", "lightmagenta", "lightred", "lightyellow", "pink", "yellowgreen"};
@@ -130,25 +120,4 @@ std::string AnnotatedIG::lookupColor(Value *RAV) {
 
   // Spilled register
   return "darkgrey";
-}
-
-void AnnotatedIG::writeNodes(std::ofstream &OutFileStream) {
-  for (auto &VertexEdgePair : IG->graph()) {
-    OutFileStream << "node: {\n";
-    OutFileStream << "title: "
-                  << "\"" << VertexEdgePair.first->toString() << "\"\n";
-    OutFileStream << "label: \"" + VertexEdgePair.first->toString() << "\n";
-    for (auto Val : IG->coalescedNodes()) {
-      if (Val.second == VertexEdgePair.first) {
-        OutFileStream << Val.first->toString() << "\n";
-      }
-    }
-    OutFileStream << "\"";
-
-    OutFileStream << "color:" + lookupColor(VertexEdgePair.first) << "\n";
-    OutFileStream << "}\n";
-    for (auto Destination : VertexEdgePair.second) {
-      IG->writeEdge(OutFileStream, VertexEdgePair.first, Destination);
-    }
-  }
 }

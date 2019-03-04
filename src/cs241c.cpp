@@ -9,6 +9,7 @@
 #include "Parser.h"
 #include "Phi2VarPass.h"
 #include "SSAPass.h"
+#include "Vcg.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -35,6 +36,7 @@ int main(int ArgC, char **ArgV) {
   ifstream FS(InputFile.data());
   string Text(istreambuf_iterator<char>{FS}, {});
   FunctionAnalyzer FA;
+  VcgWriter VCGW;
 
   auto Tokens = lex(Text);
   auto AST = parse(Tokens);
@@ -57,13 +59,12 @@ int main(int ArgC, char **ArgV) {
   if (GenerateVcg) {
     string VcgOutput{string(InputFile) + ".ssa.vcg"};
     removeFile(VcgOutput);
-    IR->writeToFile(VcgOutput);
+    VCGW.write(*IR, FA, VcgOutput);
   }
 
   ICP.run(*IR);
 
   CommonSubexElimPass CSE(FA);
-  CSE.PrintDebug = true;
   CSE.run(*IR);
 
   ICP.run(*IR);
@@ -71,7 +72,7 @@ int main(int ArgC, char **ArgV) {
   if (GenerateVcg) {
     string VcgOutput{string(InputFile) + ".cse.vcg"};
     removeFile(VcgOutput);
-    IR->writeToFile(VcgOutput);
+    VCGW.write(*IR, FA, VcgOutput);
   }
 
   DeadCodeEliminationPass DCEP(FA);
@@ -82,10 +83,9 @@ int main(int ArgC, char **ArgV) {
   FA.runRegisterAllocation(IR.get());
 
   if (GenerateVcg) {
-    IR->FA = &FA;
     string VcgOutput{string(InputFile) + ".opt.vcg"};
     removeFile(VcgOutput);
-    IR->writeToFile(VcgOutput);
+    VCGW.write(*IR, FA, VcgOutput);
   }
 
   if (GenerateVcg) {
@@ -93,7 +93,7 @@ int main(int ArgC, char **ArgV) {
       string IGOutput{string(InputFile) + "." + F->toString() + ".ig.vcg"};
       removeFile(IGOutput);
       AnnotatedIG AIG(FA.interferenceGraph(F.get()), FA.coloring(F.get()));
-      AIG.writeToFile(IGOutput);
+      VCGW.write(AIG, IGOutput);
     }
   }
 
@@ -105,7 +105,7 @@ int main(int ArgC, char **ArgV) {
   if (GenerateVcg) {
     string VcgOutput{string(InputFile) + ".reg.vcg"};
     removeFile(VcgOutput);
-    IR->writeToFile(VcgOutput);
+    VCGW.write(*IR, FA, VcgOutput);
   }
 
   auto Object = genDlx(*IR, FA);

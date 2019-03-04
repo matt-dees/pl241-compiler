@@ -4,23 +4,22 @@
 #include "DominatorTree.h"
 #include "Function.h"
 #include "RAHeuristicInfo.h"
-#include "Vcg.h"
 #include <unordered_map>
 #include <unordered_set>
 
 namespace cs241c {
-class InterferenceGraph : public Vcg {
+class InterferenceGraph {
+public:
   // Map node to edges
   using Graph = std::unordered_map<Value *, std::unordered_set<Value *>>;
-  Graph IG;
 
 private:
-  void writeNodes(std::ofstream &OutFileStream);
+  Graph IG;
+
   bool interferes(Value *Node1, Value *Node2);
 
   Value *getValueInGraph(Value *);
   std::unordered_map<Value *, RAHeuristicInfo> HeuristicDataMap;
-  std::unordered_map<Value *, std::unordered_set<Value *>> WrittenEdges;
   std::unordered_map<Value *, Value *> CoalesceMap;
 
 public:
@@ -28,16 +27,16 @@ public:
 
   std::unordered_map<Value *, Value *> &coalescedNodes() { return CoalesceMap; }
   RAHeuristicInfo &heuristicData(Value *);
-  void writeEdge(std::ofstream &OutFileStream, Value *From, Value *To);
-  void reset() { WrittenEdges = {}; }
-  void addNode(Value *Node);
+
+  const Graph &graph() const { return IG; }
+
   std::unordered_set<Value *> removeNode(Value *);
   std::unordered_set<Value *> neighbors(Value *);
   bool hasNode(Value *Node);
   void addEdge(Value *From, Value *To);
+  void addNode(Value *Node);
   void addEdges(const std::unordered_set<Value *> &FromSet, Value *To);
-  virtual void writeGraph(std::ofstream &OutFileStream) override;
-  const Graph &graph() const { return IG; }
+
   void coalesce();
 };
 

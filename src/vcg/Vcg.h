@@ -1,18 +1,18 @@
-#ifndef CS241C_VCG_VCGWRITABLE_H
-#define CS241C_VCG_VCGWRITABLE_H
+#ifndef CS241C_VCG_H
+#define CS241C_VCG_H
 
+#include "FunctionAnalyzer.h"
+#include "Module.h"
+#include "RegisterAllocator.h"
 #include <fstream>
 #include <iostream>
 #include <string>
 
 namespace cs241c {
-class Vcg {
-protected:
-  virtual void writeGraph(std::ofstream &OutFileStream) = 0;
-
+class VcgWriter {
 public:
-  virtual ~Vcg() = default;
-  void writeToFile(const std::string &OutFilePath);
+  void write(Module &M, FunctionAnalyzer &FA, const std::string &OutFilePath);
+  void write(AnnotatedIG &AIG, const std::string &OutFilePath);
 };
 } // namespace cs241c
 
