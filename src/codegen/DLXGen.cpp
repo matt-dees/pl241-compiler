@@ -143,9 +143,19 @@ struct DLXObject {
   }
 
   void load32BitValue(Reg Register, uint32_t Value) {
-    emitF1(Op::ADDI, Register, R0, Value >> 16);
-    emitF1(Op::LSHI, Register, Register, 16);
-    emitF1(Op::ADDI, Register, Register, Value);
+    // All immediate instructions sign extend, so we can't do it always with two instructions and have to avoid the most
+    // significant bit.
+
+    if (Value & 0xC0000000) {
+      // If the upper two bit are set.
+      emitF1(Op::ORI, Register, R0, Value >> 30);
+      emitF1(Op::LSHI, Register, Register, 15);
+      emitF1(Op::ORI, Register, Register, (Value >> 15) & 0x7FFF);
+    } else {
+      emitF1(Op::ORI, Register, R0, (Value >> 15) & 0x7FFF);
+    }
+    emitF1(Op::LSHI, Register, Register, 15);
+    emitF1(Op::ORI, Register, Register, Value & 0x7FFF);
   }
 
   void prepareConstantRegister(Reg Register, int32_t Value) {
@@ -406,18 +416,23 @@ struct DLXObject {
     copy(Word.begin(), Word.end(), back_inserter(CodeSegment));
   }
 
-  void init(int32_t StackOffset) {
-    emitF1(Op::SUBI, Reg::FP, Reg::GR, StackOffset);
+  int init(int32_t StackOffset) {
+    load32BitValue(Accu, StackOffset);
+    emitF2(Op::SUB, Reg::FP, Reg::GR, Accu);
     emitF2(Op::ADD, Reg::SP, Reg::FP, Reg::R0);
+
+    int MainJsrInstr = CodeSegment.size();
     emitF1(Op::JSR, 0, 0, 0);
+
+    return MainJsrInstr;
   }
 
-  void setMainAddress(Function *Main) {
+  void setMainAddress(int MainJsrInstr, Function *Main) {
     int32_t MainAddr = FunctionAddresses[Main];
-    CodeSegment[8] |= (MainAddr >> 24) & 0x3;
-    CodeSegment[9] = (MainAddr >> 16);
-    CodeSegment[10] = (MainAddr >> 8);
-    CodeSegment[11] = (MainAddr >> 0);
+    CodeSegment[MainJsrInstr] |= (MainAddr >> 24) & 0x3;
+    CodeSegment[MainJsrInstr + 1] = (MainAddr >> 16);
+    CodeSegment[MainJsrInstr + 2] = (MainAddr >> 8);
+    CodeSegment[MainJsrInstr + 3] = (MainAddr >> 0);
   }
 
   int mapSpills(Function &F, FunctionAnalyzer &FA,
@@ -663,8 +678,8 @@ struct DLXObject {
 vector<uint8_t> cs241c::genDlx(Module &M, FunctionAnalyzer &FA) {
   DLXObject DLXO;
   int32_t StackOffset = DLXO.addGlobals(M.globals());
-  DLXO.init(StackOffset);
+  int MainJsrInstr = DLXO.init(StackOffset);
   DLXO.addFunctions(M.functions(), FA);
-  DLXO.setMainAddress(M.functions().back().get());
+  DLXO.setMainAddress(MainJsrInstr, M.functions().back().get());
   return move(DLXO.CodeSegment);
 }
