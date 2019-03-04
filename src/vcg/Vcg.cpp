@@ -62,26 +62,29 @@ void writeBasicBlock(ofstream &OutFileStream, BasicBlock *BB, const string &Titl
   }
 }
 
-void writeFunction(ofstream &OutFileStream, Function *F, FunctionAnalyzer &FA) {
+void writeFunction(ofstream &OutFileStream, Function *F, FunctionAnalyzer &FA, bool WithDomInfo) {
   const string FunctionName = F->name();
   for (auto &BB : F->basicBlocks()) {
     writeBasicBlock(OutFileStream, BB.get(), FunctionName, F, FA);
   }
-  for (auto IDomPair : FA.dominatorTree(F)->IDomMap) {
-    if (IDomPair.first != IDomPair.second) {
-      writeDomEdge(OutFileStream, IDomPair.first, IDomPair.second);
+  if (WithDomInfo) {
+    for (auto IDomPair : FA.dominatorTree(F)->IDomMap) {
+      if (IDomPair.first != IDomPair.second) {
+        writeDomEdge(OutFileStream, IDomPair.first, IDomPair.second);
+      }
     }
   }
 }
 
-void writeModule(Module &M, FunctionAnalyzer &FA, ofstream &OutFileStream) {
+void writeModule(Module &M, FunctionAnalyzer &FA, ofstream &OutFileStream, bool WithDomInfo) {
   OutFileStream << "manhattan_edges: yes\n";
-  OutFileStream << "layoutalgorithm: compilergraph\n";
+  std::string LayoutType = WithDomInfo ? "hierarchic" : "compilergraph";
+  OutFileStream << "layoutalgorithm:" << LayoutType << "\n";
   OutFileStream << "title: "
                 << "\"" << M.getIdentifier() << "\"\n";
 
   for (auto &F : M.functions()) {
-    writeFunction(OutFileStream, F.get(), FA);
+    writeFunction(OutFileStream, F.get(), FA, WithDomInfo);
   }
 }
 
@@ -155,7 +158,7 @@ void VcgWriter::write(AnnotatedIG &AIG, const std::string &OutFilePath) {
   VcgFileStream.close();
 }
 
-void VcgWriter::write(Module &M, FunctionAnalyzer &FA, const std::string &OutFilePath) {
+void VcgWriter::write(Module &M, FunctionAnalyzer &FA, const std::string &OutFilePath, bool WithDomInfo) {
   if (fileExists(OutFilePath)) {
     throw runtime_error("VcgGen Error: File already exists: " + OutFilePath);
   }
@@ -163,7 +166,7 @@ void VcgWriter::write(Module &M, FunctionAnalyzer &FA, const std::string &OutFil
   ofstream VcgFileStream;
   VcgFileStream.open(OutFilePath);
   VcgFileStream << "graph: {";
-  writeModule(M, FA, VcgFileStream);
+  writeModule(M, FA, VcgFileStream, WithDomInfo);
   VcgFileStream << "}";
   VcgFileStream.close();
 }

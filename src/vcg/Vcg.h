@@ -11,7 +11,7 @@
 namespace cs241c {
 class VcgWriter {
 public:
-  void write(Module &M, FunctionAnalyzer &FA, const std::string &OutFilePath);
+  void write(Module &M, FunctionAnalyzer &FA, const std::string &OutFilePath, bool WithDomInfo = false);
   void write(AnnotatedIG &AIG, const std::string &OutFilePath);
 };
 } // namespace cs241c

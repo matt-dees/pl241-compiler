@@ -56,24 +56,12 @@ int main(int ArgC, char **ArgV) {
   ConstExprEvalPass CEE(FA);
   CEE.run(*IR);
 
-  if (GenerateVcg) {
-    string VcgOutput{string(InputFile) + ".ssa.vcg"};
-    removeFile(VcgOutput);
-    VCGW.write(*IR, FA, VcgOutput);
-  }
-
   ICP.run(*IR);
 
   CommonSubexElimPass CSE(FA);
   CSE.run(*IR);
 
   ICP.run(*IR);
-
-  if (GenerateVcg) {
-    string VcgOutput{string(InputFile) + ".cse.vcg"};
-    removeFile(VcgOutput);
-    VCGW.write(*IR, FA, VcgOutput);
-  }
 
   DeadCodeEliminationPass DCEP(FA);
   DCEP.run(*IR);
@@ -103,9 +91,13 @@ int main(int ArgC, char **ArgV) {
   ICP.run(*IR);
 
   if (GenerateVcg) {
-    string VcgOutput{string(InputFile) + ".reg.vcg"};
+    string VcgOutput{string(InputFile) + ".vcg"};
     removeFile(VcgOutput);
     VCGW.write(*IR, FA, VcgOutput);
+
+    VcgOutput = string(InputFile) + ".dom.vcg";
+    removeFile(VcgOutput);
+    VCGW.write(*IR, FA, VcgOutput, true);
   }
 
   auto Object = genDlx(*IR, FA);
