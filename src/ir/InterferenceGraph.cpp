@@ -109,8 +109,8 @@ void InterferenceGraph::coalesce() {
       auto GraphInstr = getValueInGraph(Instr);
       if (Instr->InstrT == InstructionType::Phi) {
         auto PhiArgs = Instr->arguments();
-        auto LeftArg = getValueInGraph(PhiArgs.at(0));
-        auto RightArg = getValueInGraph(PhiArgs.at(1));
+        auto LeftArg = getValueInGraph(PhiArgs[0]);
+        auto RightArg = getValueInGraph(PhiArgs[1]);
         if (hasNode(LeftArg) && hasNode(RightArg) && !interferes(GraphInstr, LeftArg) &&
             !interferes(GraphInstr, RightArg) && !interferes(LeftArg, RightArg)) {
           for (auto Node : std::unordered_set<Value *>{LeftArg, RightArg}) {
@@ -190,7 +190,7 @@ IGBuilder::processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet) {
     for (auto i = 0; i < Args.size(); i++) {
       auto Arg = Args.at(i);
       IG.heuristicData(Arg).NumUses++;
-      if (dynamic_cast<Instruction *>((Value *)Arg) == nullptr) {
+      if (dynamic_cast<Instruction *>(Arg.Ptr) == nullptr) {
         continue;
       }
       IG.addNode(Arg);

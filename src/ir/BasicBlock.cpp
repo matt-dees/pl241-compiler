@@ -160,7 +160,7 @@ vector<Variable *> BasicBlock::getMoveTargets() {
 
   for (auto &I : Instructions) {
     if (I->InstrT == InstructionType::Move) {
-      if (auto Target = dynamic_cast<Variable *>(I->arguments()[1].R.Ptr)) {
+      if (auto Target = dynamic_cast<Variable *>(I->arguments()[1].Ptr)) {
         TargetsForPhis.push_back(Target);
       }
     } else if (I->InstrT == InstructionType::Phi) {

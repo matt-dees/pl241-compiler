@@ -15,27 +15,27 @@ using namespace std;
 using T = InstructionType;
 
 ValueRef::ValueRef() : ValTy(ValueType::Undef) {}
-ValueRef::ValueRef(Value *Ptr) : ValTy(Ptr ? Ptr->ValTy : ValueType::Undef) { R.Ptr = Ptr; }
-ValueRef::ValueRef(ValueType Ty, int Id) : ValTy(Ty) { R.Id = Id; }
+ValueRef::ValueRef(Value *Ptr) : ValTy(Ptr ? Ptr->ValTy : ValueType::Undef), Ptr(Ptr) {}
+ValueRef::ValueRef(ValueType Ty, int Id) : ValTy(Ty), Id(Id) {}
 bool ValueRef::isUndef() { return ValTy == ValueType::Undef; }
-ValueRef::operator Value *() const { return R.Ptr; }
-Value *ValueRef::operator->() const { return R.Ptr; }
+ValueRef::operator Value *() const { return Ptr; }
+Value *ValueRef::operator->() const { return Ptr; }
 
 bool ValueRef::operator==(ValueRef Other) const {
   if (ValTy == Other.ValTy) {
     if (ValTy == ValueType::Register) {
-      return R.Id == Other.R.Id;
+      return Id == Other.Id;
     }
-    return R.Ptr == Other.R.Ptr;
+    return Ptr == Other.Ptr;
   }
   return false;
 }
 bool ValueRef::operator<(ValueRef Other) const {
   if (ValTy == Other.ValTy) {
     if (ValTy == ValueType::Register) {
-      return R.Id < Other.R.Id;
+      return Id < Other.Id;
     }
-    return R.Ptr < Other.R.Ptr;
+    return Ptr < Other.Ptr;
   }
   return ValTy < Other.ValTy;
 }
@@ -80,7 +80,7 @@ string Instruction::toString() const {
     Result << Separator;
 
     if (Arg.ValTy == ValueType::Register)
-      Result << "R" << Arg.R.Id;
+      Result << "R" << Arg.Id;
     else
       Result << Arg->name();
 

@@ -19,9 +19,9 @@ public:
   ValueType ValTy;
 
   union {
-    Value *Ptr;
+    Value *Ptr = nullptr;
     int Id;
-  } R{};
+  };
 
   ValueRef();
   ValueRef(Value *Ptr);

@@ -90,7 +90,7 @@ void Mem2VarPass::run(Module &M) {
       for (auto &BB : F->basicBlocks()) {
         for (auto &I : BB->instructions()) {
           for (ValueRef Arg : I->arguments()) {
-            if (auto Global = dynamic_cast<GlobalVariable *>(Arg.R.Ptr)) {
+            if (auto Global = dynamic_cast<GlobalVariable *>(Arg.Ptr)) {
               ActuallyGlobal.insert(Global);
             }
           }

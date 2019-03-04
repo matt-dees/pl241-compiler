@@ -24,9 +24,11 @@ struct DLXGenState {
   vector<pair<BasicBlock *, int32_t>> Fixups;
   RegisterAllocator::VirtualRegister lookupRegisterOffset(ValueRef Val) {
     if (Val.ValTy == ValueType::Register) {
-      return SpilledRegisterOffsets.at(Val.R.Id);
+      return SpilledRegisterOffsets.at(Val.Id);
     }
-    return SpilledRegisterOffsets.at(FA.coloring(CurrentFunction)->at(Val));
+    auto Coloring = FA.coloring(CurrentFunction);
+    auto Color = Coloring->at(Val);
+    return SpilledRegisterOffsets.at(Color);
   }
 };
 
@@ -131,7 +133,7 @@ struct DLXObject {
 
   Reg mapValueToRegister(ValueRef Val, DLXGenState &State, Reg SpillReg) {
     if (Val.ValTy == ValueType::Register) {
-      return State.FA.isRegisterSpilled(static_cast<Reg>(Val.R.Id)) ? SpillReg : static_cast<Reg>(Val.R.Id);
+      return State.FA.isRegisterSpilled(static_cast<Reg>(Val.Id)) ? SpillReg : static_cast<Reg>(Val.Id);
     } else if (Val->name() == "GlobalBase") {
       return Reg::GR;
     }
@@ -140,28 +142,48 @@ struct DLXObject {
                : static_cast<Reg>(State.FA.coloring(State.CurrentFunction)->at(Val));
   }
 
-  void prepareConstantRegister(Reg Register, int Value) {
-    if (fitsIn16BitReg(Value)) {
-      emitF1(Op::ADDI, Register, Reg::R0, Value);
-      return;
-    }
-    throw logic_error("32-Bit values not supported yet.");
+  void load32BitValue(Reg Register, uint32_t Value) {
+    emitF1(Op::ADDI, Register, R0, Value >> 16);
+    emitF1(Op::LSHI, Register, Register, 16);
+    emitF1(Op::ADDI, Register, Register, Value);
   }
 
-  void loadStackValue(Reg Register, int Offset) { emitF1(Op::LDW, Register, Reg::FP, Offset); }
+  void prepareConstantRegister(Reg Register, int32_t Value) {
+    if (exceeds16Bit(Value)) {
+      load32BitValue(Register, Value);
+    } else {
+      emitF1(Op::ADDI, Register, R0, Value);
+    }
+  }
 
-  void storeStackValue(Reg Register, int Offset) { emitF1(Op::STW, Register, FP, Offset); }
+  void loadStackValue(Reg Register, int32_t Offset) {
+    if (exceeds16Bit(Offset)) {
+      load32BitValue(Accu, Offset);
+      emitF2(Op::LDX, Register, Reg::FP, Accu);
+    } else {
+      emitF1(Op::LDW, Register, Reg::FP, Offset);
+    }
+  }
+
+  void storeStackValue(Reg Register, int Offset) {
+    if (exceeds16Bit(Offset)) {
+      load32BitValue(Accu, Offset);
+      emitF2(Op::STX, Register, Reg::FP, Accu);
+    } else {
+      emitF1(Op::STW, Register, FP, Offset);
+    }
+  }
 
   Reg loadValueIntoRegister(ValueRef Val, DLXGenState &State, Reg SpillRegToUse) {
     Reg R = mapValueToRegister(Val, State, SpillRegToUse);
 
     if (Val.ValTy == ValueType::Constant) {
-      prepareConstantRegister(R, dynamic_cast<ConstantValue *>((Value *)Val)->Val);
+      prepareConstantRegister(R, dynamic_cast<ConstantValue *>(Val.Ptr)->Val);
     } else if (Val.ValTy == ValueType::Variable) {
-      if (auto Param = dynamic_cast<LocalVariable *>(Val.R.Ptr)) {
+      if (auto Param = dynamic_cast<LocalVariable *>(Val.Ptr)) {
         loadStackValue(R, State.ValueOffsets.at(Param));
       } else {
-        prepareConstantRegister(R, -1 * GlobalVarOffsets.at(dynamic_cast<GlobalVariable *>(Val.R.Ptr)));
+        prepareConstantRegister(R, -1 * GlobalVarOffsets.at(dynamic_cast<GlobalVariable *>(Val.Ptr)));
       }
     } else if (R == SpillRegToUse) {
       loadStackValue(R, State.lookupRegisterOffset(Val));
@@ -172,15 +194,8 @@ struct DLXObject {
   Op getArithmeticOpCode(Instruction &Instr) {
     auto Args = Instr.arguments();
 
-    if (Args.size() != 2) {
-      throw logic_error("Unable to emit arithmetic instruction " + Instr.toString() +
-                        " because it does not have two arguments.");
-    }
-
-    bool const containsConstant = Args.at(1).ValTy == ValueType::Constant;
     Op OpCode;
     switch (Instr.InstrT) {
-    case InstructionType::Adda:
     case InstructionType::Add: {
       OpCode = Op::ADD;
       break;
@@ -205,23 +220,33 @@ struct DLXObject {
       throw logic_error("Unsupported arithmetic instruction");
     }
 
-    if (containsConstant) {
-      // Immediate variants are offset by 16
-      OpCode = static_cast<Op>(number(OpCode) + number(Op::ADDI));
-    }
     return OpCode;
   }
 
   void emitArithmeticImmediate(Op OpCode, ValueRef A, ValueRef B, int32_t C, DLXGenState &State) {
-    if (OpCode < Op::ADDI || OpCode > Op::CHKI) {
+    using OpT = underlying_type<Op>::type;
+    if (OpCode >= Op::ADDI && OpCode <= Op::CHKI) {
+      OpCode = static_cast<Op>(static_cast<OpT>(OpCode) - (static_cast<OpT>(Op::ADDI) - static_cast<OpT>(Op::ADD)));
+    }
+
+    if (OpCode < Op::ADD || OpCode > Op::CHK) {
       throw logic_error("Invalid Opcode for immediate arithmetic emission");
     }
-    if (OpCode == Op::CHKI) {
+    if (OpCode == Op::CHK) {
       throw logic_error("Unsupported for now");
     }
+
     Reg Ra = mapValueToRegister(A, State, Reg::Spill1);
     Reg Rb = loadValueIntoRegister(B, State, Reg::Spill1);
-    emitF1(OpCode, Ra, Rb, C);
+
+    if (exceeds16Bit(C)) {
+      load32BitValue(Accu, C);
+      emitF2(OpCode, Ra, Rb, Accu);
+    } else {
+      OpCode = static_cast<Op>(static_cast<OpT>(OpCode) + (static_cast<OpT>(Op::ADDI) - static_cast<OpT>(Op::ADD)));
+      emitF1(OpCode, Ra, Rb, C);
+    }
+
     if (Ra == Reg::Spill1) {
       storeStackValue(Ra, State.lookupRegisterOffset(A));
     }
@@ -237,7 +262,7 @@ struct DLXObject {
     Reg Ra = mapValueToRegister(A, State, Reg::Spill1);
     Reg Rb = loadValueIntoRegister(B, State, Reg::Spill1);
     Reg Rc = loadValueIntoRegister(C, State, Reg::Spill2);
-    emitF1(OpCode, Ra, Rb, Rc);
+    emitF2(OpCode, Ra, Rb, Rc);
     if (Ra == Reg::Spill1) {
       storeStackValue(Ra, State.lookupRegisterOffset(A));
     }
@@ -248,25 +273,25 @@ struct DLXObject {
   }
 
   void emitArithmetic(Instruction &Inst, DLXGenState &State) {
-    auto Args = Inst.arguments();
     Op OpCode = getArithmeticOpCode(Inst);
 
+    auto Args = Inst.arguments();
     if (Args[0].ValTy == ValueType::Constant && isCommutative(OpCode)) {
       auto Arg1 = Args[1];
       Inst.updateArg(1, Args[0]);
       Inst.updateArg(0, Arg1);
       Args = Inst.arguments();
     }
-    if (OpCode <= Op::CHK) {
-      emitArithmeticRegister(OpCode, &Inst, Args.at(0), Args.at(1), State);
+
+    if (Args[1].ValTy == ValueType::Constant) {
+      emitArithmeticImmediate(OpCode, &Inst, Args[0], dynamic_cast<ConstantValue *>(Args[1].Ptr)->Val, State);
     } else {
-      emitArithmeticImmediate(OpCode, &Inst, Args.at(0), dynamic_cast<ConstantValue *>((Value *)Args.at(1))->Val,
-                              State);
+      emitArithmeticRegister(OpCode, &Inst, Args[0], Args[1], State);
     }
   }
 
-  bool fitsIn16BitReg(int32_t Val) {
-    return Val <= numeric_limits<int16_t>::max() && Val >= numeric_limits<int16_t>::min();
+  bool exceeds16Bit(int32_t Val) {
+    return Val < numeric_limits<int16_t>::min() || Val > numeric_limits<int16_t>::max();
   }
 
   void emitMemory(Instruction &Instr, DLXGenState &State) {
@@ -278,18 +303,23 @@ struct DLXObject {
       throw logic_error("Incorrect number of arguments for memory instruction.");
     }
     // Adda will be at position 1 for Store, 0 for Load
-    Instruction *Adda = dynamic_cast<Instruction *>((Value *)Instr.arguments().at((isLoad ? 0 : 1)));
+    Instruction *Adda = dynamic_cast<Instruction *>(Instr.arguments().at((isLoad ? 0 : 1)).Ptr);
     if (Adda == nullptr) {
       throw logic_error("Argument to Load was not ADDA.");
     }
     // Load destination is the instruction, Store destination is first param
-    Reg const RaSpill = Reg::Accu;
+    Reg const RaSpill = Reg::Spill1;
     ValueRef AVal = isLoad ? &Instr : Instr.arguments().at(0);
     Reg Ra = isLoad ? mapValueToRegister(AVal, State, RaSpill) : loadValueIntoRegister(AVal, State, RaSpill);
     Reg Rb = loadValueIntoRegister(Adda->arguments().at(0), State, Reg::Spill1);
     if (Adda->arguments().at(1).ValTy == ValueType::Constant) {
-      int32_t C = dynamic_cast<ConstantValue *>((Value *)Adda->arguments().at(1))->Val;
-      emitF1(isLoad ? Op::LDW : Op::STW, Ra, Rb, C);
+      int32_t C = dynamic_cast<ConstantValue *>(Adda->arguments()[1].Ptr)->Val;
+      if (exceeds16Bit(C)) {
+        load32BitValue(Accu, C);
+        emitF2(isLoad ? Op::LDX : Op::STX, Ra, Rb, Accu);
+      } else {
+        emitF1(isLoad ? Op::LDW : Op::STW, Ra, Rb, C);
+      }
     } else {
       Reg Rc = loadValueIntoRegister(Adda->arguments().at(1), State, Reg::Spill2);
       emitF2(isLoad ? Op::LDX : Op::STX, Ra, Rb, Rc);
@@ -309,7 +339,7 @@ struct DLXObject {
     int32_t Offset = 0xF0F0;
 
     int TargetIndex = Instr.InstrT == InstructionType::Bra ? 0 : 1;
-    BasicBlock *Target = dynamic_cast<BasicBlock *>(Instr.arguments().at(TargetIndex).R.Ptr);
+    BasicBlock *Target = dynamic_cast<BasicBlock *>(Instr.arguments().at(TargetIndex).Ptr);
     if (State.BlockAddresses.find(Target) == State.BlockAddresses.end()) {
       State.Fixups.push_back({Target, PC});
     } else {
@@ -349,9 +379,9 @@ struct DLXObject {
     emitF1(BranchOp, CmpReg, 0, Offset);
   }
 
-  void emitF1(Op Op, uint8_t A, uint8_t B, int16_t C) {
+  void emitF1(Op OpCode, uint8_t A, uint8_t B, uint16_t C) {
     array<uint8_t, 4> Word;
-    Word[0] = number(Op) << 2 | ((A >> 3) & 0x3);
+    Word[0] = number(OpCode) << 2 | ((A >> 3) & 0x3);
     Word[1] = A << 5 | (B & 0x1F);
     Word[2] = C >> 8;
     Word[3] = static_cast<uint8_t>(C);
@@ -476,16 +506,15 @@ struct DLXObject {
     }
     case InstructionType::Call: {
       int32_t PC = CodeSegment.size();
-      int32_t TargetAddress = FunctionAddresses[dynamic_cast<Function *>(Instr.arguments().at(0).R.Ptr)];
-      int16_t Jump = (TargetAddress - PC) / 4;
-      emitF1(Op::BSR, 0, 0, Jump);
+      int32_t TargetAddress = FunctionAddresses[dynamic_cast<Function *>(Instr.arguments().at(0).Ptr)];
+      emitF3(Op::JSR, TargetAddress);
 
       // Retrieve return value from stack if there is any.
       auto Coloring = State.FA.coloring(State.CurrentFunction);
       if (Coloring->find(&Instr) != Coloring->end()) {
-        Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
+        Reg Ra = mapValueToRegister(&Instr, State, Reg::Spill1);
         emitF1(Op::LDW, Ra, Reg::SP, -4);
-        if (Ra == Reg::Accu) {
+        if (Ra == Reg::Spill1) {
           storeStackValue(Ra, State.lookupRegisterOffset(&Instr));
         }
       }
@@ -500,8 +529,8 @@ struct DLXObject {
 
       if (Instr.arguments().size() == 1) {
         auto RetVal = Instr.arguments().at(0);
-        Reg Ra = loadValueIntoRegister(RetVal, State, Reg::Accu);
-        emitF1(Op::STW, Ra, FP, RetValOffset);
+        Reg Ra = loadValueIntoRegister(RetVal, State, Reg::Spill1);
+        storeStackValue(Ra, RetValOffset);
       }
 
       emitF1(Op::ADDI, SP, FP, -36);
@@ -510,22 +539,28 @@ struct DLXObject {
       }
       emitF1(Op::POP, FP, SP, 4);
       emitF1(Op::POP, RA, SP, 4);
-      emitF1(Op::ADDI, SP, SP, 4 * ParamCount);
+      int ParamAreaSize = 4 * ParamCount;
+      if (exceeds16Bit(ParamAreaSize)) {
+        load32BitValue(Accu, ParamAreaSize);
+        emitF2(Op::ADD, SP, SP, Accu);
+      } else {
+        emitF1(Op::ADDI, SP, SP, ParamAreaSize);
+      }
       emitF2(Op::RET, 0, 0, RA);
       break;
     }
     case InstructionType::Read: {
-      Reg Ra = mapValueToRegister(&Instr, State, Reg::Accu);
+      Reg Ra = mapValueToRegister(&Instr, State, Reg::Spill1);
       emitF2(Op::RDD, Ra, 0, 0);
       auto Coloring = State.FA.coloring(State.CurrentFunction);
-      if (Ra == Reg::Accu && Coloring->find(&Instr) != Coloring->end()) {
+      if (Ra == Reg::Spill1 && Coloring->find(&Instr) != Coloring->end()) {
         storeStackValue(Ra, State.lookupRegisterOffset(&Instr));
       }
       break;
     }
     case InstructionType::Write: {
       auto Arg = Instr.arguments()[0];
-      Reg Rb = loadValueIntoRegister(Arg, State, Reg::Accu);
+      Reg Rb = loadValueIntoRegister(Arg, State, Reg::Spill1);
       emitF2(Op::WRD, 0, Rb, 0);
       break;
     }
@@ -582,7 +617,12 @@ struct DLXObject {
     unordered_map<RegisterAllocator::VirtualRegister, int32_t> SpilledRegOffsets;
     // Make space for spills
     Offset = mapSpills(*F, FA, SpilledRegOffsets, Offset);
-    emitF1(Op::ADDI, SP, FP, Offset);
+    if (exceeds16Bit(Offset)) {
+      load32BitValue(Accu, Offset);
+      emitF2(Op::ADD, SP, FP, Accu);
+    } else {
+      emitF1(Op::ADDI, SP, FP, Offset);
+    }
 
     // Process all basic blocks
     auto Blocks = linearize(F);
@@ -617,7 +657,7 @@ struct DLXObject {
       addFunction(FPtr.get(), FA);
     }
   }
-};
+}; // namespace
 } // namespace
 
 vector<uint8_t> cs241c::genDlx(Module &M, FunctionAnalyzer &FA) {
