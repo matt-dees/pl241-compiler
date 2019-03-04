@@ -63,7 +63,6 @@ int main(int ArgC, char **ArgV) {
   ICP.run(*IR);
 
   CommonSubexElimPass CSE(FA);
-  CSE.PrintDebug = true;
   CSE.run(*IR);
 
   ICP.run(*IR);

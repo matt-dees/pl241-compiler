@@ -1,5 +1,6 @@
 #include "CommonSubexElimPass.h"
 #include "ConstExprEvalPass.h"
+#include "DLXGen.h"
 #include "DeadCodeEliminationPass.h"
 #include "Filesystem.h"
 #include "IntegrityCheckPass.h"
@@ -54,6 +55,8 @@ TEST_CASE("Compile and run test programs") {
 
       IntegrityCheckPass ICP(FA);
       ICP.run(*IR);
+
+      genDlx(*IR, FA);
 
       CHECK(true);
     }
