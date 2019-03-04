@@ -47,9 +47,9 @@ struct InstructionEquality {
 
 namespace {
 bool shouldIgnore(Instruction *I) {
-  static const array<InstructionType, 7> IgnoredInstructions{InstructionType::Store, InstructionType::Param,
-                                                             InstructionType::Call,  InstructionType::Read,
-                                                             InstructionType::Write, InstructionType::WriteNL};
+  static const array<InstructionType, 7> IgnoredInstructions{
+      InstructionType::Phi,  InstructionType::Store, InstructionType::Param,  InstructionType::Call,
+      InstructionType::Read, InstructionType::Write, InstructionType::WriteNL};
   return isTerminator(I->InstrT) ||
          find(IgnoredInstructions.begin(), IgnoredInstructions.end(), I->InstrT) != IgnoredInstructions.end();
 }
@@ -93,6 +93,7 @@ void CommonSubexElimPass::run(Function &F) {
       // Already visited
       continue;
     }
+    VisitedBlocks.insert(Runner);
 
     for (auto InstIter = Runner->instructions().begin(); InstIter != Runner->instructions().end();) {
       InstIter->get()->updateArgs(Replacements);
@@ -122,8 +123,6 @@ void CommonSubexElimPass::run(Function &F) {
         // get re-added to the map later.
         CandidateInstructions.erase(InstIter->get());
       }
-      // Update arguments according to Replacements map
-      InstIter->get()->updateArgs(Replacements);
 
       // Rehash instruction because arguments may have changed
       HasMatch = CandidateInstructions.find(InstIter->get()) != CandidateInstructions.end();
@@ -147,7 +146,6 @@ void CommonSubexElimPass::run(Function &F) {
         InstIter++;
       }
     }
-    VisitedBlocks.insert(Runner);
     if (NeedToExploreDF) {
       for (auto &DFEntry : FA.dominatorTree(&F)->dominanceFrontier(Runner)) {
         // Need to revisit all blocks in the dominance frontier.

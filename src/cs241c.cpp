@@ -51,21 +51,28 @@ int main(int ArgC, char **ArgV) {
   IntegrityCheckPass ICP(FA);
   ICP.run(*IR);
 
+  ConstExprEvalPass CEE(FA);
+  CEE.run(*IR);
+
   if (GenerateVcg) {
     string VcgOutput{string(InputFile) + ".ssa.vcg"};
     removeFile(VcgOutput);
     IR->writeToFile(VcgOutput);
   }
 
-  ConstExprEvalPass CEE(FA);
-  CEE.run(*IR);
-
   ICP.run(*IR);
 
   CommonSubexElimPass CSE(FA);
+  CSE.PrintDebug = true;
   CSE.run(*IR);
 
   ICP.run(*IR);
+
+  if (GenerateVcg) {
+    string VcgOutput{string(InputFile) + ".cse.vcg"};
+    removeFile(VcgOutput);
+    IR->writeToFile(VcgOutput);
+  }
 
   DeadCodeEliminationPass DCEP(FA);
   DCEP.run(*IR);

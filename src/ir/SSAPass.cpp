@@ -15,12 +15,14 @@ void SSAPass::run(Module &M) {
 
 void SSAPass::run(Function &F) {
   SSAContext SSACtx;
-  recursiveGenAllPhis(F.entryBlock());
-  recursiveNodeToSSA(F.entryBlock(), SSACtx);
+  std::unordered_set<BasicBlock *> Visited = {};
+  recursiveGenAllPhis(F.entryBlock(), Visited);
+  Visited.clear();
+  recursiveNodeToSSA(F.entryBlock(), SSACtx, Visited);
 }
 
-SSAContext SSAPass::recursiveNodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx) {
-  static std::unordered_set<BasicBlock *> Visited = {};
+SSAContext SSAPass::recursiveNodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx,
+                                       std::unordered_set<BasicBlock *> &Visited) {
   if (Visited.find(CurrentBB) != Visited.end()) {
     // Already visited this node. Skip.
     return SSACtx;
@@ -33,7 +35,7 @@ SSAContext SSAPass::recursiveNodeToSSA(BasicBlock *CurrentBB, SSAContext SSACtx)
     propagateChangeToPhis(CurrentBB, VarChange.first, VarChange.second);
   }
   for (auto BB : CurrentBB->successors()) {
-    SSAContext Ret = recursiveNodeToSSA(BB, SSACtx);
+    SSAContext Ret = recursiveNodeToSSA(BB, SSACtx, Visited);
     SSACtx.merge(Ret);
   }
   return SSACtx;
@@ -47,8 +49,7 @@ void SSAPass::propagateChangeToPhis(cs241c::BasicBlock *SourceBB, cs241c::Variab
   }
 }
 
-void SSAPass::recursiveGenAllPhis(BasicBlock *CurrentBB) {
-  static std::unordered_set<BasicBlock *> Visited;
+void SSAPass::recursiveGenAllPhis(BasicBlock *CurrentBB, std::unordered_set<BasicBlock *> &Visited) {
   if (Visited.find(CurrentBB) != Visited.end()) {
     return;
   }
@@ -60,11 +61,11 @@ void SSAPass::recursiveGenAllPhis(BasicBlock *CurrentBB) {
       Phi->storage() = Target;
       DFEntry->insertPhiInstruction(move(Phi));
       Visited.erase(DFEntry);
-      recursiveGenAllPhis(DFEntry);
+      recursiveGenAllPhis(DFEntry, Visited);
     }
   }
   for (auto BB : CurrentBB->successors()) {
-    recursiveGenAllPhis(BB);
+    recursiveGenAllPhis(BB, Visited);
   }
 }
 

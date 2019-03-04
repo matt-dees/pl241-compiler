@@ -17,8 +17,8 @@ private:
   Function *CurrentFunction;
 
   void run(Function &);
-  SSAContext recursiveNodeToSSA(BasicBlock *CurrentBB, SSAContext Ctx);
-  void recursiveGenAllPhis(BasicBlock *CurrentBB);
+  SSAContext recursiveNodeToSSA(BasicBlock *CurrentBB, SSAContext Ctx, std::unordered_set<BasicBlock *> &Visited);
+  void recursiveGenAllPhis(BasicBlock *CurrentBB, std::unordered_set<BasicBlock *> &Visited);
   void propagateChangeToPhis(BasicBlock *SourceBB, Variable *ChangedVar, Value *NewVal);
   void basicBlockToSSA(BasicBlock &BB, SSAContext &SSCtx);
 };

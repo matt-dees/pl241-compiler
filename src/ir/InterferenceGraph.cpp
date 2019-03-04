@@ -114,6 +114,9 @@ void InterferenceGraph::coalesce() {
         if (hasNode(LeftArg) && hasNode(RightArg) && !interferes(GraphInstr, LeftArg) &&
             !interferes(GraphInstr, RightArg) && !interferes(LeftArg, RightArg)) {
           for (auto Node : {LeftArg, RightArg}) {
+            if (!hasNode(Node)) {
+              continue;
+            }
             addEdges(neighbors(Node), GraphInstr);
             removeNode(Node);
             CoalesceMap[Node] = GraphInstr;
