@@ -17,8 +17,6 @@ public:
     IGNode(std::set<Value *> Values) : Values(Values) {}
     std::set<Value *> Values;
 
-    std::set<Value *> &values() { return Values; }
-
     void merge(IGNode *Other) {
       for (auto Val : Other->Values) {
         this->Values.insert(Val);
