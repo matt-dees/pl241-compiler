@@ -33,6 +33,8 @@ add_library(cs241c-ir
   RegisterAllocator.cpp
   RegisterAllocator.h
   RAHeuristicInfo.h
+  SpillPass.cpp
+  SpillPass.h
   SSAPass.cpp
   SSAPass.h
   SSAContext.cpp

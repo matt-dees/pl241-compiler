@@ -4,6 +4,7 @@
 #include <set>
 #include <stack>
 #include <utility>
+
 using namespace cs241c;
 using namespace std;
 
@@ -20,8 +21,7 @@ RegisterAllocator::Coloring RegisterAllocator::color(InterferenceGraph IG) {
   return CurrentColoring;
 }
 
-namespace {
-void addNodeBack(InterferenceGraph &IG, Value *Node, std::unordered_set<Value *> &Neighbors) {
+static void addNodeBack(InterferenceGraph &IG, Value *Node, std::unordered_set<Value *> &Neighbors) {
   IG.addNode(Node);
   for (auto Neighbor : Neighbors) {
     if (IG.hasNode(Neighbor)) {
@@ -29,7 +29,6 @@ void addNodeBack(InterferenceGraph &IG, Value *Node, std::unordered_set<Value *>
     }
   }
 }
-}; // namespace
 
 void RegisterAllocator::color(InterferenceGraph &IG, RegisterAllocator::Coloring &CurrentColoring) {
   stack<pair<Value *, unordered_set<Value *>>> RemovedNodes;
@@ -56,6 +55,12 @@ Value *RegisterAllocator::getValWithLowestSpillCost(InterferenceGraph &IG) {
   Value *ToReturn = nullptr;
   int32_t CurrentMinSpillCost = std::numeric_limits<int32_t>::max();
   for (auto RAVPair : IG.graph()) {
+    /*if (auto Instr = dynamic_cast<Instruction *>(RAVPair.first)) {
+      if (Instr->DontSpill) {
+        continue;
+      }
+    }*/
+
     int32_t const RAVSpillCost = IG.heuristicData(RAVPair.first).spillCost();
     if (RAVSpillCost < CurrentMinSpillCost) {
       CurrentMinSpillCost = RAVSpillCost;

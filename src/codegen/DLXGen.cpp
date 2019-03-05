@@ -520,7 +520,6 @@ struct DLXObject {
       break;
     }
     case InstructionType::Call: {
-      int32_t PC = CodeSegment.size();
       int32_t TargetAddress = FunctionAddresses[dynamic_cast<Function *>(Instr.arguments().at(0).Ptr)];
       emitF3(Op::JSR, TargetAddress);
 

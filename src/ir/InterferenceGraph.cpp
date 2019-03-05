@@ -136,7 +136,7 @@ IGBuilder::processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet) {
     for (auto i = 0; i < Args.size(); i++) {
       auto Arg = Args.at(i);
       IG.heuristicData(Arg).NumUses++;
-      if (dynamic_cast<Instruction *>(Arg.Ptr) == nullptr) {
+      if (Arg.ValTy == ValueType::StackSlot || dynamic_cast<Instruction *>(Arg.Ptr) == nullptr) {
         continue;
       }
       IG.addNode(Arg);
