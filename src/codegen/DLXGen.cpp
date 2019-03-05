@@ -319,9 +319,10 @@ struct DLXObject {
     }
     // Load destination is the instruction, Store destination is first param
     Reg const RaSpill = Reg::Spill1;
+    Reg const RbSpill = Reg::Spill2;
     ValueRef AVal = isLoad ? &Instr : Instr.arguments().at(0);
     Reg Ra = isLoad ? mapValueToRegister(AVal, State, RaSpill) : loadValueIntoRegister(AVal, State, RaSpill);
-    Reg Rb = loadValueIntoRegister(Adda->arguments().at(0), State, Reg::Spill1);
+    Reg Rb = loadValueIntoRegister(Adda->arguments().at(0), State, RbSpill);
     if (Adda->arguments().at(1).ValTy == ValueType::Constant) {
       int32_t C = dynamic_cast<ConstantValue *>(Adda->arguments()[1].Ptr)->Val;
       if (exceeds16Bit(C)) {
