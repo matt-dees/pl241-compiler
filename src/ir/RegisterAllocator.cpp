@@ -4,6 +4,7 @@
 #include <set>
 #include <stack>
 #include <utility>
+
 using namespace cs241c;
 using namespace std;
 
@@ -67,9 +68,9 @@ InterferenceGraph::IGNode *RegisterAllocator::getNodeWithLowestSpillCost(Interfe
   // TODO: Change implementation of this function
   // to use priority queue data structure.
   InterferenceGraph::IGNode *ToReturn = nullptr;
-  int32_t CurrentMinSpillCost = std::numeric_limits<int32_t>::max();
+  uint32_t CurrentMinSpillCost = std::numeric_limits<int32_t>::max();
   for (auto NodeToNeighborsPair : IG) {
-    int32_t const SpillCost = NodeToNeighborsPair.first->spillCost();
+    uint32_t const SpillCost = NodeToNeighborsPair.first->spillCost();
     if (SpillCost < CurrentMinSpillCost) {
       CurrentMinSpillCost = SpillCost;
       ToReturn = NodeToNeighborsPair.first;

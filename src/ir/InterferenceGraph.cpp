@@ -44,6 +44,7 @@ void InterferenceGraph::addValue(Value *Val) {
   }
   auto Node = std::make_unique<struct IGNode>(Val);
   ValueToNode[Val] = Node.get();
+  IG[Node.get()] = {};
   IGNodes.push_back(move(Node));
 }
 
@@ -56,8 +57,8 @@ void InterferenceGraph::coalesce() {
         auto PhiArgs = Instr->arguments();
         auto LeftArg = PhiArgs[0];
         auto RightArg = PhiArgs[1];
-        if (hasValue(LeftArg) && hasValue(RightArg) && !interferes(Instr, LeftArg) && !interferes(Instr, RightArg) &&
-            !interferes(LeftArg, RightArg)) {
+        if (containsNodeForValue(LeftArg) && containsNodeForValue(RightArg) && !interferes(Instr, LeftArg) &&
+            !interferes(Instr, RightArg) && !interferes(LeftArg, RightArg)) {
           for (auto Node : std::unordered_set<Value *>{LeftArg, RightArg}) {
             IGNodeForValue->merge(ValueToNode[Node]);
             removeNode(ValueToNode[Node]);
@@ -124,7 +125,7 @@ IGBuilder::processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet) {
     auto Args = ReverseInstructionIt->get()->arguments();
     for (auto i = 0; i < Args.size(); i++) {
       auto Arg = Args.at(i);
-      if (dynamic_cast<Instruction *>(Arg.Ptr) == nullptr) {
+      if (Arg.ValTy == ValueType::StackSlot || dynamic_cast<Instruction *>(Arg.Ptr) == nullptr) {
         continue;
       }
       IG.addValue(Arg);

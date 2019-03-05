@@ -48,6 +48,8 @@ private:
   Variable *Object;
 
 public:
+  bool DontSpill = false;
+
   Instruction(InstructionType, int Id);
   Instruction(InstructionType, int Id, ValueRef Arg1);
   Instruction(InstructionType, int Id, ValueRef Arg1, ValueRef Arg2);

@@ -9,6 +9,7 @@
 #include "Parser.h"
 #include "Phi2VarPass.h"
 #include "SSAPass.h"
+#include "SpillPass.h"
 #include "Vcg.h"
 #include <algorithm>
 #include <fstream>
@@ -68,7 +69,10 @@ int main(int ArgC, char **ArgV) {
 
   ICP.run(*IR);
 
+  SpillPass SP(FA);
   FA.runRegisterAllocation(IR.get());
+  /*SP.run(*IR);
+  FA.runRegisterAllocation(IR.get());*/
 
   if (GenerateVcg) {
     string VcgOutput{string(InputFile) + ".opt.vcg"};

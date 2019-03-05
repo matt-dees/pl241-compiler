@@ -81,6 +81,8 @@ string Instruction::toString() const {
 
     if (Arg.ValTy == ValueType::Register)
       Result << "R" << Arg.Id;
+    else if (Arg.ValTy == ValueType::StackSlot)
+      Result << "S" << Arg.Id;
     else
       Result << Arg->name();
 

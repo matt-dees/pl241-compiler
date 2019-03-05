@@ -26,7 +26,7 @@ public:
       }
       this->NumUses += Other->NumUses;
     }
-    uint32_t NumUses;
+    uint32_t NumUses = 0;
     uint32_t spillCost() { return NumUses; }
   };
   // Map node to edges
@@ -46,6 +46,7 @@ public:
   Graph &graph() { return IG; }
 
   bool hasValue(Value *);
+  bool containsNodeForValue(Value *Val) { return IG.find(ValueToNode[Val]) != IG.end(); }
   void addInterference(Value *From, Value *To);
   void addValue(Value *);
   void addInterferences(const std::unordered_set<Value *> &FromSet, Value *To);
@@ -55,7 +56,7 @@ public:
   void removeNode(IGNode *Val);
 
   void coalesce();
-};
+}; // namespace cs241c
 
 class IGBuilder {
 public:
