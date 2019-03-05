@@ -9,6 +9,7 @@
 #include "Parser.h"
 #include "Phi2VarPass.h"
 #include "SSAPass.h"
+#include "SpillPass.h"
 #include <algorithm>
 #include <catch.hpp>
 #include <fstream>
@@ -49,6 +50,14 @@ TEST_CASE("Compile and run test programs") {
       DCEP.run(*IR);
 
       FA.runRegisterAllocation(IR.get());
+
+      SpillPass SP(FA);
+      bool Spilled = true;
+      while (Spilled) {
+        SP.run(*IR);
+        Spilled = SP.SpilledValues;
+        FA.runRegisterAllocation(IR.get());
+      }
 
       Phi2VarPass P2V(FA);
       P2V.run(*IR);
