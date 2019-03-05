@@ -435,13 +435,18 @@ struct DLXObject {
     CodeSegment[MainJsrInstr + 3] = (MainAddr >> 0);
   }
 
-  int mapSpills(Function &F, FunctionAnalyzer &FA,
-                unordered_map<RegisterAllocator::VirtualRegister, int32_t> &SpilledRegisterOffsets, int StartOffset) {
+  int mapSpills(Function &F, unordered_map<RegisterAllocator::VirtualRegister, int32_t> &SpilledRegisterOffsets,
+                int StartOffset) {
     int CurrentOffset = StartOffset;
-    for (auto ValueVRPair : *(FA.coloring(&F))) {
-      if (FA.isRegisterSpilled(ValueVRPair.second)) {
-        CurrentOffset -= 4;
-        SpilledRegisterOffsets[ValueVRPair.second] = CurrentOffset;
+    for (auto &BB : F.basicBlocks()) {
+      for (auto &Instr : BB->instructions()) {
+        if (Instr->InstrT == InstructionType::LoadS) {
+          auto Slot = Instr->arguments()[0].Id;
+          if (SpilledRegisterOffsets.find(Slot) == SpilledRegisterOffsets.end()) {
+            CurrentOffset -= 4;
+            SpilledRegisterOffsets[Slot] = CurrentOffset;
+          }
+        }
       }
     }
     return CurrentOffset;
@@ -496,6 +501,31 @@ struct DLXObject {
     case InstructionType::Store:
       emitMemory(Instr, State);
       break;
+    case InstructionType::LoadS: {
+      auto Dest = mapValueToRegister(&Instr, State, Spill1);
+      int Slot = Instr.arguments()[0].Id;
+      int Offset = State.SpilledRegisterOffsets[Slot];
+      if (exceeds16Bit(Offset)) {
+        load32BitValue(Accu, Offset);
+        emitF2(Op::LDX, Dest, FP, Accu);
+      } else {
+        emitF1(Op::LDW, Dest, FP, Offset);
+      }
+      break;
+    }
+    case InstructionType::StoreS: {
+      auto Args = Instr.arguments();
+      auto Source = loadValueIntoRegister(Args[0], State, Spill1);
+      int Slot = Instr.arguments()[1].Id;
+      int Offset = State.SpilledRegisterOffsets[Slot];
+      if (exceeds16Bit(Offset)) {
+        load32BitValue(Accu, Offset);
+        emitF2(Op::STX, Source, FP, Accu);
+      } else {
+        emitF1(Op::STW, Source, FP, Offset);
+      }
+      break;
+    }
     case InstructionType::Move:
       emitArithmeticImmediate(Op::ADDI, Instr.arguments().at(1), Instr.arguments().at(0), 0, State);
       break;
@@ -584,6 +614,8 @@ struct DLXObject {
     case InstructionType::Kill:
       // Nothing to emit
       break;
+    default:
+      throw logic_error("Unknown instruction.");
     }
   }
 
@@ -630,7 +662,7 @@ struct DLXObject {
 
     unordered_map<RegisterAllocator::VirtualRegister, int32_t> SpilledRegOffsets;
     // Make space for spills
-    Offset = mapSpills(*F, FA, SpilledRegOffsets, Offset);
+    Offset = mapSpills(*F, SpilledRegOffsets, Offset);
     if (exceeds16Bit(Offset)) {
       load32BitValue(Accu, Offset);
       emitF2(Op::ADD, SP, FP, Accu);

@@ -69,16 +69,23 @@ int main(int ArgC, char **ArgV) {
 
   ICP.run(*IR);
 
-  SpillPass SP(FA);
   FA.runRegisterAllocation(IR.get());
-  /*SP.run(*IR);
-  FA.runRegisterAllocation(IR.get());*/
 
   if (GenerateVcg) {
     string VcgOutput{string(InputFile) + ".opt.vcg"};
     removeFile(VcgOutput);
     VCGW.write(*IR, FA, VcgOutput);
   }
+
+  SpillPass SP(FA);
+  bool Spilled = true;
+  while (Spilled) {
+    SP.run(*IR);
+    Spilled = SP.SpilledValues;
+    FA.runRegisterAllocation(IR.get());
+  }
+
+  ICP.run(*IR);
 
   if (GenerateVcg) {
     for (auto &F : IR->functions()) {

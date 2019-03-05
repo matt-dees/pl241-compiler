@@ -2,7 +2,6 @@
 #include "DominatorTree.h"
 #include "FunctionAnalyzer.h"
 #include <algorithm>
-#include <array>
 #include <iostream>
 #include <stack>
 #include <type_traits>
@@ -47,11 +46,11 @@ struct InstructionEquality {
 
 namespace {
 bool shouldIgnore(Instruction *I) {
-  static const array<InstructionType, 8> IgnoredInstructions{
-      InstructionType::Phi,  InstructionType::Store, InstructionType::Param,   InstructionType::Call,
-      InstructionType::Read, InstructionType::Write, InstructionType::WriteNL, InstructionType::Adda};
+  static const InstructionType IgnoredInstructions[] = {
+      InstructionType::Adda, InstructionType::Phi,  InstructionType::Store, InstructionType::Param,
+      InstructionType::Call, InstructionType::Read, InstructionType::Write, InstructionType::WriteNL};
   return isTerminator(I->InstrT) ||
-         find(IgnoredInstructions.begin(), IgnoredInstructions.end(), I->InstrT) != IgnoredInstructions.end();
+         find(begin(IgnoredInstructions), end(IgnoredInstructions), I->InstrT) != end(IgnoredInstructions);
 }
 
 bool shouldExplore(BasicBlock *From, BasicBlock *To, const unordered_set<BasicBlock *> &Visited, DominatorTree *DT) {

@@ -1,6 +1,5 @@
 #include "InstructionType.h"
 #include <algorithm>
-#include <array>
 #include <type_traits>
 
 using namespace cs241c;
@@ -15,32 +14,34 @@ struct InsTyTInfo {
   const string_view Mnemonic;
 };
 
-static const array<InsTyTInfo, 26> Types{{{InsTyT::Neg, {ValTyT::Value, {ValTyT::Value, ValTyT::Undef}}, "neg"},
-                                          {InsTyT::Add, {ValTyT::Value, {ValTyT::Value, ValTyT::Value}}, "add"},
-                                          {InsTyT::Sub, {ValTyT::Value, {ValTyT::Value, ValTyT::Value}}, "sub"},
-                                          {InsTyT::Mul, {ValTyT::Value, {ValTyT::Value, ValTyT::Value}}, "mul"},
-                                          {InsTyT::Div, {ValTyT::Value, {ValTyT::Value, ValTyT::Value}}, "div"},
-                                          {InsTyT::Cmp, {ValTyT::Cmp, {ValTyT::Value, ValTyT::Value}}, "cmp"},
-                                          {InsTyT::Adda, {ValTyT::Adda, {ValTyT::Value, ValTyT::Value}}, "adda"},
-                                          {InsTyT::Load, {ValTyT::Value, {ValTyT::Value, ValTyT::Undef}}, "load"},
-                                          {InsTyT::Store, {ValTyT::Unit, {ValTyT::Value, ValTyT::Value}}, "store"},
-                                          {InsTyT::Move, {ValTyT::Unit, {ValTyT::Value, ValTyT::Variable}}, "move"},
-                                          {InsTyT::Phi, {ValTyT::Value, {ValTyT::Value, ValTyT::Value}}, "phi"},
-                                          {InsTyT::End, {ValTyT::Unit, {ValTyT::Undef, ValTyT::Undef}}, "end"},
-                                          {InsTyT::Bra, {ValTyT::Unit, {ValTyT::BasicBlock, ValTyT::Undef}}, "bra"},
-                                          {InsTyT::Bne, {ValTyT::Unit, {ValTyT::Cmp, ValTyT::BasicBlock}}, "bne"},
-                                          {InsTyT::Beq, {ValTyT::Unit, {ValTyT::Cmp, ValTyT::BasicBlock}}, "beq"},
-                                          {InsTyT::Ble, {ValTyT::Unit, {ValTyT::Cmp, ValTyT::BasicBlock}}, "ble"},
-                                          {InsTyT::Blt, {ValTyT::Unit, {ValTyT::Cmp, ValTyT::BasicBlock}}, "blt"},
-                                          {InsTyT::Bge, {ValTyT::Unit, {ValTyT::Cmp, ValTyT::BasicBlock}}, "bge"},
-                                          {InsTyT::Bgt, {ValTyT::Unit, {ValTyT::Cmp, ValTyT::BasicBlock}}, "bgt"},
-                                          {InsTyT::Param, {ValTyT::Unit, {ValTyT::Value, ValTyT::Undef}}, "param"},
-                                          {InsTyT::Call, {ValTyT::Value, {ValTyT::Function, ValTyT::Constant}}, "call"},
-                                          {InsTyT::Ret, {ValTyT::Unit, {ValTyT::Any, ValTyT::Undef}}, "ret"},
-                                          {InsTyT::Read, {ValTyT::Value, {ValTyT::Undef, ValTyT::Undef}}, "read"},
-                                          {InsTyT::Write, {ValTyT::Unit, {ValTyT::Value, ValTyT::Undef}}, "write"},
-                                          {InsTyT::WriteNL, {ValTyT::Unit, {ValTyT::Undef, ValTyT::Undef}}, "writeNL"},
-                                          {InsTyT::Kill, {ValTyT::Unit, {ValTyT::Undef, ValTyT::Undef}}, "kill"}}};
+static const InsTyTInfo Types[] = {{InsTyT::Neg, {ValTyT::Value, {ValTyT::Value, ValTyT::Undef}}, "neg"},
+                                   {InsTyT::Add, {ValTyT::Value, {ValTyT::Value, ValTyT::Value}}, "add"},
+                                   {InsTyT::Sub, {ValTyT::Value, {ValTyT::Value, ValTyT::Value}}, "sub"},
+                                   {InsTyT::Mul, {ValTyT::Value, {ValTyT::Value, ValTyT::Value}}, "mul"},
+                                   {InsTyT::Div, {ValTyT::Value, {ValTyT::Value, ValTyT::Value}}, "div"},
+                                   {InsTyT::Cmp, {ValTyT::Value, {ValTyT::Value, ValTyT::Value}}, "cmp"},
+                                   {InsTyT::Adda, {ValTyT::Value, {ValTyT::Value, ValTyT::Value}}, "adda"},
+                                   {InsTyT::Load, {ValTyT::Value, {ValTyT::Value, ValTyT::Undef}}, "load"},
+                                   {InsTyT::Store, {ValTyT::Unit, {ValTyT::Value, ValTyT::Value}}, "store"},
+                                   {InsTyT::Load, {ValTyT::Value, {ValTyT::StackSlot, ValTyT::Undef}}, "loadS"},
+                                   {InsTyT::Store, {ValTyT::Unit, {ValTyT::Value, ValTyT::StackSlot}}, "storeS"},
+                                   {InsTyT::Move, {ValTyT::Unit, {ValTyT::Value, ValTyT::Variable}}, "move"},
+                                   {InsTyT::Phi, {ValTyT::Value, {ValTyT::Value, ValTyT::Value}}, "phi"},
+                                   {InsTyT::End, {ValTyT::Unit, {ValTyT::Undef, ValTyT::Undef}}, "end"},
+                                   {InsTyT::Bra, {ValTyT::Unit, {ValTyT::BasicBlock, ValTyT::Undef}}, "bra"},
+                                   {InsTyT::Bne, {ValTyT::Unit, {ValTyT::Value, ValTyT::BasicBlock}}, "bne"},
+                                   {InsTyT::Beq, {ValTyT::Unit, {ValTyT::Value, ValTyT::BasicBlock}}, "beq"},
+                                   {InsTyT::Ble, {ValTyT::Unit, {ValTyT::Value, ValTyT::BasicBlock}}, "ble"},
+                                   {InsTyT::Blt, {ValTyT::Unit, {ValTyT::Value, ValTyT::BasicBlock}}, "blt"},
+                                   {InsTyT::Bge, {ValTyT::Unit, {ValTyT::Value, ValTyT::BasicBlock}}, "bge"},
+                                   {InsTyT::Bgt, {ValTyT::Unit, {ValTyT::Value, ValTyT::BasicBlock}}, "bgt"},
+                                   {InsTyT::Param, {ValTyT::Unit, {ValTyT::Value, ValTyT::Undef}}, "param"},
+                                   {InsTyT::Call, {ValTyT::Value, {ValTyT::Function, ValTyT::Constant}}, "call"},
+                                   {InsTyT::Ret, {ValTyT::Unit, {ValTyT::Any, ValTyT::Undef}}, "ret"},
+                                   {InsTyT::Read, {ValTyT::Value, {ValTyT::Undef, ValTyT::Undef}}, "read"},
+                                   {InsTyT::Write, {ValTyT::Unit, {ValTyT::Value, ValTyT::Undef}}, "write"},
+                                   {InsTyT::WriteNL, {ValTyT::Unit, {ValTyT::Undef, ValTyT::Undef}}, "writeNL"},
+                                   {InsTyT::Kill, {ValTyT::Unit, {ValTyT::Undef, ValTyT::Undef}}, "kill"}};
 
 static const InsTyTInfo &typeInfo(InsTyT InstrTy) {
   auto Id = static_cast<underlying_type<InsTyT>::type>(InstrTy);

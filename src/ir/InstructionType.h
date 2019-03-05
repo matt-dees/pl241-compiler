@@ -17,6 +17,8 @@ enum class InstructionType {
   Adda,
   Load,
   Store,
+  LoadS,
+  StoreS,
   Move,
   Phi,
 

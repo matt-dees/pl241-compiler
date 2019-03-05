@@ -44,7 +44,9 @@ void FunctionAnalyzer::runRegisterAllocation(Module *M) {
   for (auto &F : M->functions()) {
     buildInterferenceGraph(F.get());
     RegisterAllocator RA;
-    RAColoring[F.get()] = std::make_unique<RegisterAllocator::Coloring>(RA.color(interferenceGraph(F.get())->graph()));
+    auto InterferenceGraph = interferenceGraph(F.get())->graph();
+    auto Coloring = RA.color(InterferenceGraph, *F);
+    RAColoring[F.get()] = std::make_unique<RegisterAllocator::Coloring>(Coloring);
   }
 }
 
