@@ -69,10 +69,18 @@ int main(int ArgC, char **ArgV) {
 
   ICP.run(*IR);
 
-  SpillPass SP(FA);
   FA.runRegisterAllocation(IR.get());
-  /*SP.run(*IR);
-  FA.runRegisterAllocation(IR.get());*/
+
+  SpillPass SP(FA);
+  bool Spilled = true;
+  while (Spilled) {
+    SP.run(*IR);
+    Spilled = SP.SpilledValues;
+    // TODO: Don't spill into existing stack slots, we have to skip these during subsequent allocations.
+    FA.runRegisterAllocation(IR.get());
+  }
+
+  ICP.run(*IR);
 
   if (GenerateVcg) {
     string VcgOutput{string(InputFile) + ".opt.vcg"};

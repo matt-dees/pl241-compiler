@@ -55,11 +55,11 @@ Value *RegisterAllocator::getValWithLowestSpillCost(InterferenceGraph &IG) {
   Value *ToReturn = nullptr;
   int32_t CurrentMinSpillCost = std::numeric_limits<int32_t>::max();
   for (auto RAVPair : IG.graph()) {
-    /*if (auto Instr = dynamic_cast<Instruction *>(RAVPair.first)) {
+    if (auto Instr = dynamic_cast<Instruction *>(RAVPair.first)) {
       if (Instr->DontSpill) {
         continue;
       }
-    }*/
+    }
 
     int32_t const RAVSpillCost = IG.heuristicData(RAVPair.first).spillCost();
     if (RAVSpillCost < CurrentMinSpillCost) {
