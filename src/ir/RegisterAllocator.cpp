@@ -1,4 +1,5 @@
 #include "RegisterAllocator.h"
+#include <cmath>
 #include <iostream>
 #include <limits>
 #include <set>
@@ -8,10 +9,27 @@
 using namespace cs241c;
 using namespace std;
 
-RegisterAllocator::Coloring RegisterAllocator::color(InterferenceGraph IG) {
+static int countStackSlots(Function &F) {
+  int StackSlotMax = RegisterAllocator::NUM_REGISTERS;
+
+  for (auto &BB : F.basicBlocks()) {
+    for (auto &Instr : BB->instructions()) {
+      if (Instr->InstrT == InstructionType::LoadS) {
+        auto Slot = Instr->arguments()[0].Id;
+        StackSlotMax = max(StackSlotMax, Slot);
+      }
+    }
+  }
+
+  return StackSlotMax;
+}
+
+RegisterAllocator::Coloring RegisterAllocator::color(InterferenceGraph IG, Function &F) {
   if (IG.graph().size() == 0) {
     return {};
   }
+
+  FreeStackSlotBegin = countStackSlots(F) + 1;
 
   Coloring CurrentColoring = {};
   color(IG, CurrentColoring);
@@ -95,15 +113,21 @@ void RegisterAllocator::assignColor(InterferenceGraph &IG, RegisterAllocator::Co
 
   VirtualRegister ColorToUse = 0;
   // Find first unused color
-  for (auto Reg = 1; Reg <= std::numeric_limits<VirtualRegister>::max(); Reg++) {
+  for (auto Reg = 1; Reg <= NUM_REGISTERS; Reg++) {
     if (UsedColors.find(Reg) == UsedColors.end()) {
       ColorToUse = Reg;
       break;
     }
   }
 
+  // Now we spill
   if (ColorToUse == 0) {
-    throw logic_error("Not enough virtual registers to color interference graph.");
+    for (auto Reg = FreeStackSlotBegin; Reg <= numeric_limits<VirtualRegister>::max(); ++Reg) {
+      if (UsedColors.find(Reg) == UsedColors.end()) {
+        ColorToUse = Reg;
+        break;
+      }
+    }
   }
 
   CurrentColoring[NodeToColor] = ColorToUse;

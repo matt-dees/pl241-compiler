@@ -21,7 +21,8 @@ void SpillPass::process(Function &F) {
   for (auto &BB : F.basicBlocks()) {
     auto &Instructions = BB->instructions();
     for (auto InstrIt = Instructions.begin(); InstrIt != Instructions.end(); ++InstrIt) {
-      if (InstrIt->get()->InstrT == InstructionType::Phi) {
+      if (InstrIt->get()->InstrT == InstructionType::Adda) {
+      } else if (InstrIt->get()->InstrT == InstructionType::Phi) {
         auto PhiColorIt = Coloring->find(InstrIt->get());
         auto PhiColor = PhiColorIt->second;
 
@@ -50,6 +51,7 @@ void SpillPass::process(Function &F) {
               auto LoadSpill = make_unique<Instruction>(InstructionType::LoadS, Id, StackSlot);
               auto LoadSpillPtr = LoadSpill.get();
               LoadSpill->owner() = SourceBlock;
+              LoadSpill->storage() = InstrIt->get()->storage();
               LoadSpill->DontSpill = true;
               SourceBlock->appendInstruction(move(LoadSpill));
 
@@ -65,6 +67,7 @@ void SpillPass::process(Function &F) {
             int Id = NameGen::genInstructionId();
             auto StoreSpill = make_unique<Instruction>(InstructionType::StoreS, Id, Arg, StackSlot);
             StoreSpill->owner() = SourceBlock;
+            StoreSpill->storage() = InstrIt->get()->storage();
             StoreSpill->DontSpill = true;
             SourceBlock->appendInstruction(move(StoreSpill));
           }
@@ -73,6 +76,12 @@ void SpillPass::process(Function &F) {
         auto Args = InstrIt->get()->arguments();
         for (int ArgPos = 0; ArgPos < Args.size(); ++ArgPos) {
           auto Arg = Args[ArgPos];
+          if (Arg.ValTy == ValueType::Value) {
+            auto ArgInstr = dynamic_cast<Instruction *>(Arg.Ptr);
+            if (ArgInstr && ArgInstr->InstrT == InstructionType::Adda) {
+              continue;
+            }
+          }
 
           auto ColorIt = Coloring->find(Arg);
           if (ColorIt == Coloring->end())
@@ -86,6 +95,8 @@ void SpillPass::process(Function &F) {
           int InstructionId = NameGen::genInstructionId();
           ValueRef StackSlot(ValueType::StackSlot, Color);
           auto LoadSpilledArgInstr = make_unique<Instruction>(InstructionType::LoadS, InstructionId, StackSlot);
+          LoadSpilledArgInstr->owner() = BB.get();
+          LoadSpilledArgInstr->storage() = InstrIt->get()->storage();
           LoadSpilledArgInstr->DontSpill = true;
           auto ArgPtr = LoadSpilledArgInstr.get();
           InstrIt = Instructions.insert(InstrIt, move(LoadSpilledArgInstr));
@@ -109,6 +120,9 @@ void SpillPass::process(Function &F) {
         ValueRef StackSlot(ValueType::StackSlot, Color);
         auto StoreSpillInstr =
             make_unique<Instruction>(InstructionType::StoreS, InstructionId, InstrIt->get(), StackSlot);
+        StoreSpillInstr->owner() = BB.get();
+        StoreSpillInstr->storage() = InstrIt->get()->storage();
+        StoreSpillInstr->DontSpill = true;
         ++InstrIt;
         InstrIt = Instructions.insert(InstrIt, move(StoreSpillInstr));
       }

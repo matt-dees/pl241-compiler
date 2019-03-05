@@ -71,22 +71,21 @@ int main(int ArgC, char **ArgV) {
 
   FA.runRegisterAllocation(IR.get());
 
-  SpillPass SP(FA);
-  bool Spilled = true;
-  while (Spilled) {
-    SP.run(*IR);
-    Spilled = SP.SpilledValues;
-    // TODO: Don't spill into existing stack slots, we have to skip these during subsequent allocations.
-    FA.runRegisterAllocation(IR.get());
-  }
-
-  ICP.run(*IR);
-
   if (GenerateVcg) {
     string VcgOutput{string(InputFile) + ".opt.vcg"};
     removeFile(VcgOutput);
     VCGW.write(*IR, FA, VcgOutput);
   }
+
+  SpillPass SP(FA);
+  bool Spilled = true;
+  while (Spilled) {
+    SP.run(*IR);
+    Spilled = SP.SpilledValues;
+    FA.runRegisterAllocation(IR.get());
+  }
+
+  ICP.run(*IR);
 
   if (GenerateVcg) {
     for (auto &F : IR->functions()) {

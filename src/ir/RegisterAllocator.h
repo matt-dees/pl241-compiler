@@ -15,8 +15,11 @@ public:
   using Coloring = std::unordered_map<Value *, VirtualRegister>;
   static const uint8_t NUM_REGISTERS = 8;
 
+private:
+  VirtualRegister FreeStackSlotBegin = NUM_REGISTERS + 1;
+
 public:
-  Coloring color(InterferenceGraph IG);
+  Coloring color(InterferenceGraph IG, Function &);
 
 private:
   Value *getValWithLowestSpillCost(InterferenceGraph &);
