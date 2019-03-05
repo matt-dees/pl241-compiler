@@ -47,9 +47,9 @@ struct InstructionEquality {
 
 namespace {
 bool shouldIgnore(Instruction *I) {
-  static const array<InstructionType, 7> IgnoredInstructions{
-      InstructionType::Phi,  InstructionType::Store, InstructionType::Param,  InstructionType::Call,
-      InstructionType::Read, InstructionType::Write, InstructionType::WriteNL};
+  static const array<InstructionType, 8> IgnoredInstructions{
+      InstructionType::Phi,  InstructionType::Store, InstructionType::Param,   InstructionType::Call,
+      InstructionType::Read, InstructionType::Write, InstructionType::WriteNL, InstructionType::Adda};
   return isTerminator(I->InstrT) ||
          find(IgnoredInstructions.begin(), IgnoredInstructions.end(), I->InstrT) != IgnoredInstructions.end();
 }
