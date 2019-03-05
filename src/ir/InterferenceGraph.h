@@ -3,7 +3,6 @@
 
 #include "DominatorTree.h"
 #include "Function.h"
-#include "RAHeuristicInfo.h"
 #include <set>
 #include <unordered_map>
 #include <unordered_set>

@@ -32,7 +32,6 @@ add_library(cs241c-ir
   Phi2VarPass.h
   RegisterAllocator.cpp
   RegisterAllocator.h
-  RAHeuristicInfo.h
   SpillPass.cpp
   SpillPass.h
   SSAPass.cpp
