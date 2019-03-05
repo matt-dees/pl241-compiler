@@ -16,13 +16,16 @@ public:
   static const uint8_t NUM_REGISTERS = 8;
 
 public:
-  Coloring color(InterferenceGraph IG);
+  Coloring color(InterferenceGraph::Graph IG);
 
 private:
-  Value *getValWithLowestSpillCost(InterferenceGraph &);
-  void color(InterferenceGraph &IG, Coloring &CurrentColoring);
-  void assignColor(InterferenceGraph &IG, Coloring &CurrentColoring, Value *NodeToColor);
-  Value *chooseNextNodeToColor(InterferenceGraph &IG);
+  InterferenceGraph::IGNode *getNodeWithLowestSpillCost(InterferenceGraph::Graph &IG);
+  void color(InterferenceGraph::Graph &IG,
+             std::unordered_map<InterferenceGraph::IGNode *, VirtualRegister> &CurrentColoring);
+  void assignColor(InterferenceGraph::Graph &IG,
+                   std::unordered_map<InterferenceGraph::IGNode *, VirtualRegister> &CurrentColoring,
+                   InterferenceGraph::IGNode *NodeToColor);
+  InterferenceGraph::IGNode *chooseNextNodeToColor(InterferenceGraph::Graph &IG);
 };
 
 class AnnotatedIG {

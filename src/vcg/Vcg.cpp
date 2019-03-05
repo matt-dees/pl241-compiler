@@ -93,10 +93,11 @@ void writeModule(Module &M, FunctionAnalyzer &FA, ofstream &OutFileStream, bool 
 namespace {
 
 struct AIGWriteState {
-  std::set<std::pair<Value *, Value *>> WrittenEdges;
+  std::set<std::pair<InterferenceGraph::IGNode *, InterferenceGraph::IGNode *>> WrittenEdges;
 };
 
-void writeIGEdge(AIGWriteState &State, ofstream &OutStream, Value *From, Value *To) {
+void writeIGEdge(AIGWriteState &State, ofstream &OutStream, InterferenceGraph::IGNode *From,
+                 InterferenceGraph::IGNode *To) {
   if (State.WrittenEdges.find(std::pair(To, From)) != State.WrittenEdges.end() ||
       State.WrittenEdges.find(std::pair(From, To)) != State.WrittenEdges.end()) {
     return;
@@ -104,9 +105,9 @@ void writeIGEdge(AIGWriteState &State, ofstream &OutStream, Value *From, Value *
   State.WrittenEdges.insert(std::make_pair(From, To));
   OutStream << "edge: {\n";
   OutStream << "sourcename: "
-            << "\"" << From->toString() << "\"\n";
+            << "\"" << (*From->Values.begin())->toString() << "\"\n";
   OutStream << "targetname: "
-            << "\"" << To->toString() << "\"\n";
+            << "\"" << (*To->Values.begin())->toString() << "\"\n";
   OutStream << "arrowstyle: none"
             << "\n";
   OutStream << "}\n";
@@ -117,16 +118,14 @@ void writeNodes(AnnotatedIG &AIG, std::ofstream &OutFileStream) {
   for (auto &VertexEdgePair : AIG.interferenceGraph().graph()) {
     OutFileStream << "node: {\n";
     OutFileStream << "title: "
-                  << "\"" << VertexEdgePair.first->toString() << "\"\n";
-    OutFileStream << "label: \"" + VertexEdgePair.first->toString() << "\n";
-    for (auto Val : AIG.interferenceGraph().coalescedNodes()) {
-      if (Val.second == VertexEdgePair.first) {
-        OutFileStream << Val.first->toString() << "\n";
-      }
+                  << "\"" << (*(VertexEdgePair.first->Values.begin()))->toString() << "\"\n";
+    OutFileStream << "label: \"";
+    for (auto Val : VertexEdgePair.first->Values) {
+      OutFileStream << Val->toString() << "\n";
     }
     OutFileStream << "\"";
 
-    OutFileStream << "color:" + AIG.lookupColor(VertexEdgePair.first) << "\n";
+    OutFileStream << "color:" + AIG.lookupColor((*(VertexEdgePair.first->Values.begin()))) << "\n";
     OutFileStream << "}\n";
     for (auto Destination : VertexEdgePair.second) {
       writeIGEdge(State, OutFileStream, VertexEdgePair.first, Destination);

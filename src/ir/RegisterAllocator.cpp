@@ -7,40 +7,53 @@
 using namespace cs241c;
 using namespace std;
 
-RegisterAllocator::Coloring RegisterAllocator::color(InterferenceGraph IG) {
-  if (IG.graph().size() == 0) {
+RegisterAllocator::Coloring RegisterAllocator::color(InterferenceGraph::Graph IG) {
+  if (IG.size() == 0) {
     return {};
   }
 
-  Coloring CurrentColoring = {};
-  color(IG, CurrentColoring);
-  for (auto Node : IG.coalescedNodes()) {
-    CurrentColoring[Node.first] = CurrentColoring.at(Node.second);
+  std::unordered_map<InterferenceGraph::IGNode *, VirtualRegister> IGNodeColoring = {};
+  color(IG, IGNodeColoring);
+
+  Coloring ToReturn;
+  for (auto ColorPair : IGNodeColoring) {
+    for (auto Value : ColorPair.first->Values) {
+      ToReturn[Value] = ColorPair.second;
+    }
   }
-  return CurrentColoring;
+  return ToReturn;
 }
 
 namespace {
-void addNodeBack(InterferenceGraph &IG, Value *Node, std::unordered_set<Value *> &Neighbors) {
-  IG.addNode(Node);
+void addNodeBack(InterferenceGraph::Graph &IG, InterferenceGraph::IGNode *Node,
+                 std::unordered_set<InterferenceGraph::IGNode *> &Neighbors) {
+  IG[Node] = Neighbors;
   for (auto Neighbor : Neighbors) {
-    if (IG.hasNode(Neighbor)) {
-      IG.addEdge(Node, Neighbor);
+    if (IG.find(Neighbor) != IG.end()) {
+      IG.at(Neighbor).insert(Node);
     }
   }
 }
+void removeNode(InterferenceGraph::Graph &IG, InterferenceGraph::IGNode *Node) {
+  for (auto Neighbor : IG.at(Node)) {
+    IG.at(Neighbor).erase(Node);
+  }
+  IG.erase(Node);
+}
 }; // namespace
 
-void RegisterAllocator::color(InterferenceGraph &IG, RegisterAllocator::Coloring &CurrentColoring) {
-  stack<pair<Value *, unordered_set<Value *>>> RemovedNodes;
+void RegisterAllocator::color(InterferenceGraph::Graph &IG,
+                              std::unordered_map<InterferenceGraph::IGNode *, VirtualRegister> &CurrentColoring) {
+  stack<pair<InterferenceGraph::IGNode *, unordered_set<InterferenceGraph::IGNode *>>> RemovedNodes;
 
-  while (IG.graph().size() > 1) {
-    Value *NextNode = chooseNextNodeToColor(IG);
-    std::unordered_set<Value *> NeighborsOfRemoved = IG.removeNode(NextNode);
+  while (IG.size() > 1) {
+    InterferenceGraph::IGNode *NextNode = chooseNextNodeToColor(IG);
+    std::unordered_set<InterferenceGraph::IGNode *> NeighborsOfRemoved = IG.at(NextNode);
+    removeNode(IG, NextNode);
     RemovedNodes.push({NextNode, move(NeighborsOfRemoved)});
   }
 
-  assignColor(IG, CurrentColoring, IG.graph().begin()->first);
+  assignColor(IG, CurrentColoring, IG.begin()->first);
 
   while (!RemovedNodes.empty()) {
     auto &NextNode = RemovedNodes.top();
@@ -50,41 +63,42 @@ void RegisterAllocator::color(InterferenceGraph &IG, RegisterAllocator::Coloring
   }
 }
 
-Value *RegisterAllocator::getValWithLowestSpillCost(InterferenceGraph &IG) {
+InterferenceGraph::IGNode *RegisterAllocator::getNodeWithLowestSpillCost(InterferenceGraph::Graph &IG) {
   // TODO: Change implementation of this function
   // to use priority queue data structure.
-  Value *ToReturn = nullptr;
+  InterferenceGraph::IGNode *ToReturn = nullptr;
   int32_t CurrentMinSpillCost = std::numeric_limits<int32_t>::max();
-  for (auto RAVPair : IG.graph()) {
-    int32_t const RAVSpillCost = IG.heuristicData(RAVPair.first).spillCost();
-    if (RAVSpillCost < CurrentMinSpillCost) {
-      CurrentMinSpillCost = RAVSpillCost;
-      ToReturn = RAVPair.first;
+  for (auto NodeToNeighborsPair : IG) {
+    int32_t const SpillCost = NodeToNeighborsPair.first->spillCost();
+    if (SpillCost < CurrentMinSpillCost) {
+      CurrentMinSpillCost = SpillCost;
+      ToReturn = NodeToNeighborsPair.first;
     }
   }
   return ToReturn;
 }
 
-Value *RegisterAllocator::chooseNextNodeToColor(InterferenceGraph &IG) {
-  Value *NextNode = nullptr;
-  for (auto RAVPair : IG.graph()) {
-    if (IG.neighbors(RAVPair.first).size() < NUM_REGISTERS) {
-      NextNode = RAVPair.first;
+InterferenceGraph::IGNode *RegisterAllocator::chooseNextNodeToColor(InterferenceGraph::Graph &IG) {
+  InterferenceGraph::IGNode *NextNode = nullptr;
+  for (auto NodeToNeighborsPair : IG) {
+    if (NodeToNeighborsPair.second.size() < NUM_REGISTERS) {
+      NextNode = NodeToNeighborsPair.first;
       break;
     }
   }
 
   if (!NextNode) {
-    NextNode = getValWithLowestSpillCost(IG);
+    NextNode = getNodeWithLowestSpillCost(IG);
   }
   return NextNode;
 }
 
-void RegisterAllocator::assignColor(InterferenceGraph &IG, RegisterAllocator::Coloring &CurrentColoring,
-                                    Value *NodeToColor) {
+void RegisterAllocator::assignColor(InterferenceGraph::Graph &IG,
+                                    std::unordered_map<InterferenceGraph::IGNode *, VirtualRegister> &CurrentColoring,
+                                    InterferenceGraph::IGNode *NodeToColor) {
   std::set<VirtualRegister> UsedColors;
   // Figure out what colors are used by neighbors
-  for (auto Neighbor : IG.neighbors(NodeToColor)) {
+  for (auto Neighbor : IG.at(NodeToColor)) {
     UsedColors.insert(CurrentColoring[Neighbor]);
   }
 

@@ -4,38 +4,55 @@
 #include "DominatorTree.h"
 #include "Function.h"
 #include "RAHeuristicInfo.h"
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 
 namespace cs241c {
 class InterferenceGraph {
 public:
+  struct IGNode {
+  public:
+    IGNode() = default;
+    IGNode(Value *Node) : Values({Node}) {}
+    IGNode(std::set<Value *> Values) : Values(Values) {}
+    std::set<Value *> Values;
+
+    std::set<Value *> &values() { return Values; }
+
+    void merge(IGNode *Other) {
+      for (auto Val : Other->Values) {
+        this->Values.insert(Val);
+      }
+      this->NumUses += Other->NumUses;
+    }
+    uint32_t NumUses;
+    uint32_t spillCost() { return NumUses; }
+  };
   // Map node to edges
-  using Graph = std::unordered_map<Value *, std::unordered_set<Value *>>;
+  using Graph = std::unordered_map<IGNode *, std::unordered_set<IGNode *>>;
 
 private:
   Graph IG;
+  std::vector<std::unique_ptr<IGNode>> IGNodes;
 
-  bool interferes(Value *Node1, Value *Node2);
+  bool interferes(Value *Val1, Value *Val2);
 
-  Value *getValueInGraph(Value *);
-  std::unordered_map<Value *, RAHeuristicInfo> HeuristicDataMap;
-  std::unordered_map<Value *, Value *> CoalesceMap;
+  std::unordered_map<Value *, IGNode *> ValueToNode;
 
 public:
   InterferenceGraph() = default;
 
-  std::unordered_map<Value *, Value *> &coalescedNodes() { return CoalesceMap; }
-  RAHeuristicInfo &heuristicData(Value *);
+  Graph &graph() { return IG; }
 
-  const Graph &graph() const { return IG; }
+  bool hasValue(Value *);
+  void addInterference(Value *From, Value *To);
+  void addValue(Value *);
+  void addInterferences(const std::unordered_set<Value *> &FromSet, Value *To);
+  void visit(Value *);
 
-  std::unordered_set<Value *> removeNode(Value *);
-  std::unordered_set<Value *> neighbors(Value *);
-  bool hasNode(Value *Node);
-  void addEdge(Value *From, Value *To);
-  void addNode(Value *Node);
-  void addEdges(const std::unordered_set<Value *> &FromSet, Value *To);
+  std::unordered_set<IGNode *> neighbors(IGNode *Val);
+  void removeNode(IGNode *Val);
 
   void coalesce();
 };
@@ -44,7 +61,7 @@ class IGBuilder {
 public:
   IGBuilder(Function *F, DominatorTree *DT) : F(F), DT(DT){};
   void buildInterferenceGraph();
-  InterferenceGraph interferenceGraph() { return IG; }
+  InterferenceGraph &interferenceGraph() { return IG; }
 
 private:
   struct IgBuildCtx {

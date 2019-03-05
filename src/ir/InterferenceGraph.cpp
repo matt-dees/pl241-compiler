@@ -3,71 +3,65 @@
 using namespace cs241c;
 using namespace std;
 
-void InterferenceGraph::addEdges(const std::unordered_set<Value *> &FromSet, Value *To) {
+void InterferenceGraph::addInterferences(const std::unordered_set<Value *> &FromSet, Value *To) {
   for (auto Node : FromSet) {
-    addEdge(Node, To);
+    addInterference(Node, To);
   }
 }
 
-void InterferenceGraph::addEdge(Value *From, Value *To) {
+void InterferenceGraph::addInterference(Value *From, Value *To) {
   if (From == To) {
     return;
   }
-  IG[From].insert(To);
-  IG[To].insert(From);
+  auto IGFrom = ValueToNode.at(From);
+  auto IGTo = ValueToNode.at(To);
+  IG[IGFrom].insert(IGTo);
+  IG[IGTo].insert(IGFrom);
 }
 
-std::unordered_set<Value *> InterferenceGraph::neighbors(Value *RAV) {
-  if (IG.find(RAV) == IG.end()) {
-    throw logic_error("Value " + RAV->toString() + " not in graph.");
+std::unordered_set<InterferenceGraph::IGNode *> InterferenceGraph::neighbors(IGNode *Node) {
+  if (IG.find(Node) == IG.end()) {
+    throw logic_error("Node not in graph.");
   }
-  return IG.at(RAV);
+  return IG.at(Node);
 }
 
-std::unordered_set<Value *> InterferenceGraph::removeNode(Value *RAV) {
-  std::unordered_set<Value *> Neighbors = neighbors(RAV);
-  IG.erase(RAV);
-  for (auto Neighbor : Neighbors) {
-    IG[Neighbor].erase(RAV);
-  }
-  return Neighbors;
-}
-
-bool InterferenceGraph::hasNode(Value *Node) { return IG.find(Node) != IG.end(); }
-
-void InterferenceGraph::addNode(Value *Node) {
-  if (hasNode(Node)) {
+void InterferenceGraph::removeNode(IGNode *Node) {
+  if (IG.find(Node) == IG.end()) {
     return;
   }
-  IG[Node] = {};
+  for (auto Neighbor : IG.at(Node)) {
+    IG.at(Neighbor).erase(Node);
+  }
+  IG.erase(Node);
 }
 
-RAHeuristicInfo &InterferenceGraph::heuristicData(Value *Val) {
-  if (HeuristicDataMap.find(Val) == HeuristicDataMap.end()) {
-    HeuristicDataMap[Val] = RAHeuristicInfo();
+bool InterferenceGraph::hasValue(Value *Node) { return ValueToNode.find(Node) != ValueToNode.end(); }
+
+void InterferenceGraph::addValue(Value *Val) {
+  if (hasValue(Val)) {
+    return;
   }
-  return HeuristicDataMap[Val];
+  auto Node = std::make_unique<struct IGNode>(Val);
+  ValueToNode[Val] = Node.get();
+  IGNodes.push_back(move(Node));
 }
 
 void InterferenceGraph::coalesce() {
-  for (auto NodeEdgePair : graph()) {
-    if (auto Instr = dynamic_cast<Instruction *>(NodeEdgePair.first)) {
-      auto GraphInstr = getValueInGraph(Instr);
+  for (auto ValueToNodePair : ValueToNode) {
+    auto Val = ValueToNodePair.first;
+    if (auto Instr = dynamic_cast<Instruction *>(Val)) {
+      auto IGNodeForValue = ValueToNodePair.second;
       if (Instr->InstrT == InstructionType::Phi) {
         auto PhiArgs = Instr->arguments();
-        auto LeftArg = getValueInGraph(PhiArgs[0]);
-        auto RightArg = getValueInGraph(PhiArgs[1]);
-        if (hasNode(LeftArg) && hasNode(RightArg) && !interferes(GraphInstr, LeftArg) &&
-            !interferes(GraphInstr, RightArg) && !interferes(LeftArg, RightArg)) {
+        auto LeftArg = PhiArgs[0];
+        auto RightArg = PhiArgs[1];
+        if (hasValue(LeftArg) && hasValue(RightArg) && !interferes(Instr, LeftArg) && !interferes(Instr, RightArg) &&
+            !interferes(LeftArg, RightArg)) {
           for (auto Node : std::unordered_set<Value *>{LeftArg, RightArg}) {
-            addEdges(neighbors(Node), GraphInstr);
-            removeNode(Node);
-            CoalesceMap[Node] = GraphInstr;
-            for (auto CoalesceMapping : CoalesceMap) {
-              if (CoalesceMapping.second == Node) {
-                CoalesceMap[CoalesceMapping.first] = GraphInstr;
-              }
-            }
+            IGNodeForValue->merge(ValueToNode[Node]);
+            removeNode(ValueToNode[Node]);
+            ValueToNode[Node] = IGNodeForValue;
           }
         }
       }
@@ -75,16 +69,11 @@ void InterferenceGraph::coalesce() {
   }
 }
 
-bool InterferenceGraph::interferes(Value *Node1, Value *Node2) {
-  std::unordered_set<Value *> Node2Neighbors = neighbors(Node2);
+bool InterferenceGraph::interferes(Value *Val1, Value *Val2) {
+  auto Node1 = ValueToNode.at(Val1);
+  auto Node2 = ValueToNode.at(Val2);
+  auto Node2Neighbors = neighbors(Node2);
   return Node2Neighbors.find(Node1) != Node2Neighbors.end();
-}
-
-Value *InterferenceGraph::getValueInGraph(Value *V) {
-  if (CoalesceMap.find(V) == CoalesceMap.end()) {
-    return V;
-  }
-  return CoalesceMap[V];
 }
 
 void IGBuilder::buildInterferenceGraph() {
@@ -126,7 +115,7 @@ std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
 IGBuilder::processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet) {
   std::unordered_map<BasicBlock *, std::unordered_set<Value *>> PredecessorLiveSets;
   for (auto Val : LiveSet) {
-    IG.addEdges(LiveSet, Val);
+    IG.addInterferences(LiveSet, Val);
   }
   for (auto ReverseInstructionIt = BB->instructions().rbegin(); ReverseInstructionIt != BB->instructions().rend();
        ReverseInstructionIt++) {
@@ -135,12 +124,12 @@ IGBuilder::processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet) {
     auto Args = ReverseInstructionIt->get()->arguments();
     for (auto i = 0; i < Args.size(); i++) {
       auto Arg = Args.at(i);
-      IG.heuristicData(Arg).NumUses++;
       if (dynamic_cast<Instruction *>(Arg.Ptr) == nullptr) {
         continue;
       }
-      IG.addNode(Arg);
-      IG.addEdges(LiveSet, Arg);
+      IG.addValue(Arg);
+      IG.visit(Arg);
+      IG.addInterferences(LiveSet, Arg);
       if (ReverseInstructionIt->get()->InstrT != InstructionType::Phi) {
         LiveSet.insert(Arg);
       } else {
@@ -163,6 +152,11 @@ IGBuilder::processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet) {
     PredecessorLiveSets[Pred] = LiveSetToPropagate;
   }
   return PredecessorLiveSets;
+}
+
+void InterferenceGraph::visit(Value *Val) {
+  IGNode *Node = ValueToNode.at(Val);
+  Node->NumUses++;
 }
 
 IGBuilder::IgBuildCtx IGBuilder::igBuildIfStmt(IGBuilder::IgBuildCtx CurrentCtx) {

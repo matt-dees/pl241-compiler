@@ -31,7 +31,7 @@ void FunctionAnalyzer::buildDominatorTree(Function *F) {
 void FunctionAnalyzer::buildInterferenceGraph(Function *F) {
   IGBuilder IGB(F, dominatorTree(F));
   IGB.buildInterferenceGraph();
-  IGMap[F] = std::make_unique<InterferenceGraph>(IGB.interferenceGraph());
+  IGMap[F] = std::make_unique<InterferenceGraph>(std::move(IGB.interferenceGraph()));
 }
 
 void FunctionAnalyzer::runDominanceAnalytics(Module *M) {
@@ -44,7 +44,7 @@ void FunctionAnalyzer::runRegisterAllocation(Module *M) {
   for (auto &F : M->functions()) {
     buildInterferenceGraph(F.get());
     RegisterAllocator RA;
-    RAColoring[F.get()] = std::make_unique<RegisterAllocator::Coloring>(RA.color(*interferenceGraph(F.get())));
+    RAColoring[F.get()] = std::make_unique<RegisterAllocator::Coloring>(RA.color(interferenceGraph(F.get())->graph()));
   }
 }
 
