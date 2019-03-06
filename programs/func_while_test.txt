@@ -3,7 +3,7 @@ procedure foo( );
 var a, b;
 {
 	let a <- 1;
-	while a != b do
+	while a < 15  do
 		let a <- a * 2;
 		let b <- a + 1
 	od;
