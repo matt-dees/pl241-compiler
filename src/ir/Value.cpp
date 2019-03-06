@@ -11,12 +11,13 @@ struct ValTyInfo {
   const string_view Name;
 };
 
-static ValTyInfo SuperTypes[] = {{ValTyT::Undef, "Undef"},       {ValTyT::Any, "Any"},
-                                 {ValTyT::Any, "Unit"},          {ValTyT::Any, "Value"},
-                                 {ValTyT::Value, "Constant"},    {ValTyT::Value, "Variable"},
-                                 {ValTyT::Variable, "Register"}, {ValTyT::Variable, "StackSlot"},
-                                 {ValTyT::Value, "Cmp"},         {ValTyT::Value, "Adda"},
-                                 {ValTyT::Any, "BasicBlock"},    {ValTyT::Any, "Function"}};
+static ValTyInfo SuperTypes[] = {{ValTyT::Undef, "Undef"},        {ValTyT::Any, "Any"},
+                                 {ValTyT::Any, "Unit"},           {ValTyT::Any, "Value"},
+                                 {ValTyT::Value, "Constant"},     {ValTyT::Value, "Variable"},
+                                 {ValTyT::Variable, "Register"},  {ValTyT::Variable, "Parameter"},
+                                 {ValTyT::Variable, "StackSlot"}, {ValTyT::Value, "Cmp"},
+                                 {ValTyT::Value, "Adda"},         {ValTyT::Any, "BasicBlock"},
+                                 {ValTyT::Any, "Function"}};
 
 bool cs241c::isSubtype(ValTyT This, ValTyT Super) {
   if (This == ValTyT::Undef) {

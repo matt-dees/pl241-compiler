@@ -6,6 +6,7 @@
 #include "IntegrityCheckPass.h"
 #include "Lexer.h"
 #include "Mem2VarPass.h"
+#include "ParamPass.h"
 #include "Parser.h"
 #include "Phi2VarPass.h"
 #include "SSAPass.h"
@@ -66,6 +67,11 @@ int main(int ArgC, char **ArgV) {
 
   DeadCodeEliminationPass DCEP(FA);
   DCEP.run(*IR);
+
+  ICP.run(*IR);
+
+  ParamPass PP(FA);
+  PP.run(*IR);
 
   ICP.run(*IR);
 

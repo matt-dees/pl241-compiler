@@ -5,7 +5,19 @@
 #include <string_view>
 
 namespace cs241c {
-enum class ValueType { Undef, Any, Unit, Value, Constant, Variable, Register, StackSlot, BasicBlock, Function };
+enum class ValueType {
+  Undef,
+  Any,
+  Unit,
+  Value,
+  Constant,
+  Variable,
+  Register,
+  Parameter,
+  StackSlot,
+  BasicBlock,
+  Function
+};
 
 bool isSubtype(ValueType This, ValueType Super);
 std::string_view name(ValueType);

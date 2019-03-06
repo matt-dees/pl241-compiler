@@ -6,6 +6,7 @@
 #include "IntegrityCheckPass.h"
 #include "Lexer.h"
 #include "Mem2VarPass.h"
+#include "ParamPass.h"
 #include "Parser.h"
 #include "Phi2VarPass.h"
 #include "SSAPass.h"
@@ -48,6 +49,9 @@ TEST_CASE("Compile and run test programs") {
 
       DeadCodeEliminationPass DCEP(FA);
       DCEP.run(*IR);
+
+      ParamPass PP(FA);
+      PP.run(*IR);
 
       FA.runRegisterAllocation(IR.get());
 

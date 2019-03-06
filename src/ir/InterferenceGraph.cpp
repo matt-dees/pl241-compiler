@@ -128,7 +128,8 @@ IGBuilder::processBlock(BasicBlock *BB, std::unordered_set<Value *> LiveSet) {
     auto Args = ReverseInstructionIt->get()->arguments();
     for (auto i = 0; i < Args.size(); i++) {
       auto Arg = Args.at(i);
-      if (Arg.ValTy == ValueType::StackSlot || dynamic_cast<Instruction *>(Arg.Ptr) == nullptr ||
+      if (Arg.ValTy == ValueType::StackSlot || Arg.ValTy == ValueType::Parameter ||
+          dynamic_cast<Instruction *>(Arg.Ptr) == nullptr ||
           dynamic_cast<Instruction *>(Arg.Ptr)->InstrT == InstructionType::Adda) {
         continue;
       }

@@ -504,8 +504,16 @@ struct DLXObject {
       break;
     case InstructionType::LoadS: {
       auto Dest = mapValueToRegister(&Instr, State, Spill1);
+      auto Source = Instr.arguments()[0];
+
+      int Offset;
       int Slot = Instr.arguments()[0].Id;
-      int Offset = State.SpilledRegisterOffsets[Slot];
+      if (Source.ValTy == ValueType::Parameter) {
+        Offset = (State.CurrentFunction->parameters().size() - Slot) * 4;
+      } else {
+        Offset = State.SpilledRegisterOffsets[Slot];
+      }
+
       if (exceeds16Bit(Offset)) {
         load32BitValue(Accu, Offset);
         emitF2(Op::LDX, Dest, FP, Accu);
@@ -643,15 +651,8 @@ struct DLXObject {
     // Create the stack map
     unordered_map<Value *, int32_t> ValueOffsets;
 
-    // Map all parameters
-    int Offset = Parameters.size() * 4;
-    for (auto Param : F->parameters()) {
-      ValueOffsets[Param] = Offset;
-      Offset -= 4;
-    }
-
     // Map all arrays
-    Offset = -36;
+    int Offset = -36;
     for (auto &Local : F->locals()) {
       // The second check is not necessary right now, because parameters can only be single word. We still add it to
       // avoid bugs in case arrays or other complex objects can be passed as arguments at some point.
