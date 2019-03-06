@@ -36,13 +36,6 @@ void SpillPass::process(Function &F) {
               continue;
 
             if (FA.isRegisterSpilled(ArgColor)) {
-
-              if (auto X = dynamic_cast<Instruction *>(Arg.Ptr)) {
-                if (X->InstrT == InstructionType::Phi) {
-                  int x = 0;
-                }
-              }
-
               auto SourceBlock = BB->predecessors()[ArgPos];
 
               int Id = NameGen::genInstructionId();
