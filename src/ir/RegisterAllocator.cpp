@@ -46,10 +46,11 @@ RegisterAllocator::Coloring RegisterAllocator::color(InterferenceGraph::Graph IG
 namespace {
 void addNodeBack(InterferenceGraph::Graph &IG, InterferenceGraph::IGNode *Node,
                  std::unordered_set<InterferenceGraph::IGNode *> &Neighbors) {
-  IG[Node] = Neighbors;
+  IG[Node] = {};
   for (auto Neighbor : Neighbors) {
     if (IG.find(Neighbor) != IG.end()) {
       IG.at(Neighbor).insert(Node);
+      IG.at(Node).insert(Neighbor);
     }
   }
 }
