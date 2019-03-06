@@ -21,8 +21,7 @@ void SpillPass::process(Function &F) {
   for (auto &BB : F.basicBlocks()) {
     auto &Instructions = BB->instructions();
     for (auto InstrIt = Instructions.begin(); InstrIt != Instructions.end(); ++InstrIt) {
-      if (InstrIt->get()->InstrT == InstructionType::Adda) {
-      } else if (InstrIt->get()->InstrT == InstructionType::Phi) {
+      if (InstrIt->get()->InstrT == InstructionType::Phi) {
         auto PhiColorIt = Coloring->find(InstrIt->get());
         auto PhiColor = PhiColorIt->second;
 
