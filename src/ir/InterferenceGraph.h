@@ -10,6 +10,10 @@
 namespace cs241c {
 class InterferenceGraph {
 public:
+  struct SpillHeuristicCtx {
+    static const uint32_t LOOP_MULTIPLIER = 15;
+    uint32_t LoopDepth = 0;
+  };
   struct IGNode {
   public:
     IGNode() = default;
@@ -21,10 +25,10 @@ public:
       for (auto Val : Other->Values) {
         this->Values.insert(Val);
       }
-      this->NumUses += Other->NumUses;
+      this->CurrentSpillCost += Other->CurrentSpillCost;
     }
-    uint32_t NumUses = 0;
-    uint32_t spillCost() { return NumUses; }
+    uint32_t CurrentSpillCost = 0;
+    uint32_t spillCost() { return CurrentSpillCost; }
   };
   // Map node to edges
   using Graph = std::unordered_map<IGNode *, std::unordered_set<IGNode *>>;
@@ -47,7 +51,7 @@ public:
   void addInterference(Value *From, Value *To);
   void addValue(Value *);
   void addInterferences(const std::unordered_set<Value *> &FromSet, Value *To);
-  void visit(Value *);
+  void visit(Value *, const SpillHeuristicCtx &SHC);
 
   std::unordered_set<IGNode *> neighbors(IGNode *Val);
   void removeNode(IGNode *Val);
@@ -70,6 +74,7 @@ private:
     std::unordered_set<Value *> LiveSet;
     void merge(IgBuildCtx Other);
     IgBuildCtx &operator=(const IgBuildCtx &Other) = default;
+    InterferenceGraph::SpillHeuristicCtx SHC;
   };
 
   InterferenceGraph IG;
@@ -79,8 +84,7 @@ private:
   IgBuildCtx igBuildLoop(IgBuildCtx CurrentCtx);
   IgBuildCtx igBuildNormal(IgBuildCtx CurrentCtx);
 
-  std::unordered_map<BasicBlock *, std::unordered_set<Value *>> processBlock(BasicBlock *BB,
-                                                                             std::unordered_set<Value *> LiveSet);
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>> processBlock(IgBuildCtx CurrentCtx);
 
   Function *F;
   DominatorTree *DT;

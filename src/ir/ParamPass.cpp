@@ -29,7 +29,7 @@ void ParamPass::process(Function &F) {
     for (auto InstrIt = Instructions.begin(); InstrIt != Instructions.end(); ++InstrIt) {
       auto &Instr = *InstrIt;
 
-      auto &Args = Instr->arguments();
+      auto Args = Instr->arguments();
       for (int ArgPos = 0; ArgPos < Args.size(); ++ArgPos) {
         auto Arg = Args[ArgPos];
 

@@ -24,7 +24,7 @@ var a, b, c, d, e, f, g, h, i, j, k, l;
 		if c < d then
 			let g <- ( g - 5 ) * h;
 			while g > h do
-				let h <- h + 1
+				let g <- g - 1
 			od;
 			let g <- g + h;
 			let c <- c + 1
@@ -32,15 +32,13 @@ var a, b, c, d, e, f, g, h, i, j, k, l;
 			if c >= d then
 				let e <- f * f * 7 - 2;
 				while (d - 7) <= e do
-					let d <- d + 1;
-					let e <- e + 1
+					let d <- d + 1
 				od;
 				let f <- f * e
 			else
 				let g <- 725;
 				while (d - 8) >= e do
-					let d <- d - 1;
-					let e <- e + 1
+					let d <- d - 1
 				od;
 				let f <- (g * f) / 4
 			fi;
