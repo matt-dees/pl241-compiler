@@ -33,7 +33,7 @@ private:
   Graph IG;
   std::vector<std::unique_ptr<IGNode>> IGNodes;
 
-  bool interferes(Value *Val1, Value *Val2);
+  bool interferes(IGNode *Node1, IGNode *Node2);
 
   std::unordered_map<Value *, IGNode *> ValueToNode;
 
@@ -43,7 +43,7 @@ public:
   Graph &graph() { return IG; }
 
   bool hasValue(Value *);
-  bool containsNodeForValue(Value *Val) { return IG.find(ValueToNode[Val]) != IG.end(); }
+  bool hasNode(IGNode *Node) { return IG.find(Node) != IG.end(); }
   void addInterference(Value *From, Value *To);
   void addValue(Value *);
   void addInterferences(const std::unordered_set<Value *> &FromSet, Value *To);

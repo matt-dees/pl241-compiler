@@ -49,20 +49,25 @@ void InterferenceGraph::addValue(Value *Val) {
 }
 
 void InterferenceGraph::coalesce() {
-  for (auto ValueToNodePair : ValueToNode) {
-    auto Val = ValueToNodePair.first;
-    if (auto Instr = dynamic_cast<Instruction *>(Val)) {
-      auto IGNodeForValue = ValueToNodePair.second;
-      if (Instr->InstrT == InstructionType::Phi) {
-        auto PhiArgs = Instr->arguments();
-        auto LeftArg = PhiArgs[0];
-        auto RightArg = PhiArgs[1];
-        if (containsNodeForValue(LeftArg) && containsNodeForValue(RightArg) && !interferes(Instr, LeftArg) &&
-            !interferes(Instr, RightArg) && !interferes(LeftArg, RightArg)) {
-          for (auto Node : std::unordered_set<Value *>{LeftArg, RightArg}) {
-            IGNodeForValue->merge(ValueToNode[Node]);
-            removeNode(ValueToNode[Node]);
-            ValueToNode[Node] = IGNodeForValue;
+  for (auto &Node : IGNodes) {
+    IGNode *CurrentNode = Node.get();
+    if (!hasNode(CurrentNode)) {
+      continue;
+    }
+    for (auto Val : CurrentNode->Values) {
+      if (auto Instr = dynamic_cast<Instruction *>(Val)) {
+        if (Instr->InstrT == InstructionType::Phi) {
+          auto PhiArgs = Instr->arguments();
+          auto LeftArg = ValueToNode[PhiArgs[0]];
+          auto RightArg = ValueToNode[PhiArgs[1]];
+          if (hasNode(LeftArg) && hasNode(RightArg) && !interferes(CurrentNode, LeftArg) &&
+              !interferes(CurrentNode, RightArg) && !interferes(LeftArg, RightArg)) {
+            for (auto NodeArg : std::unordered_set<IGNode *>{LeftArg, RightArg}) {
+              CurrentNode->merge(NodeArg);
+              removeNode(NodeArg);
+            }
+            ValueToNode[PhiArgs[0]] = CurrentNode;
+            ValueToNode[PhiArgs[1]] = CurrentNode;
           }
         }
       }
@@ -70,9 +75,7 @@ void InterferenceGraph::coalesce() {
   }
 }
 
-bool InterferenceGraph::interferes(Value *Val1, Value *Val2) {
-  auto Node1 = ValueToNode.at(Val1);
-  auto Node2 = ValueToNode.at(Val2);
+bool InterferenceGraph::interferes(IGNode *Node1, IGNode *Node2) {
   auto Node2Neighbors = neighbors(Node2);
   return Node2Neighbors.find(Node1) != Node2Neighbors.end();
 }
