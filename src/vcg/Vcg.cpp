@@ -152,6 +152,7 @@ void VcgWriter::write(AnnotatedIG &AIG, const std::string &OutFilePath) {
   ofstream VcgFileStream;
   VcgFileStream.open(OutFilePath);
   VcgFileStream << "graph: {";
+  VcgFileStream << "orientation: top_to_bottom\n";
   writeAIG(AIG, VcgFileStream);
   VcgFileStream << "}";
   VcgFileStream.close();
@@ -165,6 +166,7 @@ void VcgWriter::write(Module &M, FunctionAnalyzer &FA, const std::string &OutFil
   ofstream VcgFileStream;
   VcgFileStream.open(OutFilePath);
   VcgFileStream << "graph: {";
+  VcgFileStream << "orientation: top_to_bottom\n";
   writeModule(M, FA, VcgFileStream, WithDomInfo);
   VcgFileStream << "}";
   VcgFileStream.close();
