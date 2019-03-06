@@ -152,7 +152,6 @@ void VcgWriter::write(AnnotatedIG &AIG, const std::string &OutFilePath) {
   ofstream VcgFileStream;
   VcgFileStream.open(OutFilePath);
   VcgFileStream << "graph: {";
-  VcgFileStream << "orientation: top_to_bottom\n";
   writeAIG(AIG, VcgFileStream);
   VcgFileStream << "}";
   VcgFileStream.close();
