@@ -36,6 +36,8 @@ void SpillPass::process(Function &F) {
               continue;
 
             if (FA.isRegisterSpilled(ArgColor)) {
+              SpilledValues = true;
+
               auto SourceBlock = BB->predecessors()[ArgPos];
 
               int Id = NameGen::genInstructionId();
@@ -53,6 +55,8 @@ void SpillPass::process(Function &F) {
           }
 
           if (FA.isRegisterSpilled(PhiColor)) {
+            SpilledValues = true;
+
             auto SourceBlock = BB->predecessors()[ArgPos];
 
             ValueRef StackSlot(ValueType::StackSlot, PhiColor);
