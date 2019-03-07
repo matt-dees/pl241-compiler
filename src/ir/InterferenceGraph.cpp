@@ -27,6 +27,8 @@ std::unordered_set<InterferenceGraph::IGNode *> InterferenceGraph::neighbors(IGN
 }
 
 void InterferenceGraph::removeNode(IGNode *Node) {
+  // Don't erase from IGNodes vector in this function, because it will invalidate iterators at call sites.
+
   if (IG.find(Node) == IG.end()) {
     return;
   }
@@ -49,11 +51,14 @@ void InterferenceGraph::addValue(Value *Val) {
 }
 
 void InterferenceGraph::coalesce() {
+  unordered_set<IGNode *> IgNodesToDelete;
+
   for (auto &Node : IGNodes) {
     IGNode *CurrentNode = Node.get();
     if (!hasNode(CurrentNode)) {
       continue;
     }
+
     for (auto Val : CurrentNode->Values) {
       if (auto Instr = dynamic_cast<Instruction *>(Val)) {
         if (Instr->InstrT == InstructionType::Phi) {
@@ -62,9 +67,18 @@ void InterferenceGraph::coalesce() {
           auto RightArg = ValueToNode[PhiArgs[1]];
           if (hasNode(LeftArg) && hasNode(RightArg) && !interferes(CurrentNode, LeftArg) &&
               !interferes(CurrentNode, RightArg) && !interferes(LeftArg, RightArg)) {
+            auto &Neighbors = IG[CurrentNode];
+
             for (auto NodeArg : std::unordered_set<IGNode *>{LeftArg, RightArg}) {
+              auto &ArgNeighbors = IG[NodeArg];
+              for (auto Neighbor : ArgNeighbors) {
+                IG[Neighbor].insert(CurrentNode);
+                Neighbors.insert(Neighbor);
+              }
+
               CurrentNode->merge(NodeArg);
               removeNode(NodeArg);
+              IgNodesToDelete.insert(NodeArg);
             }
             ValueToNode[PhiArgs[0]] = CurrentNode;
             ValueToNode[PhiArgs[1]] = CurrentNode;
@@ -73,6 +87,11 @@ void InterferenceGraph::coalesce() {
       }
     }
   }
+
+  IGNodes.erase(
+      remove_if(IGNodes.begin(), IGNodes.end(),
+                [&IgNodesToDelete](auto &Node) { return IgNodesToDelete.find(Node.get()) != IgNodesToDelete.end(); }),
+      IGNodes.end());
 }
 
 bool InterferenceGraph::interferes(IGNode *Node1, IGNode *Node2) {
