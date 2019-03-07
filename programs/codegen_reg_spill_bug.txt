@@ -14,36 +14,40 @@ var a, b, c, d, e, f, g, h, i, j, k, l;
 	let f <- 6;
 	let g <- 7;
 	let h <- 8;
-	let i <- 5;
-	let j <- 6;
-	let k <- 7;
-	let l <- 8;
 	
 	while (b / 4 + 5) < 8 do
 		let a <- a * 7 + 9;
 		if c < d then
 			let g <- ( g - 5 ) * h;
-			while g > h do
-				let g <- g - 1
+			while g < 1000 do
+				let g <- g + 1
 			od;
 			let g <- g + h;
 			let c <- c + 1
 		else
 			if c >= d then
 				let e <- f * f * 7 - 2;
-				while (d - 7) <= e do
+				call OutputNum(22222);
+				call OutputNum(e);
+				while d <= e do
+				call OutputNum(333333);
+					call OutputNum(d);
 					let d <- d + 1
 				od;
 				let f <- f * e
 			else
 				let g <- 725;
-				while (d - 8) >= e do
-					let d <- d - 1
+				while (d - 8) < e do
+				call OutputNum(44444);
+					call OutputNum(d);
+					let d <- d + 1
 				od;
 				let f <- (g * f) / 4
 			fi;
 			let g <- g + h
 		fi;
+		call OutputNum(55555);
+		call OutputNum(b);
 		let b <- b + 1
 	od;
 	let c <- a * d;
@@ -57,10 +61,6 @@ var a, b, c, d, e, f, g, h, i, j, k, l;
 	call OutputNum(e);
 	call OutputNum(f);
 	call OutputNum(g);
-	call OutputNum(h);
-	call OutputNum(i);
-	call OutputNum(j);
-	call OutputNum(k);
-	call OutputNum(l)
+	call OutputNum(h)
 }
 .
