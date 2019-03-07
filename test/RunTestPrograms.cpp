@@ -49,6 +49,7 @@ TEST_CASE("Compile and run test programs") {
 
       DeadCodeEliminationPass DCEP(FA);
       DCEP.run(*IR);
+      FA.runDominanceAnalytics(IR.get());
 
       ParamPass PP(FA);
       PP.run(*IR);

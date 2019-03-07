@@ -36,7 +36,7 @@ unordered_set<Value *> mark(Function &F, FunctionAnalyzer &FA) {
 
   for (auto &BB : F.basicBlocks()) {
     for (auto &I : BB->instructions()) {
-      if (find(PreLive.begin(), PreLive.end(), I->InstrT) != PreLive.end() || isTerminator(I->InstrT)) {
+      if (find(PreLive.begin(), PreLive.end(), I->InstrT) != PreLive.end()) {
         LiveSet.insert(I.get());
         WorkList.push_back(I.get());
       }
@@ -96,54 +96,11 @@ void erase(Function &F, const unordered_set<Value *> &LiveValues) {
   }
 }
 
-BasicBlock *skipDeadBlocks(BasicBlock *BB, const unordered_set<Value *> &LiveValues,
-                           unordered_set<BasicBlock *> &VisitedBlocks) {
-  auto Followers = BB->successors();
-
-  while (!Followers.empty() && VisitedBlocks.find(BB) == VisitedBlocks.end()) {
-    VisitedBlocks.insert(BB);
-
-    Instruction *Terminator = BB->terminator();
-    if (isConditionalBranch(Terminator->InstrT)) {
-      if (LiveValues.find(Terminator) == LiveValues.end()) {
-        BB->fallthoughSuccessor() = Terminator->target();
-        BB->releaseTerminator();
-        Followers = BB->successors();
-      } else {
-        for (BasicBlock *Follower : Followers) {
-          BB->updateSuccessor(Follower, skipDeadBlocks(Follower, LiveValues, VisitedBlocks));
-        }
-        break;
-      }
-    }
-
-    if (BB->terminator()->InstrT == InstructionType::Bra) {
-      if (BB->instructions().size() == 1 && BB->predecessors().size() <= 1) {
-        // BB = Followers.front();
-      } else {
-        BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
-        break;
-      }
-    } else if (BB->fallthoughSuccessor() != nullptr) {
-      if (BB->instructions().size() == 0 && BB->predecessors().size() <= 1) {
-        // BB = Followers.front();
-      } else {
-        BB->updateSuccessor(Followers.front(), skipDeadBlocks(Followers.front(), LiveValues, VisitedBlocks));
-        break;
-      }
-    }
-
-    Followers = BB->successors();
-  }
-
-  return BB;
-}
-
-void removeDeadBlocks(Function &F, BasicBlock *NewEntry) {
+void removeDeadBlocks(Function &F) {
   stack<BasicBlock *> WorkingStack;
   unordered_set<BasicBlock *> MarkedBlocks;
 
-  WorkingStack.push(NewEntry);
+  WorkingStack.push(F.entryBlock());
 
   while (!WorkingStack.empty()) {
     BasicBlock *Block = WorkingStack.top();
@@ -171,14 +128,16 @@ void removeDeadBlocks(Function &F, BasicBlock *NewEntry) {
 }
 
 void trim(Function &F, const unordered_set<Value *> &LiveValues) {
-  for (int I = 1; I <= 2; ++I) {
-    unordered_set<BasicBlock *> VisitedBlocks;
-    BasicBlock *NewEntry = skipDeadBlocks(F.entryBlock(), LiveValues, VisitedBlocks);
-    removeDeadBlocks(F, NewEntry);
-    auto NewEntryIt = find_if(F.basicBlocks().begin(), F.basicBlocks().end(),
-                              [NewEntry](auto &Block) { return Block.get() == NewEntry; });
-    NewEntryIt->swap(F.basicBlocks().front());
+  for (auto &BB : F.basicBlocks()) {
+    Instruction *Terminator = BB->terminator();
+    if (Terminator != nullptr && isConditionalBranch(Terminator->InstrT)) {
+      if (LiveValues.find(Terminator) == LiveValues.end()) {
+        auto TerminatorPtr = BB->releaseTerminator();
+        BB->fallthoughSuccessor() = TerminatorPtr->target();
+      }
+    }
   }
+  removeDeadBlocks(F);
 }
 
 void cleanAttributes(Function &F) {
@@ -197,6 +156,6 @@ void cleanAttributes(Function &F) {
 void DeadCodeEliminationPass::run(Function &F) {
   auto LiveValues = mark(F, FA);
   erase(F, LiveValues);
-  // trim(F, LiveValues);
-  // cleanAttributes(F);
+  trim(F, LiveValues);
+  cleanAttributes(F);
 }

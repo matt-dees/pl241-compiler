@@ -67,6 +67,7 @@ int main(int ArgC, char **ArgV) {
 
   DeadCodeEliminationPass DCEP(FA);
   DCEP.run(*IR);
+  FA.runDominanceAnalytics(IR.get());
 
   ICP.run(*IR);
 
