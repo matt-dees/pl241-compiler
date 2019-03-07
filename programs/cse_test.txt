@@ -4,7 +4,7 @@ main
 procedure foo( );
 var a, b, c, d, e, f, g;
 {
-	let a <- b + c;
+	let a <- 5 + c;
 	let d <- b + c;
 	let e <- c + b + d;
 
