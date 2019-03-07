@@ -19,7 +19,7 @@ var a, b, c, d, e, f, g, h, i, j, k, l;
 		let a <- a * 7 + 9;
 		if c < d then
 			let g <- ( g - 5 ) * h;
-			while g < 1000 do
+			while g < 100 do
 				let g <- g + 1
 			od;
 			let g <- g + h;
@@ -27,27 +27,19 @@ var a, b, c, d, e, f, g, h, i, j, k, l;
 		else
 			if c >= d then
 				let e <- f * f * 7 - 2;
-				call OutputNum(22222);
-				call OutputNum(e);
 				while d <= e do
-				call OutputNum(333333);
-					call OutputNum(d);
 					let d <- d + 1
 				od;
 				let f <- f * e
 			else
 				let g <- 725;
 				while (d - 8) < e do
-				call OutputNum(44444);
-					call OutputNum(d);
 					let d <- d + 1
 				od;
 				let f <- (g * f) / 4
 			fi;
 			let g <- g + h
 		fi;
-		call OutputNum(55555);
-		call OutputNum(b);
 		let b <- b + 1
 	od;
 	let c <- a * d;
