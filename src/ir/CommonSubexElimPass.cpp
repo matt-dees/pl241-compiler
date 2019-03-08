@@ -28,7 +28,11 @@ struct InstructionHasher {
     Hash ^= static_cast<underlying_type<InstructionType>::type>(Instr->InstrT);
     Hash *= FNVPrime;
 
-    for (Value *Arg : Instr->arguments()) {
+    auto Args = Instr->arguments();
+    if (Instr->InstrT == InstructionType::Load) {
+      Args = dynamic_cast<Instruction *>(Args[0].Ptr)->arguments();
+    }
+    for (Value *Arg : Args) {
       Hash ^= reinterpret_cast<uintptr_t>(Arg);
       Hash *= FNVPrime;
     }
@@ -39,7 +43,15 @@ struct InstructionHasher {
 
 struct InstructionEquality {
   bool operator()(Instruction *Instr, Instruction *Other) const {
-    return (Instr->arguments() == Other->arguments()) && typeid(Instr) == typeid(Other);
+    bool const TypeEqual = Instr->InstrT == Other->InstrT;
+    auto InstrArgs = Instr->InstrT == InstructionType::Load
+                         ? dynamic_cast<Instruction *>(Instr->arguments()[0].Ptr)->arguments()
+                         : Instr->arguments();
+
+    auto OtherArgs = Other->InstrT == InstructionType::Load
+                         ? dynamic_cast<Instruction *>(Other->arguments()[0].Ptr)->arguments()
+                         : Other->arguments();
+    return TypeEqual && (InstrArgs == OtherArgs);
   }
 };
 } // namespace

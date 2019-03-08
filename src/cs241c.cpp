@@ -52,6 +52,12 @@ int main(int ArgC, char **ArgV) {
   SSAPass SSAP(FA);
   SSAP.run(*IR);
 
+  if (GenerateVcg) {
+    string VcgOutput{string(InputFile) + ".ssa.vcg"};
+    removeFile(VcgOutput);
+    VCGW.write(*IR, FA, VcgOutput);
+  }
+
   IntegrityCheckPass ICP(FA);
   ICP.run(*IR);
 
