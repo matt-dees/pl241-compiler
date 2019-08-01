@@ -2,6 +2,7 @@
 #include "FunctionAnalyzer.h"
 #include "Module.h"
 #include "NameGen.h"
+#include <algorithm>
 
 using namespace cs241c;
 using namespace std;
