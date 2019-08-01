@@ -66,10 +66,10 @@ int main(int ArgC, char **ArgV) {
 
   ICP.run(*IR);
 
-  CommonSubexElimPass CSE(FA);
-  CSE.run(*IR);
-
-  ICP.run(*IR);
+//  CommonSubexElimPass CSE(FA);
+//  CSE.run(*IR);
+//
+//  ICP.run(*IR);
 
   DeadCodeEliminationPass DCEP(FA);
   DCEP.run(*IR);

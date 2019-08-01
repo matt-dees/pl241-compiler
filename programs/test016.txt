@@ -38,7 +38,7 @@ var i;
 	let y <- ( 895 * 2 * 2 ) / 2;
 	call baz( x, y );
 	let y <- y + call boo( 2, 4 );
-
+	let y <- 1;
 	call OutputNum(x);
 	call OutputNum(y)
 }
