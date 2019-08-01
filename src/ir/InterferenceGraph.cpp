@@ -1,9 +1,11 @@
 #include "InterferenceGraph.h"
+#include <algorithm>
 
 using namespace cs241c;
 using namespace std;
 
-void InterferenceGraph::addInterferences(const std::unordered_set<Value *> &FromSet, Value *To) {
+void InterferenceGraph::addInterferences(
+    const std::unordered_set<Value *> &FromSet, Value *To) {
   for (auto Node : FromSet) {
     addInterference(Node, To);
   }
@@ -19,7 +21,8 @@ void InterferenceGraph::addInterference(Value *From, Value *To) {
   IG[IGTo].insert(IGFrom);
 }
 
-std::unordered_set<InterferenceGraph::IGNode *> InterferenceGraph::neighbors(IGNode *Node) {
+std::unordered_set<InterferenceGraph::IGNode *>
+InterferenceGraph::neighbors(IGNode *Node) {
   if (IG.find(Node) == IG.end()) {
     throw logic_error("Node not in graph.");
   }
@@ -27,7 +30,8 @@ std::unordered_set<InterferenceGraph::IGNode *> InterferenceGraph::neighbors(IGN
 }
 
 void InterferenceGraph::removeNode(IGNode *Node) {
-  // Don't erase from IGNodes vector in this function, because it will invalidate iterators at call sites.
+  // Don't erase from IGNodes vector in this function, because it will
+  // invalidate iterators at call sites.
 
   if (IG.find(Node) == IG.end()) {
     return;
@@ -38,7 +42,9 @@ void InterferenceGraph::removeNode(IGNode *Node) {
   IG.erase(Node);
 }
 
-bool InterferenceGraph::hasValue(Value *Node) { return ValueToNode.find(Node) != ValueToNode.end(); }
+bool InterferenceGraph::hasValue(Value *Node) {
+  return ValueToNode.find(Node) != ValueToNode.end();
+}
 
 void InterferenceGraph::addValue(Value *Val) {
   if (hasValue(Val)) {
@@ -65,11 +71,14 @@ void InterferenceGraph::coalesce() {
           auto PhiArgs = Instr->arguments();
           auto LeftArg = ValueToNode[PhiArgs[0]];
           auto RightArg = ValueToNode[PhiArgs[1]];
-          if (hasNode(LeftArg) && hasNode(RightArg) && !interferes(CurrentNode, LeftArg) &&
-              !interferes(CurrentNode, RightArg) && !interferes(LeftArg, RightArg)) {
+          if (hasNode(LeftArg) && hasNode(RightArg) &&
+              !interferes(CurrentNode, LeftArg) &&
+              !interferes(CurrentNode, RightArg) &&
+              !interferes(LeftArg, RightArg)) {
             auto &Neighbors = IG[CurrentNode];
 
-            for (auto NodeArg : std::unordered_set<IGNode *>{LeftArg, RightArg}) {
+            for (auto NodeArg :
+                 std::unordered_set<IGNode *>{LeftArg, RightArg}) {
               auto &ArgNeighbors = IG[NodeArg];
               for (auto Neighbor : ArgNeighbors) {
                 IG[Neighbor].insert(CurrentNode);
@@ -88,10 +97,12 @@ void InterferenceGraph::coalesce() {
     }
   }
 
-  IGNodes.erase(
-      remove_if(IGNodes.begin(), IGNodes.end(),
-                [&IgNodesToDelete](auto &Node) { return IgNodesToDelete.find(Node.get()) != IgNodesToDelete.end(); }),
-      IGNodes.end());
+  IGNodes.erase(remove_if(IGNodes.begin(), IGNodes.end(),
+                          [&IgNodesToDelete](auto &Node) {
+                            return IgNodesToDelete.find(Node.get()) !=
+                                   IgNodesToDelete.end();
+                          }),
+                IGNodes.end());
 }
 
 bool InterferenceGraph::interferes(IGNode *Node1, IGNode *Node2) {
@@ -121,8 +132,10 @@ IGBuilder::IgBuildCtx IGBuilder::igBuild(IGBuilder::IgBuildCtx CurrentCtx) {
   return igBuildNormal(CurrentCtx);
 }
 
-IGBuilder::IgBuildCtx IGBuilder::igBuildNormal(IGBuilder::IgBuildCtx CurrentCtx) {
-  std::unordered_map<BasicBlock *, std::unordered_set<Value *>> PredecessorSets = processBlock(CurrentCtx);
+IGBuilder::IgBuildCtx
+IGBuilder::igBuildNormal(IGBuilder::IgBuildCtx CurrentCtx) {
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
+      PredecessorSets = processBlock(CurrentCtx);
 
   IgBuildCtx NextCtx;
   if (PredecessorSets.size() > 1) {
@@ -138,20 +151,24 @@ IGBuilder::IgBuildCtx IGBuilder::igBuildNormal(IGBuilder::IgBuildCtx CurrentCtx)
 
 std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
 IGBuilder::processBlock(IGBuilder::IgBuildCtx CurrentCtx) {
-  std::unordered_map<BasicBlock *, std::unordered_set<Value *>> PredecessorLiveSets;
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
+      PredecessorLiveSets;
   for (auto Val : CurrentCtx.LiveSet) {
     IG.addInterferences(CurrentCtx.LiveSet, Val);
   }
   for (auto ReverseInstructionIt = CurrentCtx.NextNode->instructions().rbegin();
-       ReverseInstructionIt != CurrentCtx.NextNode->instructions().rend(); ReverseInstructionIt++) {
+       ReverseInstructionIt != CurrentCtx.NextNode->instructions().rend();
+       ReverseInstructionIt++) {
 
     CurrentCtx.LiveSet.erase(ReverseInstructionIt->get());
     auto Args = ReverseInstructionIt->get()->arguments();
     for (auto i = 0; i < Args.size(); i++) {
       auto Arg = Args.at(i);
-      if (Arg.ValTy == ValueType::StackSlot || Arg.ValTy == ValueType::Parameter ||
+      if (Arg.ValTy == ValueType::StackSlot ||
+          Arg.ValTy == ValueType::Parameter ||
           dynamic_cast<Instruction *>(Arg.Ptr) == nullptr ||
-          dynamic_cast<Instruction *>(Arg.Ptr)->InstrT == InstructionType::Adda) {
+          dynamic_cast<Instruction *>(Arg.Ptr)->InstrT ==
+              InstructionType::Adda) {
         continue;
       }
       IG.addValue(Arg);
@@ -175,7 +192,8 @@ IGBuilder::processBlock(IGBuilder::IgBuildCtx CurrentCtx) {
     if (PredecessorLiveSets.find(Pred) != PredecessorLiveSets.end()) {
       LiveSetToPropagate = PredecessorLiveSets[Pred];
     }
-    copy(CurrentCtx.LiveSet.begin(), CurrentCtx.LiveSet.end(), inserter(LiveSetToPropagate, LiveSetToPropagate.end()));
+    copy(CurrentCtx.LiveSet.begin(), CurrentCtx.LiveSet.end(),
+         inserter(LiveSetToPropagate, LiveSetToPropagate.end()));
     PredecessorLiveSets[Pred] = LiveSetToPropagate;
   }
   return PredecessorLiveSets;
@@ -186,8 +204,10 @@ void InterferenceGraph::visit(Value *Val, const SpillHeuristicCtx &SHC) {
   Node->CurrentSpillCost += 1 + SHC.LoopDepth * SHC.LOOP_MULTIPLIER;
 }
 
-IGBuilder::IgBuildCtx IGBuilder::igBuildIfStmt(IGBuilder::IgBuildCtx CurrentCtx) {
-  std::unordered_map<BasicBlock *, std::unordered_set<Value *>> PredecessorPhiSets = processBlock(CurrentCtx);
+IGBuilder::IgBuildCtx
+IGBuilder::igBuildIfStmt(IGBuilder::IgBuildCtx CurrentCtx) {
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
+      PredecessorPhiSets = processBlock(CurrentCtx);
 
   IgBuildCtx IfHeaderCtx;
   for (auto Pred : CurrentCtx.NextNode->predecessors()) {
@@ -201,7 +221,8 @@ IGBuilder::IgBuildCtx IGBuilder::igBuildIfStmt(IGBuilder::IgBuildCtx CurrentCtx)
 }
 
 IGBuilder::IgBuildCtx IGBuilder::igBuildLoop(IGBuilder::IgBuildCtx CurrentCtx) {
-  std::unordered_map<BasicBlock *, std::unordered_set<Value *>> PredecessorPhiSets = processBlock(CurrentCtx);
+  std::unordered_map<BasicBlock *, std::unordered_set<Value *>>
+      PredecessorPhiSets = processBlock(CurrentCtx);
   BasicBlock *LoopPredecessor = nullptr;
   BasicBlock *ContinuePredecessor = nullptr;
   for (auto P : CurrentCtx.NextNode->predecessors()) {
@@ -212,12 +233,14 @@ IGBuilder::IgBuildCtx IGBuilder::igBuildLoop(IGBuilder::IgBuildCtx CurrentCtx) {
     }
   }
   if (!LoopPredecessor) {
-    throw logic_error("Tried to build interference graph for loop block " + CurrentCtx.NextNode->toString() +
+    throw logic_error("Tried to build interference graph for loop block " +
+                      CurrentCtx.NextNode->toString() +
                       " but it does not have a loop predecessor.");
   }
 
   bool InSecondIteration = false;
-  IgBuildCtx LoopContext = {LoopPredecessor, PredecessorPhiSets.at(LoopPredecessor)};
+  IgBuildCtx LoopContext = {LoopPredecessor,
+                            PredecessorPhiSets.at(LoopPredecessor)};
   while (LoopContext.NextNode != CurrentCtx.NextNode || !InSecondIteration) {
     if (LoopContext.NextNode == CurrentCtx.NextNode) {
       InSecondIteration = true;
