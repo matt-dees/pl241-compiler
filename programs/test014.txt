@@ -7,6 +7,9 @@ var a, b;
 		let b <- a + 1;
 		let a <- a * 2
 	od;
-	let b <- a
+	let b <- a;
+
+	call OutputNum(a);
+	call OutputNum(b)
 }
 .

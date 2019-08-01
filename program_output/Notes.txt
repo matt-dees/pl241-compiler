@@ -1,0 +1,9 @@
+All tests: uninitialized primitive variables are zero initialized by our compiler.
+
+test004.txt: Changed array indices to zero based such that max function correctly returned maximum value in the input array.
+test006.txt: Added OutputNum call to print result of foo(). Otherwise dead code elimination removes the entire program.
+test008.txt: Removed unused j variable and added OutputNum call to i to provide useful output from program.
+test010.txt: Fixed infinite loop.
+test011.txt: Fixed infinite loop and added OutputNum call so that dead code elimination keeps instructions around.
+test014.txt: Added OutputNum() calls for variables.
+test015.txt: Added OutputNum() calls and calls to functions that weren't previously used.

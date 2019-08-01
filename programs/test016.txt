@@ -25,7 +25,8 @@ var i;
 {
 	let i <- 0;
 	while i < y do
-		let x <- x * x
+		let x <- x * x;
+		let i <- i + 1
 	od;
 	return x + 4
 	
@@ -36,6 +37,9 @@ var i;
 	let x <- 3 + 7 - 2;
 	let y <- ( 895 * 2 * 2 ) / 2;
 	call baz( x, y );
-	let y <- y + call boo( 2, 4 )
+	let y <- y + call boo( 2, 4 );
+
+	call OutputNum(x);
+	call OutputNum(y)
 }
 .

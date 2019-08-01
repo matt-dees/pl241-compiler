@@ -39,7 +39,12 @@ main
     };
     {
         let foo <- 3+too;
-        let af <- foo+6
+        let af <- foo+6;
+
+        call OutputNum(foo);
+        call OutputNum(af);
+        call OutputNum(call bar(af));
+        call OutputNum(call foo(foo))
 
     }
 .
